@@ -1,0 +1,170 @@
+{
+  "schema": "hwyd-acts-gold/1",
+  "recording": "benchmarks/summary/acts/test/t1-community-choir-concert-fr.json",
+  "participants": [
+    "Inès",
+    "Valentin",
+    "Oscar"
+  ],
+  "turns": {
+    "S3": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": "Valentin"
+      }
+    ],
+    "S4": [
+      {
+        "act": "accept",
+        "target": "S3",
+        "agent": "Valentin"
+      }
+    ],
+    "S5": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": "Oscar"
+      }
+    ],
+    "S6": [
+      {
+        "act": "decline",
+        "target": "S5",
+        "agent": null
+      }
+    ],
+    "S7": [
+      {
+        "act": "obligation",
+        "target": null,
+        "agent": null
+      }
+    ],
+    "S8": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": null
+      }
+    ],
+    "S9": [
+      {
+        "act": "commit",
+        "target": "S8",
+        "agent": "Inès"
+      }
+    ],
+    "S10": [
+      {
+        "act": "propose",
+        "target": null,
+        "agent": null
+      }
+    ],
+    "S11": [
+      {
+        "act": "decline",
+        "target": "S10",
+        "agent": null
+      },
+      {
+        "act": "propose",
+        "target": "S10",
+        "agent": null
+      }
+    ],
+    "S12": [
+      {
+        "act": "decide",
+        "target": "S11",
+        "agent": null
+      }
+    ],
+    "S13": [
+      {
+        "act": "agree",
+        "target": "S12",
+        "agent": null
+      }
+    ],
+    "S14": [
+      {
+        "act": "agree",
+        "target": "S12",
+        "agent": null
+      }
+    ],
+    "S15": [
+      {
+        "act": "tentative",
+        "target": null,
+        "agent": "Oscar"
+      }
+    ],
+    "S16": [
+      {
+        "act": "quote",
+        "target": null,
+        "agent": "Valentin"
+      }
+    ],
+    "S17": [
+      {
+        "act": "quote",
+        "target": null,
+        "agent": "other"
+      }
+    ],
+    "S18": [
+      {
+        "act": "commit",
+        "target": null,
+        "agent": null
+      }
+    ],
+    "S19": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": "Valentin"
+      }
+    ],
+    "S20": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": "Valentin"
+      }
+    ],
+    "S21": [
+      {
+        "act": "accept",
+        "target": "S19",
+        "agent": "Valentin"
+      },
+      {
+        "act": "decline",
+        "target": "S20",
+        "agent": null
+      }
+    ],
+    "S22": [
+      {
+        "act": "correct",
+        "target": "S4",
+        "agent": "Valentin"
+      }
+    ],
+    "S23": [
+      {
+        "act": "propose",
+        "target": null,
+        "agent": null,
+        "optional": true,
+        "note": "Collective 'we'll meet again to finish': not a commitment; propose is the closest label, empty is also defensible."
+      }
+    ]
+  }
+}

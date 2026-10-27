@@ -1,0 +1,267 @@
+{
+  "schema": "hwyd-acts-gold/1",
+  "recording": "benchmarks/summary/acts/test/t2-mountain-trail-race-en.json",
+  "participants": [
+    "Ludivine",
+    "Maxence",
+    "Rosalie",
+    "Anselme"
+  ],
+  "turns": {
+    "S3": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": "Maxence"
+      }
+    ],
+    "S4": [
+      {
+        "act": "accept",
+        "target": "S3",
+        "agent": "Maxence"
+      }
+    ],
+    "S5": [
+      {
+        "act": "quote",
+        "target": null,
+        "agent": "other"
+      }
+    ],
+    "S6": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": "Rosalie"
+      }
+    ],
+    "S7": [
+      {
+        "act": "accept",
+        "target": "S6",
+        "agent": "Rosalie"
+      }
+    ],
+    "S9": [
+      {
+        "act": "commit",
+        "target": null,
+        "agent": "Anselme"
+      }
+    ],
+    "S10": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": "Anselme"
+      }
+    ],
+    "S11": [
+      {
+        "act": "accept",
+        "target": "S10",
+        "agent": "Anselme"
+      }
+    ],
+    "S12": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": "Anselme"
+      }
+    ],
+    "S13": [
+      {
+        "act": "accept",
+        "target": "S12",
+        "agent": "Anselme"
+      }
+    ],
+    "S14": [
+      {
+        "act": "request",
+        "target": null,
+        "agent": null
+      }
+    ],
+    "S15": [
+      {
+        "act": "commit",
+        "target": "S14",
+        "agent": "Rosalie"
+      }
+    ],
+    "S16": [
+      {
+        "act": "propose",
+        "target": null,
+        "agent": null
+      }
+    ],
+    "S17": [
+      {
+        "act": "decide",
+        "target": "S16",
+        "agent": null
+      }
+    ],
+    "S18": [
+      {
+        "act": "agree",
+        "target": "S17",
+        "agent": null
+      }
+    ],
+    "S19": [
+      {
+        "act": "agree",
+        "target": "S17",
+        "agent": null
+      }
+    ],
+    "S20": [
+      {
+        "act": "commit",
+        "target": null,
+        "agent": "Ludivine"
+      }
+    ],
+    "S21": [
+      {
+        "act": "propose",
+        "target": null,
+        "agent": null
+      }
+    ],
+    "S22": [
+      {
+        "act": "decline",
+        "target": "S21",
+        "agent": null
+      },
+      {
+        "act": "propose",
+        "target": "S21",
+        "agent": null
+      },
+      {
+        "act": "commit",
+        "target": null,
+        "agent": "Maxence"
+      }
+    ],
+    "S23": [
+      {
+        "act": "quote",
+        "target": null,
+        "agent": "Maxence"
+      }
+    ],
+    "S24": [
+      {
+        "act": "challenge",
+        "target": "S11",
+        "agent": null
+      }
+    ],
+    "S25": [
+      {
+        "act": "commit",
+        "target": "S11",
+        "agent": "Anselme"
+      }
+    ],
+    "S26": [
+      {
+        "act": "propose",
+        "target": null,
+        "agent": null
+      }
+    ],
+    "S27": [
+      {
+        "act": "defer",
+        "target": "S26",
+        "agent": null
+      }
+    ],
+    "S28": [
+      {
+        "act": "challenge",
+        "target": "S15",
+        "agent": null
+      }
+    ],
+    "S29": [
+      {
+        "act": "request",
+        "target": "S7",
+        "agent": "Ludivine"
+      }
+    ],
+    "S30": [
+      {
+        "act": "decline",
+        "target": "S29",
+        "agent": null
+      }
+    ],
+    "S31": [
+      {
+        "act": "request",
+        "target": "S9",
+        "agent": "Maxence"
+      }
+    ],
+    "S32": [
+      {
+        "act": "accept",
+        "target": "S31",
+        "agent": "Maxence"
+      }
+    ],
+    "S33": [
+      {
+        "act": "commit",
+        "target": null,
+        "agent": "Maxence"
+      }
+    ],
+    "S34": [
+      {
+        "act": "correct",
+        "target": "S20",
+        "agent": "Ludivine"
+      }
+    ],
+    "S35": [
+      {
+        "act": "correct",
+        "target": "S4",
+        "agent": "Maxence"
+      }
+    ],
+    "S36": [
+      {
+        "act": "decide",
+        "target": "S17",
+        "agent": null
+      }
+    ],
+    "S37": [
+      {
+        "act": "withdraw",
+        "target": "S15",
+        "agent": null
+      }
+    ],
+    "S38": [
+      {
+        "act": "withdraw",
+        "target": "S12",
+        "agent": null
+      }
+    ]
+  }
+}

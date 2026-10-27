@@ -27,6 +27,11 @@ SCENARIOS = ROOT / "benchmarks/summary/ledger"
 # Default: ledger-v2, selected on development results over ledger-v3 (fewer cases with a gate under the
 # same rules). Every measured version stays selectable to reproduce its development pass.
 PROMPT_VERSION = "ledger-v2"
+# Deterministic rule sets. "v3" is the frozen rule set of the measured system and stays the default.
+# "v4" is a separate arm that only closes the withdrawal flaw found on the read holdout: an owner's
+# confirmation must be a later turn of that owner, not one of the turns of the withdrawn item itself.
+RULES_VERSION = "v3"
+RULES_VERSIONS = ("v3", "v4")
 MAXIMUM_PROMPT_CHARACTERS = 24_000  # Same user prompt ceiling as the shipped workflow.
 MINIMUM_PROMPT_CHARACTERS = 12_000
 PRODUCTION_WINDOW_CHARACTERS = 12_000
@@ -416,7 +421,10 @@ class Ledger:
     """Deterministic ledger derived from model statements. The model chooses categories and
     turns; code grounds owners in their own speech and applies replacements under rules."""
 
-    def __init__(self, turns):
+    def __init__(self, turns, rules=RULES_VERSION):
+        if rules not in RULES_VERSIONS:
+            raise ValueError(f"unknown rules version {rules}")
+        self.rules = rules
         self.turns = {turn["sid"]: turn for turn in turns}
         self.position = {turn["sid"]: index for index, turn in enumerate(turns)}
         self.items, self.windows = [], []
@@ -489,6 +497,9 @@ class Ledger:
             owner_turn = new["owner_turn"]
             owner_confirms = bool(owner_turn and target["owner"] and self.turns[owner_turn]["identified"]
                                   and self.speaker(owner_turn) == target["owner"])
+            if owner_confirms and self.rules != "v3":
+                owner_confirms = (owner_turn not in target["turns"]
+                                  and self.position[owner_turn] > max(self.position[sid] for sid in target["turns"]))
             return speaker in self.authority(target) or owner_confirms
         if target["kind"] in COMMITMENT_KINDS:
             if new["kind"] in COMMITMENT_KINDS and new["owner"] and new["owner"] != target["owner"]:
@@ -1010,6 +1021,7 @@ def run_case(path, output, args, harness):
     identity = {"endpoint": args.endpoint, "model": args.model, "reasoning_effort": args.reasoning_effort, "prompt_version": version,
                 "prompt_hash": prompt_hash(version), "input_sha256": input_sha, "limit": limit, "window_characters": window_budget}
     report = {"workflow": "ledger-prototype", "prompt_version": version, "prompt_hash": prompt_hash(version),
+              "rules": getattr(args, "rules", RULES_VERSION),
               "run_type": "resumed" if seed else "fresh", "cache_seed": seed, "timing_comparable_with_fresh": seed is None,
               "model": args.model, "endpoint": args.endpoint, "reasoning_effort": args.reasoning_effort,
               "quantization_label": args.quantization, "loaded_context_tokens_label": args.context_tokens,
@@ -1036,7 +1048,7 @@ def run_case(path, output, args, harness):
     started = time.monotonic()
     runner = Runner(Client(args.endpoint, args.model, args.reasoning_effort), cache, compact(identity), output / "calls.jsonl",
                     deadline=started + args.timeout, max_calls=getattr(args, "max_calls", None), version=version)
-    status, error, ledger, notes = "failed", None, Ledger(turns), {}
+    status, error, ledger, notes = "failed", None, Ledger(turns, getattr(args, "rules", RULES_VERSION)), {}
     try:
         result, ledger, notes = generate(recording, turns, runner, limit, window_budget, ledger, version)
         notes["language"] = language_metrics(result)
@@ -1258,7 +1270,7 @@ def score(run_directory):
     return rows
 
 
-def rederive(run_directory, output):
+def rederive(run_directory, output, rules=RULES_VERSION):
     """No network: apply the current rules to the cached ledger responses of single-window cases.
     Lists change, prose is copied from the original run. Several windows are skipped, because carried
     L identifiers were numbered by the original rules."""
@@ -1276,7 +1288,7 @@ def rederive(run_directory, output):
         keys = [record["key"] for record in records if record["stage"] == "ledger" and record["status"] == "valid"]
         content = json.loads((case / "cache" / f"{keys[-1]}.json").read_text())["content"]
         ids, people = [turn["sid"] for turn in windows[0]], participants(turns)
-        ledger = Ledger(turns)
+        ledger = Ledger(turns, rules)
         ledger.add_window(0, parse_statements(content, ids, people, []), [], [])
         original = json.loads((case / "result.json").read_text())
         writing = {name: original[name] for name in ("overview", "key_points", "details")}
@@ -1287,7 +1299,7 @@ def rederive(run_directory, output):
         (target / "summary.md").write_text(markdown(result))
         write_json(target / "ledger.json", {"windows": ledger.windows, "rederived_from": str(case),
                                             "items": [dict(item, turn_uuids=[ledger.turns[sid]["id"] for sid in item["turns"]]) for item in ledger.items]})
-        write_json(target / "benchmark.json", dict(report, rederived_from=str(case), rules="current", status=report["status"],
+        write_json(target / "benchmark.json", dict(report, rederived_from=str(case), rules=rules, status=report["status"],
                                                    note="Lists re-derived from cached responses with the current rules; no inference."))
         print(case.name, "rederived")
 
@@ -1333,6 +1345,8 @@ def main():
     run.add_argument("--server-pid", type=int, action="append", default=[])
     run.add_argument("--sample-interval", type=float, default=0.5)
     run.add_argument("--timeout", type=float, default=3600)
+    run.add_argument("--rules", choices=RULES_VERSIONS, default=RULES_VERSION,
+                     help="Deterministic rule set; v4 only adds the later-owner-turn check for withdrawals")
     run.add_argument("--max-calls", type=int, help="Fail a case instead of exceeding this many model requests, retries included")
     run.add_argument("--quantization", help="User-supplied label, not inferred")
     run.add_argument("--context-tokens", type=int, help="Loaded server context label; does not configure the server")
@@ -1341,6 +1355,7 @@ def main():
     replay = commands.add_parser("rederive", help="Apply the current rules to cached single-window responses, without inference")
     replay.add_argument("run_directory", type=Path)
     replay.add_argument("--output", type=Path, required=True)
+    replay.add_argument("--rules", choices=RULES_VERSIONS, default=RULES_VERSION)
     args = parser.parse_args()
     if args.command == "score":
         score(args.run_directory.resolve())
@@ -1349,7 +1364,7 @@ def main():
         output = args.output.resolve()
         if not output.is_relative_to(ROOT / "build") or output == ROOT / "build":
             parser.error("Output must be a new directory under build/")
-        rederive(args.run_directory.resolve(), output)
+        rederive(args.run_directory.resolve(), output, args.rules)
         return
     paths = [path for name in args.fixtures for path in fixture_paths(name)] + [path.resolve() for path in args.recording]
     if not paths:

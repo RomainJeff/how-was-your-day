@@ -38,8 +38,8 @@ def statement(turn, kind, text="Faire la chose.", owner=None, owner_turn=None, s
             "support_turns": list(support), "replaces": replaces, "due_text": due}
 
 
-def ledger_for(*rows):
-    return module.Ledger(module.build_turns(recording(*rows)))
+def ledger_for(*rows, rules=module.RULES_VERSION):
+    return module.Ledger(module.build_turns(recording(*rows)), rules)
 
 
 def by_text(ledger, text):
@@ -305,6 +305,31 @@ class Version3RuleTests(unittest.TestCase):
         text = module.markdown(module.summarize(ledger, list(ledger.turns.values()), {"overview": "R.", "key_points": [], "details": []}))
         self.assertIn("- Non retenu : « Refaire la grille », abandonné ou refusé par Bea", text)
         self.assertNotIn("Retiré", text)
+
+
+class Version4WithdrawalTests(unittest.TestCase):
+    ROWS = (("Theo", "Je fais le relevé d'humidité lundi."), ("Rachid", "Le relevé ne sert plus à rien, si ?"),
+            ("Theo", "Si, je le garde."), ("Theo", "Finalement je laisse tomber le relevé."))
+
+    def withdraw(self, rules, owner_turn):
+        ledger = ledger_for(*self.ROWS, rules=rules)
+        ledger.add_window(0, [statement("S1", "task", "Faire le relevé d'humidité.", "Theo", "S1"),
+                              statement("S2", "withdrawn", "Abandonner le relevé d'humidité.", "Theo", owner_turn, replaces="S1")], [], [])
+        return ledger.items[0]["status"]
+
+    def test_v3_stays_the_default_and_keeps_its_measured_behaviour(self):
+        self.assertEqual(module.RULES_VERSION, "v3")
+        self.assertEqual(self.withdraw("v3", "S1"), "withdrawn")
+
+    def test_v4_rejects_the_original_promise_as_the_owner_confirmation(self):
+        self.assertEqual(self.withdraw("v4", "S1"), "active")
+
+    def test_v4_still_accepts_a_later_owner_turn(self):
+        self.assertEqual(self.withdraw("v4", "S4"), "withdrawn")
+
+    def test_unknown_rules_are_rejected(self):
+        with self.assertRaises(ValueError):
+            ledger_for(*self.ROWS, rules="v5")
 
 
 class DeadlineAndContextTests(unittest.TestCase):

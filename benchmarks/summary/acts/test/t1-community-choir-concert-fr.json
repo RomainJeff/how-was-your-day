@@ -1,0 +1,225 @@
+{
+  "id": "444DA466-8369-5C01-A3DA-D8692A48D6B3",
+  "title": "Synthetic community choir winter concert (fr)",
+  "kind": "meeting",
+  "startedAt": 813781800,
+  "duration": 205,
+  "state": "sealed",
+  "revision": 0,
+  "transcriptVersion": 1,
+  "notes": "",
+  "noteEntries": [],
+  "speakers": [
+    {
+      "id": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "personID": "1EC9F111-F6A2-529D-AD84-FC91B2879B6D",
+      "label": "Inès",
+      "confirmed": true,
+      "source": "mic"
+    },
+    {
+      "id": "B109F325-C48E-5B55-B71C-F62CD9F94573",
+      "personID": "4118DF21-90F7-5A92-8634-86CB5038F1D4",
+      "label": "Valentin",
+      "confirmed": true,
+      "source": "system"
+    },
+    {
+      "id": "2FBC7032-1BC8-5505-89D8-4135FA486777",
+      "personID": "DF1519C5-F9A1-5EF7-975E-0C75C0F5A4AA",
+      "label": "Oscar",
+      "confirmed": true,
+      "source": "system"
+    }
+  ],
+  "segments": [
+    {
+      "id": "8C19A687-9951-5CB8-AB76-F3FA070158DA",
+      "start": 0.0,
+      "end": 13.9,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Bon, on prépare le concert de Noël de la chorale à l’église de Saint-Aubin, le 12 décembre. Nous sommes quarante-deux choristes inscrits. J’aimerais qu’on reparte avec une liste claire de qui fait quoi."
+    },
+    {
+      "id": "D78BFDF2-CFD6-5965-945E-2999B8477568",
+      "start": 15.2,
+      "end": 25.5,
+      "speakerID": "B109F325-C48E-5B55-B71C-F62CD9F94573",
+      "source": "system",
+      "text": "Pour info, la salle paroissiale est libre pour une répétition générale le 5 décembre, de quatorze heures à dix-huit heures. Le curé la laisse ouverte."
+    },
+    {
+      "id": "C45D4F66-3B83-5AD6-9ADD-03B666ECFC1A",
+      "start": 26.6,
+      "end": 34.5,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Valentin, tu pourrais t’occuper d’imprimer les affiches ? Il en faut une soixantaine pour les commerces du village."
+    },
+    {
+      "id": "98DDDD77-1895-5D79-AEA3-D1704A02FC45",
+      "start": 35.4,
+      "end": 41.1,
+      "speakerID": "B109F325-C48E-5B55-B71C-F62CD9F94573",
+      "source": "system",
+      "text": "Oui, je m’en occupe. Je passe commander chez l’imprimeur vendredi."
+    },
+    {
+      "id": "BAD70CCD-236F-5093-8B00-EDCDD8276900",
+      "start": 41.8,
+      "end": 49.4,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Oscar, et toi, tu peux appeler l’accordeur pour le piano de l’église ? Il n’a pas été accordé depuis deux ans."
+    },
+    {
+      "id": "E2A87B98-80C0-5025-BAA4-C54F381FAC52",
+      "start": 50.8,
+      "end": 57.6,
+      "speakerID": "2FBC7032-1BC8-5505-89D8-4135FA486777",
+      "source": "system",
+      "text": "Mon agenda est plein jusqu’à Noël, et l’accordeur ne rappelle jamais quand c’est moi qui l’appelle."
+    },
+    {
+      "id": "6C17E153-244E-5687-9DCB-94D1701CED43",
+      "start": 58.8,
+      "end": 67.2,
+      "speakerID": "B109F325-C48E-5B55-B71C-F62CD9F94573",
+      "source": "system",
+      "text": "Il faudra déclarer le programme à la société des droits d’auteur avant le 20 novembre, sinon le concert n’est pas couvert."
+    },
+    {
+      "id": "8F9D22C8-C7A0-5B0B-88BD-8AA89318C028",
+      "start": 68.2,
+      "end": 75.1,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Côté assurance, la paroisse veut une attestation avant la mi-novembre. Qui peut appeler l’assureur ?"
+    },
+    {
+      "id": "7863E9B7-E2BD-5F21-BD94-060B9A7FD966",
+      "start": 80.1,
+      "end": 84.0,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Personne ? Très bien, je l’appelle moi-même lundi matin."
+    },
+    {
+      "id": "D925C678-20C6-5055-8078-E8860E076DC7",
+      "start": 84.6,
+      "end": 93.4,
+      "speakerID": "2FBC7032-1BC8-5505-89D8-4135FA486777",
+      "source": "system",
+      "text": "Pour la fin du concert, je propose un chant de Noël que toute la salle chanterait avec nous, partitions distribuées à l’entrée."
+    },
+    {
+      "id": "2E0BD782-4E89-510C-B32D-A9D61ECD604D",
+      "start": 94.7,
+      "end": 104.6,
+      "speakerID": "B109F325-C48E-5B55-B71C-F62CD9F94573",
+      "source": "system",
+      "text": "Trois cents partitions à imprimer, et la salle est mal éclairée, ça ne marchera pas. Je verrais plutôt le chœur d’enfants, seul, pour conclure."
+    },
+    {
+      "id": "227943FB-E3B5-52DF-A3F0-144CBAE06EC6",
+      "start": 105.7,
+      "end": 112.5,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Alors on abandonne le chant collectif et on termine avec le chœur d’enfants. Vous êtes d’accord ?"
+    },
+    {
+      "id": "0711E1B1-AF3F-5404-8319-E5491712CE75",
+      "start": 113.4,
+      "end": 115.2,
+      "speakerID": "2FBC7032-1BC8-5505-89D8-4135FA486777",
+      "source": "system",
+      "text": "D’accord, ça me convient."
+    },
+    {
+      "id": "DA3BD09B-A72B-5044-85BB-E4891B70A757",
+      "start": 115.9,
+      "end": 117.8,
+      "speakerID": "B109F325-C48E-5B55-B71C-F62CD9F94573",
+      "source": "system",
+      "text": "Moi aussi, allons-y."
+    },
+    {
+      "id": "8A00C452-7E88-5724-A131-43211E9DB1C9",
+      "start": 119.2,
+      "end": 127.8,
+      "speakerID": "2FBC7032-1BC8-5505-89D8-4135FA486777",
+      "source": "system",
+      "text": "Pour les fleurs de l’autel, je peux peut-être m’en occuper, si j’ai fini mes cartons de déménagement. Mais aucune promesse."
+    },
+    {
+      "id": "03AF780C-CDBF-5136-B76F-BABCAE1790CF",
+      "start": 129.0,
+      "end": 135.7,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Valentin m’a dit mardi : « la buvette ce soir-là, c’est pour moi, j’apporte les thermos. »"
+    },
+    {
+      "id": "AFA092CA-3628-579C-AD8A-3E2FA5398419",
+      "start": 136.7,
+      "end": 145.1,
+      "speakerID": "2FBC7032-1BC8-5505-89D8-4135FA486777",
+      "source": "system",
+      "text": "Maëlle, qui est en déplacement cette semaine, fera la liste des solistes d’ici mercredi. Elle me l’a confirmé par message."
+    },
+    {
+      "id": "1F4680A1-FC38-5A07-877A-462647E914D8",
+      "start": 145.9,
+      "end": 153.0,
+      "speakerID": null,
+      "source": "system",
+      "text": "Je rapporte les chaises pliantes de la salle des fêtes samedi matin, ne vous en occupez pas."
+    },
+    {
+      "id": "15FFE66F-0B57-5BFA-8988-454B3A3127EF",
+      "start": 153.6,
+      "end": 160.2,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Valentin, il nous faut aussi un programme imprimé pour le soir du concert. Tu peux le préparer ?"
+    },
+    {
+      "id": "EB8A7B0C-EFE2-5CFC-A954-4B0B8754E667",
+      "start": 161.5,
+      "end": 165.6,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Et la buvette ce soir-là, tu pourrais la tenir ?"
+    },
+    {
+      "id": "88C22F64-3B78-5BE7-B3FB-C5C1D72C7DAC",
+      "start": 166.7,
+      "end": 180.0,
+      "speakerID": "B109F325-C48E-5B55-B71C-F62CD9F94573",
+      "source": "system",
+      "text": "Le programme, oui, je le prépare et je te l’envoie jeudi. Pour la buvette, il faudra trouver un autre bénévole : pendant le concert, je suis à la console de son et je ne peux pas m’en éloigner."
+    },
+    {
+      "id": "214853FE-4608-5C50-93F0-00EAF3D4E05F",
+      "start": 180.9,
+      "end": 188.8,
+      "speakerID": "B109F325-C48E-5B55-B71C-F62CD9F94573",
+      "source": "system",
+      "text": "Je corrige pour les affiches : l’imprimeur ferme vendredi, donc je passerai commander lundi plutôt que vendredi."
+    },
+    {
+      "id": "345B1B7A-8B1D-5DC4-AB57-F76B264642CC",
+      "start": 189.5,
+      "end": 202.5,
+      "speakerID": "FF3CD964-D32C-539F-A65A-6C111CD9AEEF",
+      "source": "mic",
+      "text": "Merci à tous. Je récapitule : affiches lundi, programme jeudi, l’assurance c’est moi, on finit avec le chœur d’enfants. On se retrouve le 14 novembre pour boucler les derniers points."
+    }
+  ],
+  "transcriptState": "ready",
+  "audioChunks": [],
+  "consentAnnounced": false,
+  "isDemo": true
+}

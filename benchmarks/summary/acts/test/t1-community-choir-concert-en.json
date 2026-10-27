@@ -1,0 +1,225 @@
+{
+  "id": "8B51C955-0F69-5723-A192-65E12C323C37",
+  "title": "Synthetic community choir winter concert (en)",
+  "kind": "meeting",
+  "startedAt": 813781800,
+  "duration": 205,
+  "state": "sealed",
+  "revision": 0,
+  "transcriptVersion": 1,
+  "notes": "",
+  "noteEntries": [],
+  "speakers": [
+    {
+      "id": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "personID": "1EC9F111-F6A2-529D-AD84-FC91B2879B6D",
+      "label": "Inès",
+      "confirmed": true,
+      "source": "mic"
+    },
+    {
+      "id": "87BAD251-1DC7-5582-94A2-20D854A5AE10",
+      "personID": "4118DF21-90F7-5A92-8634-86CB5038F1D4",
+      "label": "Valentin",
+      "confirmed": true,
+      "source": "system"
+    },
+    {
+      "id": "984552C9-9653-5E08-8D2D-B93ACB93B51F",
+      "personID": "DF1519C5-F9A1-5EF7-975E-0C75C0F5A4AA",
+      "label": "Oscar",
+      "confirmed": true,
+      "source": "system"
+    }
+  ],
+  "segments": [
+    {
+      "id": "B2E519B4-1CFE-566A-8A99-2A7AE1E6093D",
+      "start": 0.0,
+      "end": 13.9,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "Right, we're preparing the choir's Christmas concert at the Saint-Aubin church on December 12. Forty-two singers are signed up. I'd like us to leave with a clear list of who does what."
+    },
+    {
+      "id": "AF9F3938-9483-5CCE-BEB8-75B60D5114C0",
+      "start": 15.2,
+      "end": 25.5,
+      "speakerID": "87BAD251-1DC7-5582-94A2-20D854A5AE10",
+      "source": "system",
+      "text": "For the record, the parish hall is free for a dress rehearsal on December 5, from two to six in the afternoon. The priest leaves it unlocked."
+    },
+    {
+      "id": "C713A0EE-852D-538F-AF79-BF6BE8996DA8",
+      "start": 26.6,
+      "end": 34.5,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "Valentin, could you handle printing the posters? We need about sixty for the village shops."
+    },
+    {
+      "id": "F5FC012C-94E9-5C86-B6F8-0E2FB602239E",
+      "start": 35.4,
+      "end": 41.1,
+      "speakerID": "87BAD251-1DC7-5582-94A2-20D854A5AE10",
+      "source": "system",
+      "text": "Yes, I'll take care of it. I'll go and place the order at the printer's on Friday."
+    },
+    {
+      "id": "90DB0AEC-B693-555D-9AFE-5F72DA53C959",
+      "start": 41.8,
+      "end": 49.4,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "Oscar, and you, could you call the tuner for the church piano? It hasn't been tuned in two years."
+    },
+    {
+      "id": "3E51BE4C-38F2-57C6-BC2D-6B47D81B0F01",
+      "start": 50.8,
+      "end": 57.6,
+      "speakerID": "984552C9-9653-5E08-8D2D-B93ACB93B51F",
+      "source": "system",
+      "text": "My calendar is full until Christmas, and the tuner never calls back when I'm the one calling."
+    },
+    {
+      "id": "021FA1A1-8EEE-532B-832D-636D366C2A1D",
+      "start": 58.8,
+      "end": 67.2,
+      "speakerID": "87BAD251-1DC7-5582-94A2-20D854A5AE10",
+      "source": "system",
+      "text": "The program will have to be declared to the copyright society before November 20, otherwise the concert isn't covered."
+    },
+    {
+      "id": "5FE92C41-044E-5E3D-9F34-EE026BD3DD0C",
+      "start": 68.2,
+      "end": 75.1,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "On insurance, the parish wants a certificate before mid-November. Who can call the insurer?"
+    },
+    {
+      "id": "FADBC61A-9542-5978-AA7C-DB8AC3DF6BC5",
+      "start": 80.1,
+      "end": 84.0,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "Nobody? Fine, I'll call them myself on Monday morning."
+    },
+    {
+      "id": "C7E8413C-4C6B-59A4-8F61-9AC738EC23C2",
+      "start": 84.6,
+      "end": 93.4,
+      "speakerID": "984552C9-9653-5E08-8D2D-B93ACB93B51F",
+      "source": "system",
+      "text": "For the end of the concert, I suggest a carol that the whole audience would sing with us, with scores handed out at the door."
+    },
+    {
+      "id": "C57C50D3-4F6D-5F38-BC83-0F3BBEDDD30D",
+      "start": 94.7,
+      "end": 104.6,
+      "speakerID": "87BAD251-1DC7-5582-94A2-20D854A5AE10",
+      "source": "system",
+      "text": "Three hundred scores to print, and the hall is badly lit, it won't work. I'd rather see the children's choir close the concert on its own."
+    },
+    {
+      "id": "DDAB9539-C7D3-596A-BAA6-6F6B3414D20C",
+      "start": 105.7,
+      "end": 112.5,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "Then we drop the audience carol and finish with the children's choir. Does everyone agree?"
+    },
+    {
+      "id": "6C1CF5D2-A022-5DD2-B1D7-597E4304528F",
+      "start": 113.4,
+      "end": 115.2,
+      "speakerID": "984552C9-9653-5E08-8D2D-B93ACB93B51F",
+      "source": "system",
+      "text": "Agreed, that works for me."
+    },
+    {
+      "id": "1E01713B-9F8E-5B8E-AA25-B7DBFB576427",
+      "start": 115.9,
+      "end": 117.8,
+      "speakerID": "87BAD251-1DC7-5582-94A2-20D854A5AE10",
+      "source": "system",
+      "text": "Me too, let's go with it."
+    },
+    {
+      "id": "035E02D1-7D69-59CA-94EC-0FF385B839C1",
+      "start": 119.2,
+      "end": 127.8,
+      "speakerID": "984552C9-9653-5E08-8D2D-B93ACB93B51F",
+      "source": "system",
+      "text": "As for the altar flowers, I might be able to take care of them, if I'm done with my moving boxes. But no promises."
+    },
+    {
+      "id": "F69302C3-7FBF-5368-BB89-F7636C0E60B9",
+      "start": 129.0,
+      "end": 135.7,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "Valentin told me on Tuesday: “the refreshment stand that evening is mine, I'll bring the flasks.”"
+    },
+    {
+      "id": "6B2B009A-36CC-5C1F-ACFE-3A5356BC2DE4",
+      "start": 136.7,
+      "end": 145.1,
+      "speakerID": "984552C9-9653-5E08-8D2D-B93ACB93B51F",
+      "source": "system",
+      "text": "Maëlle, who is away this week, will draw up the list of soloists by Wednesday. She confirmed it to me by message."
+    },
+    {
+      "id": "FFD6E49B-FCCA-5700-870C-2081F7CF29A6",
+      "start": 145.9,
+      "end": 153.0,
+      "speakerID": null,
+      "source": "system",
+      "text": "I'll bring the folding chairs back from the community hall on Saturday morning, don't worry about them."
+    },
+    {
+      "id": "EA77E598-9924-5017-BF52-77C5BFFB8DA5",
+      "start": 153.6,
+      "end": 160.2,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "Valentin, we also need a printed program for the concert night. Can you prepare it?"
+    },
+    {
+      "id": "827BA2FC-DE0F-5E66-9949-BF231697CB8F",
+      "start": 161.5,
+      "end": 165.6,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "And the refreshment stand that night, could you run it?"
+    },
+    {
+      "id": "0E62A2C0-219D-5E51-9C02-54F1F869B825",
+      "start": 166.7,
+      "end": 180.0,
+      "speakerID": "87BAD251-1DC7-5582-94A2-20D854A5AE10",
+      "source": "system",
+      "text": "The program, yes, I'll prepare it and send it to you on Thursday. For the stand, you'll need another volunteer: during the concert I'm at the sound desk and can't step away."
+    },
+    {
+      "id": "E57BC7EE-DB24-55F4-9D30-E83C85C24DDB",
+      "start": 180.9,
+      "end": 188.8,
+      "speakerID": "87BAD251-1DC7-5582-94A2-20D854A5AE10",
+      "source": "system",
+      "text": "A correction on the posters: the printer is closed on Friday, so I'll place the order on Monday instead of Friday."
+    },
+    {
+      "id": "3F3057DC-D90C-5495-891A-807FFF3055ED",
+      "start": 189.5,
+      "end": 202.5,
+      "speakerID": "4B13B7D3-1D94-57CF-93A9-0E4182718C00",
+      "source": "mic",
+      "text": "Thanks, everyone. To recap: posters Monday, program Thursday, I'm handling the insurance, we close with the children's choir. We'll meet again on November 14 to finish the remaining points."
+    }
+  ],
+  "transcriptState": "ready",
+  "audioChunks": [],
+  "consentAnnounced": false,
+  "isDemo": true
+}

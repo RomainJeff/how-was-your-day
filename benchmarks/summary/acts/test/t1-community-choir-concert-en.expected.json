@@ -1,0 +1,386 @@
+{
+  "schema": "hwyd-ledger-expected/1",
+  "synthetic": true,
+  "split": "test",
+  "scenario": "t1-community-choir-concert",
+  "input_language": "en",
+  "output_language": "fr",
+  "participants": [
+    "Inès",
+    "Valentin",
+    "Oscar"
+  ],
+  "items": [
+    {
+      "id": "E1",
+      "phenomena": [
+        "third_party_assignment",
+        "late_correction",
+        "relative_deadline"
+      ],
+      "description": "Valentin has the village posters printed, order placed at the printer's on Monday, corrected from Friday because the printer is closed on Friday; asked by Inès and accepted by Valentin.",
+      "match_segment_ids": [
+        "C713A0EE-852D-538F-AF79-BF6BE8996DA8",
+        "F5FC012C-94E9-5C86-B6F8-0E2FB602239E",
+        "E57BC7EE-DB24-55F4-9D30-E83C85C24DDB",
+        "3F3057DC-D90C-5495-891A-807FFF3055ED"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Valentin",
+      "final_status": "active",
+      "due_text_contains": [
+        "lundi"
+      ],
+      "due_date": null,
+      "notes": "One commitment corrected in place by its owner; Friday is no longer the day. Original statement at turn 4; change at turn 22, 18 turns later."
+    },
+    {
+      "id": "E2",
+      "phenomena": [
+        "request_without_acceptance"
+      ],
+      "description": "Call the tuner for the church piano: Inès asked Oscar, who declined by saying his calendar is full and the tuner never calls back; nobody owns it.",
+      "match_segment_ids": [
+        "90DB0AEC-B693-555D-9AFE-5F72DA53C959",
+        "3E51BE4C-38F2-57C6-BC2D-6B47D81B0F01"
+      ],
+      "expected_section": "to_confirm",
+      "acceptable_sections": [
+        "to_confirm",
+        "open"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "The refusal is indirect (full calendar, tuner unreachable)."
+    },
+    {
+      "id": "E3",
+      "phenomena": [
+        "no_owner",
+        "explicit_date"
+      ],
+      "description": "Declare the program to the copyright society before November 20, otherwise the concert is not covered; nobody took it on.",
+      "match_segment_ids": [
+        "021FA1A1-8EEE-532B-832D-636D366C2A1D"
+      ],
+      "expected_section": "to_confirm",
+      "acceptable_sections": [
+        "to_confirm"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [
+        "20 novembre"
+      ],
+      "due_date": null,
+      "notes": "Obligation stated by Valentin without any owner."
+    },
+    {
+      "id": "E4",
+      "phenomena": [
+        "self_assignment",
+        "relative_deadline"
+      ],
+      "description": "Inès calls the insurer on Monday morning to get the parish certificate, after nobody answered her open call.",
+      "match_segment_ids": [
+        "5FE92C41-044E-5E3D-9F34-EE026BD3DD0C",
+        "FADBC61A-9542-5978-AA7C-DB8AC3DF6BC5",
+        "3F3057DC-D90C-5495-891A-807FFF3055ED"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Inès",
+      "final_status": "active",
+      "due_text_contains": [
+        "lundi"
+      ],
+      "due_date": null,
+      "notes": "Open call at turn 8, silence, then Inès takes it herself at turn 9."
+    },
+    {
+      "id": "E5",
+      "phenomena": [
+        "collective_decision",
+        "alternative_adopted"
+      ],
+      "description": "Collective decision: close the concert with the children's choir alone instead of an audience carol.",
+      "match_segment_ids": [
+        "C57C50D3-4F6D-5F38-BC83-0F3BBEDDD30D",
+        "DDAB9539-C7D3-596A-BAA6-6F6B3414D20C",
+        "6C1CF5D2-A022-5DD2-B1D7-597E4304528F",
+        "1E01713B-9F8E-5B8E-AA25-B7DBFB576427",
+        "3F3057DC-D90C-5495-891A-807FFF3055ED"
+      ],
+      "expected_section": "decision",
+      "acceptable_sections": [
+        "decision"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "Counter-proposal by Valentin at turn 11, put to the group at turn 12 and approved by Oscar and Valentin."
+    },
+    {
+      "id": "E6",
+      "phenomena": [
+        "proposal_rejected"
+      ],
+      "description": "Oscar's proposal of an audience carol with printed scores was rejected (three hundred scores, poor lighting) and dropped in favour of the children's choir.",
+      "match_segment_ids": [
+        "C7E8413C-4C6B-59A4-8F61-9AC738EC23C2",
+        "C57C50D3-4F6D-5F38-BC83-0F3BBEDDD30D",
+        "DDAB9539-C7D3-596A-BAA6-6F6B3414D20C"
+      ],
+      "expected_section": "open",
+      "acceptable_sections": [
+        "open",
+        "decision"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "Reporting it as dropped inside the adopted decision (E5) is acceptable; reporting the carol as adopted is not."
+    },
+    {
+      "id": "E7",
+      "phenomena": [
+        "hesitant_commitment"
+      ],
+      "description": "Oscar may take care of the altar flowers if he finishes his moving boxes, with no promise.",
+      "match_segment_ids": [
+        "035E02D1-7D69-59CA-94EC-0FF385B839C1"
+      ],
+      "expected_section": "to_confirm",
+      "acceptable_sections": [
+        "to_confirm"
+      ],
+      "owner": "Oscar",
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "Hedged and conditional, no guarantee."
+    },
+    {
+      "id": "E8",
+      "phenomena": [
+        "reported_speech",
+        "quoted_never_commits",
+        "request_without_acceptance"
+      ],
+      "description": "Run the refreshment stand on concert night: Inès reported Valentin claiming it, then asked him, and he declined because he is at the sound desk; nobody owns it.",
+      "match_segment_ids": [
+        "F69302C3-7FBF-5368-BB89-F7636C0E60B9",
+        "827BA2FC-DE0F-5E66-9949-BF231697CB8F",
+        "0E62A2C0-219D-5E51-9C02-54F1F869B825"
+      ],
+      "expected_section": "to_confirm",
+      "acceptable_sections": [
+        "to_confirm",
+        "open"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "The quoted first-person promise at turn 16 is never confirmed by Valentin, who refuses at turn 21."
+    },
+    {
+      "id": "E9",
+      "phenomena": [
+        "absent_assignee",
+        "relative_deadline"
+      ],
+      "description": "Maëlle, absent, will draw up the list of soloists by Wednesday, according to Oscar.",
+      "match_segment_ids": [
+        "6B2B009A-36CC-5C1F-ACFE-3A5356BC2DE4"
+      ],
+      "expected_section": "to_confirm",
+      "acceptable_sections": [
+        "to_confirm"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [
+        "mercredi"
+      ],
+      "due_date": null,
+      "notes": "Maëlle does not speak in the meeting, so her commitment is only reported."
+    },
+    {
+      "id": "E10",
+      "phenomena": [
+        "unidentified_voice",
+        "relative_deadline"
+      ],
+      "description": "Bring the folding chairs back from the community hall on Saturday morning: promised by an unidentified voice, so the owner cannot be confirmed.",
+      "match_segment_ids": [
+        "FFD6E49B-FCCA-5700-870C-2081F7CF29A6"
+      ],
+      "expected_section": "to_confirm",
+      "acceptable_sections": [
+        "to_confirm"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [
+        "samedi"
+      ],
+      "due_date": null,
+      "notes": "Nothing identifies the voice as Inès, Valentin or Oscar."
+    },
+    {
+      "id": "E11",
+      "phenomena": [
+        "third_party_assignment",
+        "relative_deadline"
+      ],
+      "description": "Valentin prepares the printed program for the concert night and sends it to Inès on Thursday; asked by Inès and accepted by Valentin in the same turn where he refuses the stand.",
+      "match_segment_ids": [
+        "EA77E598-9924-5017-BF52-77C5BFFB8DA5",
+        "0E62A2C0-219D-5E51-9C02-54F1F869B825",
+        "3F3057DC-D90C-5495-891A-807FFF3055ED"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Valentin",
+      "final_status": "active",
+      "due_text_contains": [
+        "jeudi"
+      ],
+      "due_date": null,
+      "notes": ""
+    }
+  ],
+  "forbidden": [
+    {
+      "id": "F1",
+      "phenomena": [
+        "request_without_acceptance"
+      ],
+      "description": "No task, for anyone, to call the piano tuner.",
+      "section": "task",
+      "owner": null,
+      "match_segment_ids": [
+        "90DB0AEC-B693-555D-9AFE-5F72DA53C959",
+        "3E51BE4C-38F2-57C6-BC2D-6B47D81B0F01"
+      ]
+    },
+    {
+      "id": "F2",
+      "phenomena": [
+        "no_owner"
+      ],
+      "description": "No task, for anyone, to declare the program to the copyright society.",
+      "section": "task",
+      "owner": null,
+      "match_segment_ids": [
+        "021FA1A1-8EEE-532B-832D-636D366C2A1D"
+      ]
+    },
+    {
+      "id": "F3",
+      "phenomena": [
+        "reported_speech",
+        "quoted_never_commits"
+      ],
+      "description": "No task, for anyone, to run the refreshment stand.",
+      "section": "task",
+      "owner": null,
+      "match_segment_ids": [
+        "F69302C3-7FBF-5368-BB89-F7636C0E60B9",
+        "827BA2FC-DE0F-5E66-9949-BF231697CB8F",
+        "0E62A2C0-219D-5E51-9C02-54F1F869B825"
+      ]
+    },
+    {
+      "id": "F4",
+      "phenomena": [
+        "unidentified_voice"
+      ],
+      "description": "No task, for anyone, to bring back the folding chairs.",
+      "section": "task",
+      "owner": null,
+      "match_segment_ids": [
+        "FFD6E49B-FCCA-5700-870C-2081F7CF29A6"
+      ]
+    },
+    {
+      "id": "F5",
+      "phenomena": [
+        "hesitant_commitment"
+      ],
+      "description": "No firm task owned by Oscar for the altar flowers.",
+      "section": "task",
+      "owner": "Oscar",
+      "match_segment_ids": [
+        "035E02D1-7D69-59CA-94EC-0FF385B839C1"
+      ]
+    },
+    {
+      "id": "F6",
+      "phenomena": [
+        "absent_assignee"
+      ],
+      "description": "No firm task owned by Maëlle for the list of soloists.",
+      "section": "task",
+      "owner": "Maëlle",
+      "match_segment_ids": [
+        "6B2B009A-36CC-5C1F-ACFE-3A5356BC2DE4"
+      ]
+    },
+    {
+      "id": "F7",
+      "phenomena": [
+        "proposal_rejected"
+      ],
+      "description": "The audience carol is not a collective decision.",
+      "section": "decision",
+      "owner": null,
+      "match_segment_ids": [
+        "C7E8413C-4C6B-59A4-8F61-9AC738EC23C2"
+      ]
+    },
+    {
+      "id": "F8",
+      "phenomena": [
+        "agenda_wish"
+      ],
+      "description": "The November 14 meeting is not a task for anyone.",
+      "section": "task",
+      "owner": null,
+      "match_segment_ids": [
+        "3F3057DC-D90C-5495-891A-807FFF3055ED"
+      ]
+    }
+  ],
+  "forbidden_claims": [
+    "Valentin places the poster order on Friday.",
+    "Oscar will call the piano tuner.",
+    "Valentin runs the refreshment stand.",
+    "Inès, Valentin or Oscar brings back the folding chairs.",
+    "Oscar will do the altar flowers.",
+    "The concert ends with an audience carol.",
+    "Maëlle has committed in the meeting to the list of soloists.",
+    "A calendar date (day number or month) is given for the Monday, Thursday, Wednesday or Saturday deadlines."
+  ],
+  "detail_checks": [
+    "Christmas concert of the choir at the Saint-Aubin church on December 12, forty-two singers.",
+    "Parish hall free for a dress rehearsal on December 5.",
+    "Sixty posters for the village shops; the printer is closed on Friday.",
+    "The parish wants an insurance certificate before mid-November.",
+    "Program to be declared to the copyright society before November 20.",
+    "Audience carol dropped because of three hundred scores to print and poor lighting.",
+    "Valentin cannot run the stand because he is at the sound desk during the concert."
+  ]
+}

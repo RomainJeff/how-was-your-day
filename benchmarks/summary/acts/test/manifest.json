@@ -1,0 +1,199 @@
+{
+  "schema": "hwyd-acts-manifest/1",
+  "created_at": "2026-10-27T09:00:00Z",
+  "root": "benchmarks/summary/acts",
+  "uuid_namespace": "66D674E3-87BC-5485-9B2D-435A522C1071",
+  "uuid_namespace_derivation": "uuid5(NAMESPACE_URL, \"hwyd:benchmarks/summary/acts\")",
+  "source": {
+    "path": "benchmarks/summary/acts/scenarios_test.py",
+    "sha256": "4dbcdbabd1801ab530b16c8c0dbe761c4217a2dbf45e1de883b3c356262c96c8"
+  },
+  "files": [
+    {
+      "path": "test/t1-community-choir-concert-fr.json",
+      "kind": "recording",
+      "split": "test",
+      "scenario": "t1-community-choir-concert",
+      "language": "fr",
+      "sha256": "ddae8f5c45914b0d2cacd96c1409d8b6376199782b96dcb7645bf3f51752093c",
+      "segments": 23,
+      "text_characters": 2491,
+      "speakers": 3,
+      "unidentified_segments": 1,
+      "duration_seconds": 205
+    },
+    {
+      "path": "test/t1-community-choir-concert-fr.expected.json",
+      "kind": "expected",
+      "split": "test",
+      "scenario": "t1-community-choir-concert",
+      "language": "fr",
+      "sha256": "a71f335c1864a62e347048cc57700afd76cd99819fc9d2ed52ae76b39c0aa33c",
+      "recording": "test/t1-community-choir-concert-fr.json"
+    },
+    {
+      "path": "test/t1-community-choir-concert-fr.acts.json",
+      "kind": "acts",
+      "split": "test",
+      "scenario": "t1-community-choir-concert",
+      "language": "fr",
+      "sha256": "b7d783d6c18fbbaae696b603b624eb59bef79c599adc1e4cb21b77b9f731f9a7",
+      "recording": "test/t1-community-choir-concert-fr.json"
+    },
+    {
+      "path": "test/t1-community-choir-concert-en.json",
+      "kind": "recording",
+      "split": "test",
+      "scenario": "t1-community-choir-concert",
+      "language": "en",
+      "sha256": "6e88fc385d56b9448830b10dd33e43cbc9dc80eb7c99c51e79b634ef4017c70e",
+      "segments": 23,
+      "text_characters": 2396,
+      "speakers": 3,
+      "unidentified_segments": 1,
+      "duration_seconds": 205
+    },
+    {
+      "path": "test/t1-community-choir-concert-en.expected.json",
+      "kind": "expected",
+      "split": "test",
+      "scenario": "t1-community-choir-concert",
+      "language": "en",
+      "sha256": "746f988f2c88ac0cc18896e8f208a72fd4d249463e1dca4117d895e84010989a",
+      "recording": "test/t1-community-choir-concert-en.json"
+    },
+    {
+      "path": "test/t1-community-choir-concert-en.acts.json",
+      "kind": "acts",
+      "split": "test",
+      "scenario": "t1-community-choir-concert",
+      "language": "en",
+      "sha256": "64fd1130ae5adbe299cb4308f36a62348066a301e0bc1ea01b4d4ea21e8f0247",
+      "recording": "test/t1-community-choir-concert-en.json"
+    },
+    {
+      "path": "test/t1-community-choir-concert-mixed.json",
+      "kind": "recording",
+      "split": "test",
+      "scenario": "t1-community-choir-concert",
+      "language": "mixed",
+      "sha256": "a92d945d55e30310c8f4cbfce424ba8cb1fabc60b60d168f6fc8fb8d2e1b376d",
+      "segments": 23,
+      "text_characters": 2417,
+      "speakers": 3,
+      "unidentified_segments": 1,
+      "duration_seconds": 205
+    },
+    {
+      "path": "test/t1-community-choir-concert-mixed.expected.json",
+      "kind": "expected",
+      "split": "test",
+      "scenario": "t1-community-choir-concert",
+      "language": "mixed",
+      "sha256": "f2287b6768f1be06eae15b4ddfdacf18ad52ae7056d9ec7ccb1c93a0b001efce",
+      "recording": "test/t1-community-choir-concert-mixed.json"
+    },
+    {
+      "path": "test/t1-community-choir-concert-mixed.acts.json",
+      "kind": "acts",
+      "split": "test",
+      "scenario": "t1-community-choir-concert",
+      "language": "mixed",
+      "sha256": "4f172b032c26908cbdef007ed188bfcd1c833da5e0b5d184b73e005425ef468f",
+      "recording": "test/t1-community-choir-concert-mixed.json"
+    },
+    {
+      "path": "test/t2-mountain-trail-race-fr.json",
+      "kind": "recording",
+      "split": "test",
+      "scenario": "t2-mountain-trail-race",
+      "language": "fr",
+      "sha256": "f3102ff593792ea519aa1de392f0549011d9031246bbf49eb80f4b6ffa729bce",
+      "segments": 39,
+      "text_characters": 3971,
+      "speakers": 4,
+      "unidentified_segments": 0,
+      "duration_seconds": 323
+    },
+    {
+      "path": "test/t2-mountain-trail-race-fr.expected.json",
+      "kind": "expected",
+      "split": "test",
+      "scenario": "t2-mountain-trail-race",
+      "language": "fr",
+      "sha256": "a561d2c6a8892b776c62c3101ccb4a6928426091475512ba6b13063156bb934b",
+      "recording": "test/t2-mountain-trail-race-fr.json"
+    },
+    {
+      "path": "test/t2-mountain-trail-race-fr.acts.json",
+      "kind": "acts",
+      "split": "test",
+      "scenario": "t2-mountain-trail-race",
+      "language": "fr",
+      "sha256": "4eab8b3d02c3039cfa61e6d9e95870bb87290e5d8a5bf86bd7002bbd266a32a2",
+      "recording": "test/t2-mountain-trail-race-fr.json"
+    },
+    {
+      "path": "test/t2-mountain-trail-race-en.json",
+      "kind": "recording",
+      "split": "test",
+      "scenario": "t2-mountain-trail-race",
+      "language": "en",
+      "sha256": "19ed35394991199f9bb00ae99be66992c0d009dbf49fb686e8dae7b557cad7a8",
+      "segments": 39,
+      "text_characters": 3765,
+      "speakers": 4,
+      "unidentified_segments": 0,
+      "duration_seconds": 323
+    },
+    {
+      "path": "test/t2-mountain-trail-race-en.expected.json",
+      "kind": "expected",
+      "split": "test",
+      "scenario": "t2-mountain-trail-race",
+      "language": "en",
+      "sha256": "1bb912b079efb894cad10b53d65e6af08427bc931bb86b80e8dd103d0dcfcb14",
+      "recording": "test/t2-mountain-trail-race-en.json"
+    },
+    {
+      "path": "test/t2-mountain-trail-race-en.acts.json",
+      "kind": "acts",
+      "split": "test",
+      "scenario": "t2-mountain-trail-race",
+      "language": "en",
+      "sha256": "ba9f2e2299773204b885eebef70a1833621abb46326014a2c7500cf648e6f67f",
+      "recording": "test/t2-mountain-trail-race-en.json"
+    },
+    {
+      "path": "test/t2-mountain-trail-race-mixed.json",
+      "kind": "recording",
+      "split": "test",
+      "scenario": "t2-mountain-trail-race",
+      "language": "mixed",
+      "sha256": "143fb9009cb13cbdc90d5196835854b23a7aee7da2d7e04568495bff7fdcbeb7",
+      "segments": 39,
+      "text_characters": 3856,
+      "speakers": 4,
+      "unidentified_segments": 0,
+      "duration_seconds": 323
+    },
+    {
+      "path": "test/t2-mountain-trail-race-mixed.expected.json",
+      "kind": "expected",
+      "split": "test",
+      "scenario": "t2-mountain-trail-race",
+      "language": "mixed",
+      "sha256": "2dae9ebdf631d7d1960dafb54cd9429f561dfe771974e04f3e93dfd5ad7d7675",
+      "recording": "test/t2-mountain-trail-race-mixed.json"
+    },
+    {
+      "path": "test/t2-mountain-trail-race-mixed.acts.json",
+      "kind": "acts",
+      "split": "test",
+      "scenario": "t2-mountain-trail-race",
+      "language": "mixed",
+      "sha256": "ce1d0b7b7dee99d71eba894f6bfcfce5f0e9ba05b679bd9b1665025e096d6013",
+      "recording": "test/t2-mountain-trail-race-mixed.json"
+    }
+  ]
+}

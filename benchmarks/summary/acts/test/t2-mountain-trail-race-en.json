@@ -1,0 +1,360 @@
+{
+  "id": "895BBB03-B1A4-51CC-9335-E58C2268589C",
+  "title": "Synthetic mountain trail race organization (en)",
+  "kind": "meeting",
+  "startedAt": 814208400,
+  "duration": 323,
+  "state": "sealed",
+  "revision": 0,
+  "transcriptVersion": 1,
+  "notes": "",
+  "noteEntries": [],
+  "speakers": [
+    {
+      "id": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "personID": "4165A6D4-272C-5D87-921A-2D6CAFCC9748",
+      "label": "Ludivine",
+      "confirmed": true,
+      "source": "mic"
+    },
+    {
+      "id": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "personID": "D3DC6DB3-7277-5B2A-85E5-EE9B7A8AF072",
+      "label": "Maxence",
+      "confirmed": true,
+      "source": "system"
+    },
+    {
+      "id": "BB37E647-1A7B-5C95-AA28-41F633C2B636",
+      "personID": "BAC35041-90E6-5033-9630-D5FB0EBFB78A",
+      "label": "Rosalie",
+      "confirmed": true,
+      "source": "system"
+    },
+    {
+      "id": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "personID": "4093CAA9-C4FA-5E96-824E-CC6A38F7753E",
+      "label": "Anselme",
+      "confirmed": true,
+      "source": "system"
+    }
+  ],
+  "segments": [
+    {
+      "id": "B559002F-D63D-54FA-81F2-00469EDD67A9",
+      "start": 0.0,
+      "end": 15.4,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "We're preparing the Four Passes trail race, on Sunday April 26. A hundred and eighty runners have already signed up, starting from the village. I'd like us to go over the course marking, safety, finances and the finish gift."
+    },
+    {
+      "id": "290C1E9E-1FE1-533C-8CC7-491B22D957DB",
+      "start": 16.7,
+      "end": 25.7,
+      "speakerID": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "source": "system",
+      "text": "Me, a week before every race, I walk the whole course from start to finish. It's a habit, I've done it for ten years."
+    },
+    {
+      "id": "33496D8D-7207-5A20-B310-CDB2887C958F",
+      "start": 26.8,
+      "end": 33.4,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "Maxence, could you take care of marking the upper loop, with the ribbons and the signs?"
+    },
+    {
+      "id": "95079B94-6380-5800-8801-C939B5EE2BA5",
+      "start": 34.3,
+      "end": 40.1,
+      "speakerID": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "source": "system",
+      "text": "Gladly. I'll put up all the marking on the upper loop on the weekend of April 18."
+    },
+    {
+      "id": "9A9D1B85-A714-5B9A-941B-FC5A34ECE756",
+      "start": 40.8,
+      "end": 49.8,
+      "speakerID": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "source": "system",
+      "text": "For the aid station at the Eagles pass, Dorian told me he'd run it with his friends from the ski club. He isn't here tonight."
+    },
+    {
+      "id": "BAE61CC0-AFCE-5AA7-8793-E4D550650628",
+      "start": 51.2,
+      "end": 58.8,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "Rosalie, on safety, we need an agreement with the White Cross first aiders. Can you ask for it?"
+    },
+    {
+      "id": "447E082C-09ED-52B6-9DD3-CEC33714A8BE",
+      "start": 60.0,
+      "end": 63.4,
+      "speakerID": "BB37E647-1A7B-5C95-AA28-41F633C2B636",
+      "source": "system",
+      "text": "Yes, I'll handle it, I'll write to them this week."
+    },
+    {
+      "id": "8A3B5E0C-5C3F-5661-92B1-36C0C4373119",
+      "start": 64.4,
+      "end": 75.3,
+      "speakerID": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "source": "system",
+      "text": "Useful for the budget: the town hall lends us the community hall for free for bib pickup, but we have to pay for cleaning, sixty euros."
+    },
+    {
+      "id": "31AC42C8-FA5E-5554-94DF-63896B64E8E1",
+      "start": 76.1,
+      "end": 83.1,
+      "speakerID": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "source": "system",
+      "text": "As for the traffic plan, I'll take care of it: I'll hand it in at the gendarmerie before February 15."
+    },
+    {
+      "id": "2A35A97A-0A57-541A-B521-CEC514D0CC1D",
+      "start": 83.7,
+      "end": 90.0,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "Anselme, could you also redo the budget table with the new registration fees?"
+    },
+    {
+      "id": "870A8487-4BBB-578D-B4EA-8212635745F3",
+      "start": 91.3,
+      "end": 95.2,
+      "speakerID": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "source": "system",
+      "text": "Yes, I'll redo it. Complete table by the end of February."
+    },
+    {
+      "id": "3042DB5A-9A45-5DE0-A1BF-A2B4C6ACB52C",
+      "start": 96.3,
+      "end": 103.8,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "Another point: Anselme, could you have five hundred flyers printed for the tourist offices in the valley?"
+    },
+    {
+      "id": "9A73C96F-B390-589B-95DA-931290A70F48",
+      "start": 104.7,
+      "end": 109.7,
+      "speakerID": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "source": "system",
+      "text": "Okay, I'll take care of it, they'll be printed before the end of January."
+    },
+    {
+      "id": "D3A81038-2B0D-5462-90F2-BC872B95751D",
+      "start": 110.4,
+      "end": 115.4,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "The shuttle between the car park and the start: who can book the minibus?"
+    },
+    {
+      "id": "D0A1BB8C-D51C-555D-BB43-D9D7CF56751A",
+      "start": 120.4,
+      "end": 126.5,
+      "speakerID": "BB37E647-1A7B-5C95-AA28-41F633C2B636",
+      "source": "system",
+      "text": "Nobody says anything? Fine, I'll book the minibus, I'll sort it out before December 15."
+    },
+    {
+      "id": "5527E4D5-C49A-5AE6-B8F8-8A5EF9BED2F5",
+      "start": 127.7,
+      "end": 135.1,
+      "speakerID": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "source": "system",
+      "text": "For the finish gift, I suggest a merino wool buff with the club logo, rather than a medal."
+    },
+    {
+      "id": "1DDB0B4C-7C6F-5CC7-9095-26F627C1D626",
+      "start": 136.1,
+      "end": 142.4,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "Then we go with the merino buff for every finisher. Maxence, Rosalie, is that fine with you?"
+    },
+    {
+      "id": "BAD133FA-F611-5C0E-A5ED-CF11B3748E41",
+      "start": 143.2,
+      "end": 144.8,
+      "speakerID": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "source": "system",
+      "text": "Yes, very good."
+    },
+    {
+      "id": "6A2C2E46-7B57-553A-84BD-4FC7F37D9F10",
+      "start": 145.4,
+      "end": 149.0,
+      "speakerID": "BB37E647-1A7B-5C95-AA28-41F633C2B636",
+      "source": "system",
+      "text": "Me too, it's more original than a medal."
+    },
+    {
+      "id": "7A6C1A1A-BDC0-56C5-8D27-390BC8D6CE26",
+      "start": 150.3,
+      "end": 158.6,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "On my side, I'll write the complete race rules, with the cut-off times and the penalties, by early March."
+    },
+    {
+      "id": "F7D3524C-A019-574E-B81F-FD553726E2AE",
+      "start": 159.7,
+      "end": 164.9,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "For bib pickup, I'd like it on Friday evening, in the village."
+    },
+    {
+      "id": "B52D7F65-8997-5974-AB0A-36A1DFA3F1F9",
+      "start": 165.8,
+      "end": 175.4,
+      "speakerID": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "source": "system",
+      "text": "Not Friday, runners get off work too late. Saturday from two in the afternoon would be better, and I'll be the one opening the hall."
+    },
+    {
+      "id": "7C448B6E-3E45-5D9B-A1D2-D0988ABF3198",
+      "start": 176.1,
+      "end": 182.6,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "Maxence was telling me yesterday: “the start tents, I'll book them with the town this week.”"
+    },
+    {
+      "id": "D18EAB7D-5745-5A80-A469-4F63D1EBD3AA",
+      "start": 184.0,
+      "end": 192.9,
+      "speakerID": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "source": "system",
+      "text": "Anselme, is the complete budget table really useful? We roughly know our numbers, it would be work for nothing."
+    },
+    {
+      "id": "F32200A5-4BBD-5D48-B0B6-9F555EA231AB",
+      "start": 194.1,
+      "end": 201.3,
+      "speakerID": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "source": "system",
+      "text": "Yes, I'm keeping it. I'm the treasurer, the town hall can ask me for it, and I'd rather have it on hand."
+    },
+    {
+      "id": "85475048-77ED-5AA8-B610-190301918CB2",
+      "start": 202.3,
+      "end": 207.4,
+      "speakerID": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "source": "system",
+      "text": "We could add ten euros to registrations made after March 31."
+    },
+    {
+      "id": "A6924E2A-75F6-55CA-B434-6713516C1A2A",
+      "start": 208.2,
+      "end": 215.0,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "Let's not settle anything today, we'll come back to it once we've seen how registrations are going."
+    },
+    {
+      "id": "EFE0E058-A2A0-508B-9846-AD3A65EDC354",
+      "start": 215.6,
+      "end": 222.6,
+      "speakerID": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "source": "system",
+      "text": "Rosalie, do we really need this minibus? The town already runs a festival shuttle, doesn't it?"
+    },
+    {
+      "id": "8F1E8D4D-FC02-5869-BDDC-AF3777ABDB41",
+      "start": 223.9,
+      "end": 231.8,
+      "speakerID": "BB37E647-1A7B-5C95-AA28-41F633C2B636",
+      "source": "system",
+      "text": "Ludivine, since you know the president of the White Cross, would you take over the agreement from me?"
+    },
+    {
+      "id": "2C511337-9DC8-51D1-BFCB-7D3211ACFCD2",
+      "start": 232.9,
+      "end": 240.3,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "The president and I had a bit of a falling out at the last assembly. A letter from you will go over better."
+    },
+    {
+      "id": "62A4B2CE-CD52-5DB4-A0C6-2E9A14126576",
+      "start": 241.2,
+      "end": 248.6,
+      "speakerID": "4FD1A9E7-FA15-52B8-8D38-C92EF049A7F0",
+      "source": "system",
+      "text": "Maxence, between the budget and the flyers, I'm at my limit. The traffic plan, can you take it over?"
+    },
+    {
+      "id": "17890290-36D1-5D70-AA74-4AB9C3CEBB92",
+      "start": 249.3,
+      "end": 256.5,
+      "speakerID": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "source": "system",
+      "text": "Yes, I'll take over the traffic plan. I'll hand it in at the gendarmerie before February 15, as planned."
+    },
+    {
+      "id": "921055FF-CD05-54F0-94D6-6C81BB27A7C6",
+      "start": 257.9,
+      "end": 264.1,
+      "speakerID": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "source": "system",
+      "text": "And for the start tents, I confirm: I'll stop by the town hall on Monday to book them."
+    },
+    {
+      "id": "25609140-E9A0-5148-957E-766CA6A39900",
+      "start": 265.3,
+      "end": 272.5,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "I'm scaling back my commitment on the rules: I'll only write the short version, one page for the website."
+    },
+    {
+      "id": "385BEF88-50E2-5241-9D14-BA7A48AFA1B2",
+      "start": 273.5,
+      "end": 281.2,
+      "speakerID": "2A201DEB-225B-5899-B8C1-34186BAF0DDE",
+      "source": "system",
+      "text": "A correction on the course marking: I have a wedding on April 18, so I'll put it up on the weekend of April 11."
+    },
+    {
+      "id": "E0FE4B9A-E21F-5456-855C-DD445D6B513E",
+      "start": 282.0,
+      "end": 291.5,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "The buff supplier wants eleven euros each, which blows the budget. So we go back to the medal for every finisher, all right?"
+    },
+    {
+      "id": "8B832B85-6A02-5532-B723-5F12C3C7C2ED",
+      "start": 292.1,
+      "end": 299.4,
+      "speakerID": "BB37E647-1A7B-5C95-AA28-41F633C2B636",
+      "source": "system",
+      "text": "Actually, I'm dropping the minibus idea: the town's shuttle will do, I'm not booking it."
+    },
+    {
+      "id": "788AA4CE-9705-5BD9-B61F-FE7EFA38DDC6",
+      "start": 300.7,
+      "end": 309.3,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "Anselme, forget the flyers: the tourist offices will take the digital version, there's no need to print them anymore."
+    },
+    {
+      "id": "0E2EFAD3-0786-5156-BAD5-ED85AD4EE02F",
+      "start": 310.4,
+      "end": 320.4,
+      "speakerID": "AB492313-65D3-50E2-9B51-0B92229AB4AC",
+      "source": "mic",
+      "text": "Thanks, everyone. To sum up what is settled: marking on April 11, traffic plan with Maxence, medal for every finisher. Have a good evening."
+    }
+  ],
+  "transcriptState": "ready",
+  "audioChunks": [],
+  "consentAnnounced": false,
+  "isDemo": true
+}

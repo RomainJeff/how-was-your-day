@@ -1,0 +1,360 @@
+{
+  "id": "6337C6C9-0298-52DC-B97E-811AA1805E83",
+  "title": "Synthetic mountain trail race organization (mixed)",
+  "kind": "meeting",
+  "startedAt": 814208400,
+  "duration": 323,
+  "state": "sealed",
+  "revision": 0,
+  "transcriptVersion": 1,
+  "notes": "",
+  "noteEntries": [],
+  "speakers": [
+    {
+      "id": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "personID": "4165A6D4-272C-5D87-921A-2D6CAFCC9748",
+      "label": "Ludivine",
+      "confirmed": true,
+      "source": "mic"
+    },
+    {
+      "id": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "personID": "D3DC6DB3-7277-5B2A-85E5-EE9B7A8AF072",
+      "label": "Maxence",
+      "confirmed": true,
+      "source": "system"
+    },
+    {
+      "id": "841B7507-D146-50C1-8311-3EEA65E802C3",
+      "personID": "BAC35041-90E6-5033-9630-D5FB0EBFB78A",
+      "label": "Rosalie",
+      "confirmed": true,
+      "source": "system"
+    },
+    {
+      "id": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "personID": "4093CAA9-C4FA-5E96-824E-CC6A38F7753E",
+      "label": "Anselme",
+      "confirmed": true,
+      "source": "system"
+    }
+  ],
+  "segments": [
+    {
+      "id": "DA3847AC-88DD-5D7A-8E1D-1F4AEB8122E0",
+      "start": 0.0,
+      "end": 15.4,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "On prépare le trail des Quatre Cols, on Sunday April 26. A hundred and eighty runners have already signed up, départ du village. J’aimerais qu’on passe en revue le balisage, la sécurité, les finances et le cadeau d’arrivée."
+    },
+    {
+      "id": "10D01B8C-B0D1-54E5-845C-956BC8EBCD2B",
+      "start": 16.7,
+      "end": 25.7,
+      "speakerID": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "source": "system",
+      "text": "Moi, a week before every race, je reparcours le tracé à pied du début à la fin. It's a habit, je le fais depuis dix ans."
+    },
+    {
+      "id": "320227B2-82A2-54A0-BEB3-AA603F3ABA26",
+      "start": 26.8,
+      "end": 33.4,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Maxence, tu pourrais t’occuper du balisage de la boucle haute, avec les rubans et les panneaux ?"
+    },
+    {
+      "id": "12EF5040-6A86-5170-8E38-979924B25DDF",
+      "start": 34.3,
+      "end": 40.1,
+      "speakerID": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "source": "system",
+      "text": "Avec plaisir. I'll put up all the marking on the upper loop le week-end du 18 avril."
+    },
+    {
+      "id": "BB3219B4-E961-5E6A-B765-3D14A63EA5C9",
+      "start": 40.8,
+      "end": 49.8,
+      "speakerID": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "source": "system",
+      "text": "Pour le ravitaillement du col des Aigles, Dorian told me he'd run it with his ski club friends. Il n’est pas là ce soir."
+    },
+    {
+      "id": "63C5720B-DC7F-5945-A5A0-E83244CF1A13",
+      "start": 51.2,
+      "end": 58.8,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Rosalie, côté sécurité, we need an agreement with the White Cross first aiders. Tu peux la demander ?"
+    },
+    {
+      "id": "69452487-3184-55BE-8242-CA9E7A3C704E",
+      "start": 60.0,
+      "end": 63.4,
+      "speakerID": "841B7507-D146-50C1-8311-3EEA65E802C3",
+      "source": "system",
+      "text": "Oui, je m’en charge, I'll write to them this week."
+    },
+    {
+      "id": "6E14A25A-C2BD-50E1-8947-EF19AB68BDC8",
+      "start": 64.4,
+      "end": 75.3,
+      "speakerID": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "source": "system",
+      "text": "Info utile pour le budget : the town hall lends us the community hall for free pour le retrait des dossards, mais il faut payer le ménage, sixty euros."
+    },
+    {
+      "id": "C2386584-0C07-5A3A-A88A-37C1B8A6E484",
+      "start": 76.1,
+      "end": 83.1,
+      "speakerID": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "source": "system",
+      "text": "As for the traffic plan, je m’en occupe : je le dépose à la gendarmerie avant le 15 février."
+    },
+    {
+      "id": "3CD51288-F6E9-5570-8D25-646B2C633604",
+      "start": 83.7,
+      "end": 90.0,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Anselme, tu peux aussi refaire le tableau du budget avec les nouveaux tarifs d’inscription ?"
+    },
+    {
+      "id": "189ABD2E-990A-5792-8F01-69A04507353D",
+      "start": 91.3,
+      "end": 95.2,
+      "speakerID": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "source": "system",
+      "text": "Yes, I'll redo it. Tableau complet pour fin février."
+    },
+    {
+      "id": "CAC47218-38B5-5CD9-9434-5CB1993A4A14",
+      "start": 96.3,
+      "end": 103.8,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Autre point : Anselme, could you have five hundred flyers printed pour les offices de tourisme de la vallée ?"
+    },
+    {
+      "id": "F18F2567-4059-5F74-9F09-FAA01F935C78",
+      "start": 104.7,
+      "end": 109.7,
+      "speakerID": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "source": "system",
+      "text": "D’accord, I'll take care of it, ils seront imprimés avant fin janvier."
+    },
+    {
+      "id": "DFE1D431-7C9C-5C29-9B5B-E77A56390778",
+      "start": 110.4,
+      "end": 115.4,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "La navette entre le parking et le départ : who can book the minibus?"
+    },
+    {
+      "id": "0128212F-A5D4-5C9E-B517-6981E61166FD",
+      "start": 120.4,
+      "end": 126.5,
+      "speakerID": "841B7507-D146-50C1-8311-3EEA65E802C3",
+      "source": "system",
+      "text": "Personne ne dit rien ? Fine, I'll book the minibus, je m’en occupe avant le 15 décembre."
+    },
+    {
+      "id": "9459451B-3375-52CE-8740-12476910C87F",
+      "start": 127.7,
+      "end": 135.1,
+      "speakerID": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "source": "system",
+      "text": "For the finish gift, je propose un buff en laine mérinos avec le logo du club, rather than a medal."
+    },
+    {
+      "id": "978A2E22-FA94-59DC-B15E-292DAE136AE2",
+      "start": 136.1,
+      "end": 142.4,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Alors on part sur le buff mérinos for every finisher. Maxence, Rosalie, ça vous va ?"
+    },
+    {
+      "id": "504578FB-C427-5275-93F8-6FB3591CA965",
+      "start": 143.2,
+      "end": 144.8,
+      "speakerID": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "source": "system",
+      "text": "Oui, très bien."
+    },
+    {
+      "id": "52F89246-27F5-5184-A5F0-A1930F5FF778",
+      "start": 145.4,
+      "end": 149.0,
+      "speakerID": "841B7507-D146-50C1-8311-3EEA65E802C3",
+      "source": "system",
+      "text": "Pour moi aussi, it's more original qu’une médaille."
+    },
+    {
+      "id": "30C7D090-3DE9-5894-AEA8-E0C7E7B730CE",
+      "start": 150.3,
+      "end": 158.6,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "De mon côté, I'll write the complete race rules, avec les barrières horaires et les pénalités, pour début mars."
+    },
+    {
+      "id": "F9B0CB05-78E8-511A-BACD-ADF21C9B7E48",
+      "start": 159.7,
+      "end": 164.9,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Pour le retrait des dossards, je verrais bien le vendredi soir, au village."
+    },
+    {
+      "id": "6BC0C5F6-0B7B-5866-A850-30D052E0105E",
+      "start": 165.8,
+      "end": 175.4,
+      "speakerID": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "source": "system",
+      "text": "Pas le vendredi, runners get off work too late. Plutôt le samedi à partir de quatorze heures, et I'll be the one opening the hall."
+    },
+    {
+      "id": "03E985F1-3317-5D7D-8CE9-679E23967476",
+      "start": 176.1,
+      "end": 182.6,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Maxence me disait hier : “the start tents, I'll book them with the town this week.”"
+    },
+    {
+      "id": "6B9BE342-D6A8-5C34-A611-BE2B59CC9A50",
+      "start": 184.0,
+      "end": 192.9,
+      "speakerID": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "source": "system",
+      "text": "Anselme, le tableau de budget complet, is it really useful? On connaît à peu près nos chiffres, it would be work for nothing."
+    },
+    {
+      "id": "92742AA4-9934-5403-A9DE-22EC58AD2366",
+      "start": 194.1,
+      "end": 201.3,
+      "speakerID": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "source": "system",
+      "text": "Si, I'm keeping it. Je suis trésorier, la mairie peut me le réclamer, and I'd rather have it on hand."
+    },
+    {
+      "id": "762F72C9-F40D-549E-8FF7-26927740ECA3",
+      "start": 202.3,
+      "end": 207.4,
+      "speakerID": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "source": "system",
+      "text": "On pourrait majorer de dix euros les inscriptions faites après le 31 mars."
+    },
+    {
+      "id": "509FFA42-C76E-5942-AC09-732E0D545D4F",
+      "start": 208.2,
+      "end": 215.0,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Ne tranchons rien aujourd’hui, we'll come back to it quand on aura vu le rythme des inscriptions."
+    },
+    {
+      "id": "3E2B679E-E172-501A-8883-A374259C435C",
+      "start": 215.6,
+      "end": 222.6,
+      "speakerID": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "source": "system",
+      "text": "Rosalie, ce minibus, do we really need it ? La commune a déjà une navette pour les festivals, non ?"
+    },
+    {
+      "id": "BC8441AD-66E9-5EAE-BC24-393ACC36BDD3",
+      "start": 223.9,
+      "end": 231.8,
+      "speakerID": "841B7507-D146-50C1-8311-3EEA65E802C3",
+      "source": "system",
+      "text": "Ludivine, comme tu connais le président de la Croix-Blanche, would you take over the agreement from me?"
+    },
+    {
+      "id": "5C7D1144-FA78-585E-9D81-4697A279A321",
+      "start": 232.9,
+      "end": 240.3,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "The president and I had a bit of a falling out at the last assembly. A letter from you will go over better."
+    },
+    {
+      "id": "2D60EC55-EE1C-5A94-B86D-64D576424B1D",
+      "start": 241.2,
+      "end": 248.6,
+      "speakerID": "16BEB2F8-63EF-56F5-86D5-5C63A9A7FBD7",
+      "source": "system",
+      "text": "Maxence, entre le budget et les flyers, je suis à la limite. Le plan de circulation, tu peux le reprendre ?"
+    },
+    {
+      "id": "20A831EA-DFDE-545C-BAD0-C58E201C8869",
+      "start": 249.3,
+      "end": 256.5,
+      "speakerID": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "source": "system",
+      "text": "Yes, I'll take over the traffic plan. Je le dépose à la gendarmerie avant le 15 février, as planned."
+    },
+    {
+      "id": "D051F0DE-0A9B-5B66-A04B-E94874296C65",
+      "start": 257.9,
+      "end": 264.1,
+      "speakerID": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "source": "system",
+      "text": "Et pour les barnums du départ, I confirm: je passe à la mairie lundi pour les réserver."
+    },
+    {
+      "id": "A4762FBB-6F60-54C3-9125-A7964D3B5505",
+      "start": 265.3,
+      "end": 272.5,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Je réduis mon engagement sur le règlement : I'll only write the short version, une page pour le site."
+    },
+    {
+      "id": "96CE167F-1075-5BED-834B-5E2D5478CAEB",
+      "start": 273.5,
+      "end": 281.2,
+      "speakerID": "A4680450-B143-5740-870A-20AF3E2A8DC9",
+      "source": "system",
+      "text": "A correction on the course marking: le 18 avril j’ai un mariage, so I'll put it up le week-end du 11 avril."
+    },
+    {
+      "id": "18FB1496-44D8-5D3D-9697-B2914400A374",
+      "start": 282.0,
+      "end": 291.5,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Le fournisseur de buffs wants eleven euros each, on dépasse le budget. So we go back to the medal pour tous les arrivants, d’accord ?"
+    },
+    {
+      "id": "82087360-8C10-5013-9446-A4DD0931F53A",
+      "start": 292.1,
+      "end": 299.4,
+      "speakerID": "841B7507-D146-50C1-8311-3EEA65E802C3",
+      "source": "system",
+      "text": "Finalement, I'm dropping the minibus idea : la navette de la commune fera l’affaire, I'm not booking it."
+    },
+    {
+      "id": "C3ECFA7F-9B3E-53B6-980D-A02A877DCC83",
+      "start": 300.7,
+      "end": 309.3,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Anselme, forget the flyers: the tourist offices will take the digital version, there's no need to print them anymore."
+    },
+    {
+      "id": "C1AA23B5-D8DD-5D67-9B8A-6F867CD6B94E",
+      "start": 310.4,
+      "end": 320.4,
+      "speakerID": "BFD5FBFD-0D71-54E2-8E30-F5D802561377",
+      "source": "mic",
+      "text": "Merci à tous. To sum up ce qui est acté : balisage le 11 avril, traffic plan with Maxence, medal for every finisher. Bonne soirée."
+    }
+  ],
+  "transcriptState": "ready",
+  "audioChunks": [],
+  "consentAnnounced": false,
+  "isDemo": true
+}

@@ -1,0 +1,192 @@
+{
+ "schema": "hwyd-acts-gold/1",
+ "recording": "benchmarks/summary/synthetic/fr.json",
+ "participants": [
+  "Camille",
+  "Jordan"
+ ],
+ "turns": {
+  "S1": [
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S2": [
+   {
+    "act": "decline",
+    "target": "S1",
+    "agent": null
+   }
+  ],
+  "S3": [
+   {
+    "act": "withdraw",
+    "target": "S1",
+    "agent": null
+   },
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null,
+    "optional": true,
+    "note": "The pilot is put forward, then settled at S4"
+   }
+  ],
+  "S4": [
+   {
+    "act": "decide",
+    "target": "S3",
+    "agent": null,
+    "alt_targets": [
+     "S1"
+    ]
+   }
+  ],
+  "S5": [
+   {
+    "act": "request",
+    "target": null,
+    "agent": "Jordan"
+   }
+  ],
+  "S6": [
+   {
+    "act": "accept",
+    "target": "S5",
+    "agent": "Jordan"
+   }
+  ],
+  "S7": [
+   {
+    "act": "commit",
+    "target": null,
+    "agent": "Camille"
+   },
+   {
+    "act": "decline",
+    "target": null,
+    "agent": null,
+    "optional": true,
+    "note": "Refuses customer training nobody asked for"
+   }
+  ],
+  "S8": [
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null
+   },
+   {
+    "act": "defer",
+    "target": null,
+    "agent": null,
+    "optional": true,
+    "note": "'An idea for later'"
+   }
+  ],
+  "S9": [
+   {
+    "act": "question",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S10": [
+   {
+    "act": "obligation",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S11": [
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S12": [
+   {
+    "act": "defer",
+    "target": "S11",
+    "agent": null
+   },
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null,
+    "optional": true,
+    "note": "Counter-preference of seven days"
+   }
+  ],
+  "S13": [
+   {
+    "act": "obligation",
+    "target": null,
+    "agent": null
+   },
+   {
+    "act": "defer",
+    "target": "S11",
+    "agent": null,
+    "optional": true
+   },
+   {
+    "act": "agree",
+    "target": "S12",
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S15": [
+   {
+    "act": "correct",
+    "target": "S7",
+    "agent": "Camille"
+   }
+  ],
+  "S16": [
+   {
+    "act": "commit",
+    "target": "S6",
+    "agent": "Jordan",
+    "optional": true,
+    "note": "Restates an unchanged commitment"
+   }
+  ],
+  "S17": [
+   {
+    "act": "decide",
+    "target": null,
+    "agent": null
+   },
+   {
+    "act": "decline",
+    "target": "S8",
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S18": [
+   {
+    "act": "decide",
+    "target": null,
+    "agent": null
+   },
+   {
+    "act": "agree",
+    "target": "S17",
+    "agent": null,
+    "optional": true
+   },
+   {
+    "act": "obligation",
+    "target": null,
+    "agent": null,
+    "optional": true
+   }
+  ]
+ }
+}

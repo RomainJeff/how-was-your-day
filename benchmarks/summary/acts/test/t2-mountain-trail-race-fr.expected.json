@@ -1,0 +1,476 @@
+{
+  "schema": "hwyd-ledger-expected/1",
+  "synthetic": true,
+  "split": "test",
+  "scenario": "t2-mountain-trail-race",
+  "input_language": "fr",
+  "output_language": "fr",
+  "participants": [
+    "Ludivine",
+    "Maxence",
+    "Rosalie",
+    "Anselme"
+  ],
+  "items": [
+    {
+      "id": "E1",
+      "phenomena": [
+        "third_party_assignment",
+        "late_correction",
+        "explicit_date"
+      ],
+      "description": "Maxence puts up the marking of the upper loop on the weekend of April 11, corrected from April 18 because of a wedding; asked by Ludivine and accepted by Maxence.",
+      "match_segment_ids": [
+        "5A10F7B6-C7D2-502F-AB71-C0F9B8C5EDB0",
+        "400F51BB-3640-5FCA-86D7-ACA6D156E413",
+        "7E1D4C7E-69EB-5E29-A767-E92D19FB02E3",
+        "8D3E707F-C596-51DB-93C1-4A476A95602B"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Maxence",
+      "final_status": "active",
+      "due_text_contains": [
+        "11 avril"
+      ],
+      "due_date": null,
+      "notes": "One commitment corrected in place by its owner; April 18 is no longer the date. Original statement at turn 4; change at turn 35, 31 turns later."
+    },
+    {
+      "id": "E2",
+      "phenomena": [
+        "third_party_assignment",
+        "handover_suggested",
+        "relative_deadline"
+      ],
+      "description": "Rosalie asks the White Cross first aiders for an agreement this week; her attempt to hand it to Ludivine was declined, so she keeps it.",
+      "match_segment_ids": [
+        "6777DB96-4E94-52B3-A112-39758425CC0F",
+        "C7D8341D-5943-5134-8C52-98312E18F7AF",
+        "301D296E-121B-57D0-9628-B9506828A712",
+        "FF218D81-36FC-559D-A0E6-2DCCFB8195FA"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Rosalie",
+      "final_status": "active",
+      "due_text_contains": [
+        "cette semaine"
+      ],
+      "due_date": null,
+      "notes": "Handover suggested at turn 29 and declined at turn 30; Ludivine never accepts."
+    },
+    {
+      "id": "E3",
+      "phenomena": [
+        "third_party_assignment",
+        "false_withdrawal_third_party",
+        "relative_deadline"
+      ],
+      "description": "Anselme redoes the complete budget table with the new registration fees by the end of February; Maxence questioned its usefulness and Anselme kept it.",
+      "match_segment_ids": [
+        "92AE8F8F-0244-578F-84AF-90496F0CD062",
+        "6E4F7111-B421-56E0-A864-2FCF129BEEEC",
+        "B0C504C0-6DAD-5978-BAF9-12483490D39B",
+        "CC9C52D7-2CF7-5531-8CC3-8E69CD41303D"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Anselme",
+      "final_status": "active",
+      "due_text_contains": [
+        "fin février"
+      ],
+      "due_date": null,
+      "notes": "A third party cannot drop it; the owner rejects the challenge at turn 25."
+    },
+    {
+      "id": "E4",
+      "phenomena": [
+        "handover_accepted",
+        "explicit_date"
+      ],
+      "description": "Anselme's commitment to hand the traffic plan in at the gendarmerie before February 15, superseded by the handover to Maxence.",
+      "match_segment_ids": [
+        "EF268552-3F04-5F13-90C9-B7D0186EF53F",
+        "FDFCC394-F833-5CE0-84A0-EAD0F9D17ACD",
+        "6FD951D8-9DCB-5D99-A531-6C846298C78A"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Anselme",
+      "final_status": "superseded",
+      "due_text_contains": [
+        "15 février"
+      ],
+      "due_date": null,
+      "notes": "Anselme commits at turn 9 and hands over at turn 31."
+    },
+    {
+      "id": "E5",
+      "phenomena": [
+        "handover_accepted",
+        "explicit_date"
+      ],
+      "description": "Maxence takes over the traffic plan and hands it in at the gendarmerie before February 15.",
+      "match_segment_ids": [
+        "FDFCC394-F833-5CE0-84A0-EAD0F9D17ACD",
+        "6FD951D8-9DCB-5D99-A531-6C846298C78A",
+        "8D3E707F-C596-51DB-93C1-4A476A95602B"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Maxence",
+      "final_status": "active",
+      "due_text_contains": [
+        "15 février"
+      ],
+      "due_date": null,
+      "notes": "Handover accepted by the new owner at turn 32."
+    },
+    {
+      "id": "E6",
+      "phenomena": [
+        "self_assignment",
+        "late_withdrawal",
+        "false_withdrawal_third_party"
+      ],
+      "description": "Rosalie's commitment to book the minibus before December 15, questioned by Anselme and later withdrawn by Rosalie herself in favour of the town shuttle.",
+      "match_segment_ids": [
+        "A0A7A05D-AFD5-58D2-BF7B-75F535C45E9E",
+        "EC5FFF38-7B2B-58CB-BD3E-5D78A9FAF577",
+        "F63F176B-5871-59B4-A31E-09B1F78650CC",
+        "BD555A5B-7A02-570B-BCE4-BB6A6F1CA0C3"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Rosalie",
+      "final_status": "withdrawn",
+      "due_text_contains": [
+        "15 décembre"
+      ],
+      "due_date": null,
+      "notes": "The challenge at turn 28 changes nothing; only Rosalie's own withdrawal at turn 37 counts. Original statement at turn 15; change at turn 37, 22 turns later."
+    },
+    {
+      "id": "E7",
+      "phenomena": [
+        "collective_decision",
+        "decision_reversal"
+      ],
+      "description": "Decision to give a merino wool buff to every finisher, superseded by the later return to the medal.",
+      "match_segment_ids": [
+        "1895DDC1-BE77-52EC-B0DD-A34AD455EEFC",
+        "F3A00F38-839E-5AEB-9205-4D3EA494E19F",
+        "38FF9856-90BC-5E61-94B6-225BA424C9A1",
+        "31EA5250-11C7-58B4-A4F9-F151A3470F8D",
+        "82634754-FC40-5B37-8F4A-07254272FFA2"
+      ],
+      "expected_section": "decision",
+      "acceptable_sections": [
+        "decision"
+      ],
+      "owner": null,
+      "final_status": "superseded",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "Adopted at turn 17 with Maxence and Rosalie agreeing; reversed because the buff costs eleven euros each. Original statement at turn 17; change at turn 36, 19 turns later."
+    },
+    {
+      "id": "E8",
+      "phenomena": [
+        "collective_decision",
+        "decision_reversal"
+      ],
+      "description": "Decision to give a medal to every finisher, replacing the merino buff because of its price.",
+      "match_segment_ids": [
+        "82634754-FC40-5B37-8F4A-07254272FFA2",
+        "8D3E707F-C596-51DB-93C1-4A476A95602B"
+      ],
+      "expected_section": "decision",
+      "acceptable_sections": [
+        "decision"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "Put to the group by Ludivine at turn 36; nobody objects."
+    },
+    {
+      "id": "E9",
+      "phenomena": [
+        "proposal_rejected"
+      ],
+      "description": "Ludivine's proposal of bib pickup on Friday evening was rejected by Maxence, who suggested Saturday from two in the afternoon; no choice was settled.",
+      "match_segment_ids": [
+        "27285017-297D-57F5-862E-28F887192E97",
+        "FE6760C5-3EE3-5F05-8E99-BA9F24760437"
+      ],
+      "expected_section": "open",
+      "acceptable_sections": [
+        "open"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "Maxence's alternative is a counter-proposal, not a group decision."
+    },
+    {
+      "id": "E10",
+      "phenomena": [
+        "self_assignment"
+      ],
+      "description": "Maxence opens the community hall for bib pickup, in the same turn where he rejects Friday and suggests Saturday.",
+      "match_segment_ids": [
+        "FE6760C5-3EE3-5F05-8E99-BA9F24760437"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Maxence",
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "A firm commitment inside a turn that also declines and proposes."
+    },
+    {
+      "id": "E11",
+      "phenomena": [
+        "late_correction",
+        "relative_deadline"
+      ],
+      "description": "Ludivine writes only the short version of the race rules, one page for the website, instead of the complete rules with penalties, by early March.",
+      "match_segment_ids": [
+        "F464DDFB-21CF-5D50-ADE0-17F62CAA4513",
+        "6C643A4B-0078-5DCF-970F-C49E718F6808"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Ludivine",
+      "final_status": "active",
+      "due_text_contains": [
+        "début mars"
+      ],
+      "due_date": null,
+      "notes": "Deliverable reduced by its owner; the complete rules are no longer promised. Original statement at turn 20; change at turn 34, 14 turns later."
+    },
+    {
+      "id": "E12",
+      "phenomena": [
+        "reported_speech",
+        "quoted_later_commits",
+        "relative_deadline"
+      ],
+      "description": "Maxence books the start tents at the town hall on Monday; first quoted by Ludivine, then confirmed by Maxence in his own words.",
+      "match_segment_ids": [
+        "B31A8943-C314-5701-8EDE-3C235CE3BEF4",
+        "4E05ED93-8D9F-5B2F-9909-3B4BF18B4953"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Maxence",
+      "final_status": "active",
+      "due_text_contains": [
+        "lundi"
+      ],
+      "due_date": null,
+      "notes": "Not a commitment at turn 23; Maxence commits at turn 33."
+    },
+    {
+      "id": "E13",
+      "phenomena": [
+        "absent_assignee"
+      ],
+      "description": "Dorian, absent, would run the aid station at the Eagles pass with friends from the ski club, according to Maxence.",
+      "match_segment_ids": [
+        "26990F54-1287-5205-A619-E319871BB7C5"
+      ],
+      "expected_section": "to_confirm",
+      "acceptable_sections": [
+        "to_confirm"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "Dorian does not speak in the meeting."
+    },
+    {
+      "id": "E14",
+      "phenomena": [
+        "deferred_idea"
+      ],
+      "description": "Idea of adding ten euros to registrations made after March 31, deferred until registration numbers are seen.",
+      "match_segment_ids": [
+        "8314464D-728C-513F-8864-EAF1498F3F39",
+        "885825ED-56C7-572D-90F2-A49A6B0217FC"
+      ],
+      "expected_section": "open",
+      "acceptable_sections": [
+        "open"
+      ],
+      "owner": null,
+      "final_status": "active",
+      "due_text_contains": [],
+      "due_date": null,
+      "notes": "Explicitly deferred by Ludivine."
+    },
+    {
+      "id": "E15",
+      "phenomena": [
+        "third_party_assignment",
+        "requester_cancellation",
+        "relative_deadline"
+      ],
+      "description": "Anselme had accepted to have five hundred flyers printed before the end of January; Ludivine cancelled the request because the tourist offices take a digital version.",
+      "match_segment_ids": [
+        "EB38F0D6-281A-5F12-9662-B74591DD4526",
+        "1EEB0E34-A7F3-5292-B25A-1038A0B61258",
+        "86716070-2C6A-5CE7-A515-5BB261D71FE9"
+      ],
+      "expected_section": "task",
+      "acceptable_sections": [
+        "task"
+      ],
+      "owner": "Anselme",
+      "final_status": "withdrawn",
+      "due_text_contains": [
+        "fin janvier"
+      ],
+      "due_date": null,
+      "notes": "Cancelled by the requester. Original statement at turn 12; change at turn 38, 26 turns later."
+    }
+  ],
+  "forbidden": [
+    {
+      "id": "F1",
+      "phenomena": [
+        "handover_suggested"
+      ],
+      "description": "No live task owned by Ludivine for the first aiders agreement: she declined the handover.",
+      "section": "task",
+      "owner": "Ludivine",
+      "match_segment_ids": [
+        "301D296E-121B-57D0-9628-B9506828A712",
+        "FF218D81-36FC-559D-A0E6-2DCCFB8195FA"
+      ]
+    },
+    {
+      "id": "F2",
+      "phenomena": [
+        "personal_habit"
+      ],
+      "description": "Maxence walking the course a week before each race is a personal habit, not a task.",
+      "section": "task",
+      "owner": "Maxence",
+      "match_segment_ids": [
+        "9DA788A7-AA90-5B9F-BEC9-9C17BED462A2"
+      ]
+    },
+    {
+      "id": "F3",
+      "phenomena": [
+        "late_withdrawal"
+      ],
+      "description": "No live task for the minibus booking.",
+      "section": "task",
+      "owner": "Rosalie",
+      "match_segment_ids": [
+        "EC5FFF38-7B2B-58CB-BD3E-5D78A9FAF577",
+        "BD555A5B-7A02-570B-BCE4-BB6A6F1CA0C3"
+      ]
+    },
+    {
+      "id": "F4",
+      "phenomena": [
+        "requester_cancellation"
+      ],
+      "description": "No live task for printing the flyers.",
+      "section": "task",
+      "owner": "Anselme",
+      "match_segment_ids": [
+        "1EEB0E34-A7F3-5292-B25A-1038A0B61258",
+        "86716070-2C6A-5CE7-A515-5BB261D71FE9"
+      ]
+    },
+    {
+      "id": "F5",
+      "phenomena": [
+        "handover_accepted"
+      ],
+      "description": "No live task owned by Anselme for the traffic plan: it moved to Maxence.",
+      "section": "task",
+      "owner": "Anselme",
+      "match_segment_ids": [
+        "EF268552-3F04-5F13-90C9-B7D0186EF53F",
+        "6FD951D8-9DCB-5D99-A531-6C846298C78A"
+      ]
+    },
+    {
+      "id": "F6",
+      "phenomena": [
+        "absent_assignee"
+      ],
+      "description": "No firm task owned by Dorian for the aid station.",
+      "section": "task",
+      "owner": "Dorian",
+      "match_segment_ids": [
+        "26990F54-1287-5205-A619-E319871BB7C5"
+      ]
+    },
+    {
+      "id": "F7",
+      "phenomena": [
+        "decision_reversal"
+      ],
+      "description": "The merino buff is not a live decision.",
+      "section": "decision",
+      "owner": null,
+      "match_segment_ids": [
+        "F3A00F38-839E-5AEB-9205-4D3EA494E19F",
+        "82634754-FC40-5B37-8F4A-07254272FFA2"
+      ]
+    }
+  ],
+  "forbidden_claims": [
+    "Maxence puts up the marking on the weekend of April 18.",
+    "Ludivine writes the complete race rules with penalties.",
+    "Rosalie books the minibus.",
+    "Anselme prints the flyers.",
+    "Ludivine or anyone else took over the first aiders agreement from Rosalie.",
+    "Anselme still owns the traffic plan.",
+    "Every finisher receives a merino buff.",
+    "Dorian is in charge of the aid station.",
+    "The ten euro late fee was adopted.",
+    "Bib pickup was set on Friday evening or on Saturday.",
+    "A calendar date is given for the Monday tent booking."
+  ],
+  "detail_checks": [
+    "Four Passes trail race on Sunday April 26, a hundred and eighty runners signed up.",
+    "Community hall lent for free for bib pickup, cleaning costs sixty euros.",
+    "Maxence's marking moved to the weekend of April 11 because of a wedding.",
+    "Merino buff costs eleven euros each, which exceeds the budget, so the medal returns.",
+    "Ludivine's rules reduced to a one-page short version for the website.",
+    "Traffic plan to be handed in at the gendarmerie before February 15.",
+    "Flyers cancelled because the tourist offices take the digital version."
+  ]
+}

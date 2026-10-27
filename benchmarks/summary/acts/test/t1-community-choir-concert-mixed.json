@@ -1,0 +1,225 @@
+{
+  "id": "3005500E-D8C7-5EBC-8981-7D0C286FEA07",
+  "title": "Synthetic community choir winter concert (mixed)",
+  "kind": "meeting",
+  "startedAt": 813781800,
+  "duration": 205,
+  "state": "sealed",
+  "revision": 0,
+  "transcriptVersion": 1,
+  "notes": "",
+  "noteEntries": [],
+  "speakers": [
+    {
+      "id": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "personID": "1EC9F111-F6A2-529D-AD84-FC91B2879B6D",
+      "label": "Inès",
+      "confirmed": true,
+      "source": "mic"
+    },
+    {
+      "id": "03EF544F-3E87-553B-8F5C-9147635A6B8C",
+      "personID": "4118DF21-90F7-5A92-8634-86CB5038F1D4",
+      "label": "Valentin",
+      "confirmed": true,
+      "source": "system"
+    },
+    {
+      "id": "4994C9F3-21B5-547E-A0DE-BA893F5DD39C",
+      "personID": "DF1519C5-F9A1-5EF7-975E-0C75C0F5A4AA",
+      "label": "Oscar",
+      "confirmed": true,
+      "source": "system"
+    }
+  ],
+  "segments": [
+    {
+      "id": "09089DC3-5994-52D9-AC06-09915ED62C50",
+      "start": 0.0,
+      "end": 13.9,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "Bon, on prépare le concert de Noël de la chorale at the Saint-Aubin church, le 12 décembre. Forty-two singers are signed up. J’aimerais qu’on reparte avec une liste claire de qui fait quoi."
+    },
+    {
+      "id": "8014D5C4-0086-52B8-A3B5-5333AC0D04EB",
+      "start": 15.2,
+      "end": 25.5,
+      "speakerID": "03EF544F-3E87-553B-8F5C-9147635A6B8C",
+      "source": "system",
+      "text": "Pour info, the parish hall is free for a dress rehearsal on December 5, de quatorze heures à dix-huit heures. Le curé la laisse ouverte."
+    },
+    {
+      "id": "BC9E62BE-395D-53BB-8F6D-FB1949F0A18A",
+      "start": 26.6,
+      "end": 34.5,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "Valentin, tu pourrais t’occuper d’imprimer les affiches ? Il en faut une soixantaine pour les commerces du village."
+    },
+    {
+      "id": "96E39376-FECC-55EB-AFAE-BB520857FB63",
+      "start": 35.4,
+      "end": 41.1,
+      "speakerID": "03EF544F-3E87-553B-8F5C-9147635A6B8C",
+      "source": "system",
+      "text": "Yes, I'll take care of it. Je passe commander chez l’imprimeur vendredi."
+    },
+    {
+      "id": "51744165-46FF-56F9-A0E4-A8771D17A6F7",
+      "start": 41.8,
+      "end": 49.4,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "Oscar, and you, could you call the tuner for the church piano? It hasn't been tuned in two years."
+    },
+    {
+      "id": "37B2262F-CDB6-5724-90CF-839E5621B6AA",
+      "start": 50.8,
+      "end": 57.6,
+      "speakerID": "4994C9F3-21B5-547E-A0DE-BA893F5DD39C",
+      "source": "system",
+      "text": "Mon agenda est plein jusqu’à Noël, and the tuner never calls back quand c’est moi qui l’appelle."
+    },
+    {
+      "id": "70B23E98-B300-5A9C-98FE-456FC18B80C8",
+      "start": 58.8,
+      "end": 67.2,
+      "speakerID": "03EF544F-3E87-553B-8F5C-9147635A6B8C",
+      "source": "system",
+      "text": "Il faudra déclarer le programme to the copyright society avant le 20 novembre, otherwise the concert isn't covered."
+    },
+    {
+      "id": "4AF20253-36F1-5DC5-9FC5-B7FF2F49E0F0",
+      "start": 68.2,
+      "end": 75.1,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "On insurance, the parish wants a certificate before mid-November. Who can call the insurer?"
+    },
+    {
+      "id": "21B7F4DB-E7CA-59FF-85ED-DC43230F9250",
+      "start": 80.1,
+      "end": 84.0,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "Personne ? Fine, I'll call them myself lundi matin."
+    },
+    {
+      "id": "DF0B7EB1-9C84-536E-85A5-25FEC6459AD3",
+      "start": 84.6,
+      "end": 93.4,
+      "speakerID": "4994C9F3-21B5-547E-A0DE-BA893F5DD39C",
+      "source": "system",
+      "text": "For the end of the concert, I suggest a carol that the whole audience would sing with us, with scores handed out at the door."
+    },
+    {
+      "id": "4C48DDB2-C219-5D92-A6DA-62B3438EF5BF",
+      "start": 94.7,
+      "end": 104.6,
+      "speakerID": "03EF544F-3E87-553B-8F5C-9147635A6B8C",
+      "source": "system",
+      "text": "Trois cents partitions à imprimer, and the hall is badly lit, ça ne marchera pas. I'd rather see le chœur d’enfants conclure tout seul."
+    },
+    {
+      "id": "EA90F57D-45D5-5D28-B248-8687FDA759A0",
+      "start": 105.7,
+      "end": 112.5,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "Alors on abandonne le chant collectif and we finish with the children's choir. Vous êtes d’accord ?"
+    },
+    {
+      "id": "8244A97E-D137-5D03-B742-DBFD3285ED61",
+      "start": 113.4,
+      "end": 115.2,
+      "speakerID": "4994C9F3-21B5-547E-A0DE-BA893F5DD39C",
+      "source": "system",
+      "text": "Agreed, that works for me."
+    },
+    {
+      "id": "A0EA363C-3DB5-54CA-A201-BF11962C4709",
+      "start": 115.9,
+      "end": 117.8,
+      "speakerID": "03EF544F-3E87-553B-8F5C-9147635A6B8C",
+      "source": "system",
+      "text": "Moi aussi, let's go with it."
+    },
+    {
+      "id": "342844B2-7A7B-51AE-A7B9-83E75398BEA2",
+      "start": 119.2,
+      "end": 127.8,
+      "speakerID": "4994C9F3-21B5-547E-A0DE-BA893F5DD39C",
+      "source": "system",
+      "text": "Pour les fleurs de l’autel, I might be able to take care of them, si j’ai fini mes cartons de déménagement. But no promises."
+    },
+    {
+      "id": "31DCC05E-1D28-583C-BC95-C06780CBFB25",
+      "start": 129.0,
+      "end": 135.7,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "Valentin m’a dit mardi : “the refreshment stand that evening is mine, I'll bring the flasks.”"
+    },
+    {
+      "id": "5255F6A2-3C08-5641-B8CD-946AFB30232E",
+      "start": 136.7,
+      "end": 145.1,
+      "speakerID": "4994C9F3-21B5-547E-A0DE-BA893F5DD39C",
+      "source": "system",
+      "text": "Maëlle, who is away this week, fera la liste des solistes d’ici mercredi. Elle me l’a confirmé par message."
+    },
+    {
+      "id": "E338A2D6-4FAF-5259-92EC-B98FAABB86FE",
+      "start": 145.9,
+      "end": 153.0,
+      "speakerID": null,
+      "source": "system",
+      "text": "I'll bring the folding chairs back from the community hall on Saturday morning, don't worry about them."
+    },
+    {
+      "id": "012D1A75-8BB4-51EF-B547-C38DB8246469",
+      "start": 153.6,
+      "end": 160.2,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "Valentin, il nous faut aussi un programme imprimé pour le soir du concert. Tu peux le préparer ?"
+    },
+    {
+      "id": "7002A9E0-44BE-5EF9-9B49-C40848142240",
+      "start": 161.5,
+      "end": 165.6,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "Et the refreshment stand that night, tu pourrais la tenir ?"
+    },
+    {
+      "id": "56C95F24-782D-5C37-AA8C-10AFA4E10EDB",
+      "start": 166.7,
+      "end": 180.0,
+      "speakerID": "03EF544F-3E87-553B-8F5C-9147635A6B8C",
+      "source": "system",
+      "text": "Le programme, yes, I'll prepare it et je te l’envoie jeudi. For the stand, il faudra trouver un autre bénévole : during the concert I'm at the sound desk and can't step away."
+    },
+    {
+      "id": "58932952-AC5A-5E68-8F48-47967E27AEA6",
+      "start": 180.9,
+      "end": 188.8,
+      "speakerID": "03EF544F-3E87-553B-8F5C-9147635A6B8C",
+      "source": "system",
+      "text": "A correction on the posters: l’imprimeur ferme vendredi, so I'll place the order lundi instead of vendredi."
+    },
+    {
+      "id": "7427BCFF-A65B-5A68-89AC-42571D4DA3B6",
+      "start": 189.5,
+      "end": 202.5,
+      "speakerID": "FCA9EE89-AF4C-5F6F-A598-98997E844AEC",
+      "source": "mic",
+      "text": "Merci à tous. To recap: affiches lundi, programme jeudi, l’assurance c’est moi, we close with the children's choir. We'll meet again le 14 novembre to finish the remaining points."
+    }
+  ],
+  "transcriptState": "ready",
+  "audioChunks": [],
+  "consentAnnounced": false,
+  "isDemo": true
+}

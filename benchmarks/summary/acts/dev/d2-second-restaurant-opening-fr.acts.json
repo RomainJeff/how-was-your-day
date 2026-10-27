@@ -1,0 +1,401 @@
+{
+ "schema": "hwyd-acts-gold/1",
+ "recording": "benchmarks/summary/ledger/dev/d2-second-restaurant-opening-fr.json",
+ "participants": [
+  "Lucie",
+  "Karim",
+  "Sophie",
+  "Thomas"
+ ],
+ "turns": {
+  "S4": [
+   {
+    "act": "quote",
+    "target": null,
+    "agent": "other",
+    "optional": true,
+    "note": "The sign maker installs it"
+   }
+  ],
+  "S5": [
+   {
+    "act": "request",
+    "target": null,
+    "agent": "Karim"
+   }
+  ],
+  "S6": [
+   {
+    "act": "accept",
+    "target": "S5",
+    "agent": "Karim"
+   }
+  ],
+  "S7": [
+   {
+    "act": "question",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S8": [
+   {
+    "act": "commit",
+    "target": null,
+    "agent": "Karim"
+   }
+  ],
+  "S9": [
+   {
+    "act": "quote",
+    "target": null,
+    "agent": "Karim"
+   }
+  ],
+  "S10": [
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S11": [
+   {
+    "act": "agree",
+    "target": "S10",
+    "agent": null
+   }
+  ],
+  "S12": [
+   {
+    "act": "agree",
+    "target": "S10",
+    "agent": null
+   }
+  ],
+  "S13": [
+   {
+    "act": "agree",
+    "target": "S10",
+    "agent": null
+   }
+  ],
+  "S14": [
+   {
+    "act": "decide",
+    "target": "S10",
+    "agent": null
+   },
+   {
+    "act": "question",
+    "target": null,
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S15": [
+   {
+    "act": "commit",
+    "target": null,
+    "agent": "Sophie"
+   },
+   {
+    "act": "obligation",
+    "target": null,
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S16": [
+   {
+    "act": "obligation",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S17": [
+   {
+    "act": "commit",
+    "target": null,
+    "agent": "Thomas"
+   },
+   {
+    "act": "obligation",
+    "target": null,
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S18": [
+   {
+    "act": "commit",
+    "target": null,
+    "agent": "Karim"
+   },
+   {
+    "act": "obligation",
+    "target": null,
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S19": [
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S20": [
+   {
+    "act": "agree",
+    "target": "S19",
+    "agent": null
+   }
+  ],
+  "S21": [
+   {
+    "act": "agree",
+    "target": "S19",
+    "agent": null
+   }
+  ],
+  "S23": [
+   {
+    "act": "decide",
+    "target": "S19",
+    "agent": null
+   },
+   {
+    "act": "request",
+    "target": null,
+    "agent": "Sophie"
+   }
+  ],
+  "S24": [
+   {
+    "act": "accept",
+    "target": "S23",
+    "agent": "Sophie"
+   }
+  ],
+  "S25": [
+   {
+    "act": "commit",
+    "target": null,
+    "agent": "Thomas"
+   }
+  ],
+  "S26": [
+   {
+    "act": "request",
+    "target": null,
+    "agent": null
+   },
+   {
+    "act": "question",
+    "target": null,
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S27": [
+   {
+    "act": "tentative",
+    "target": "S26",
+    "agent": "Thomas"
+   }
+  ],
+  "S29": [
+   {
+    "act": "request",
+    "target": null,
+    "agent": "Karim"
+   }
+  ],
+  "S30": [
+   {
+    "act": "decline",
+    "target": "S29",
+    "agent": null
+   }
+  ],
+  "S31": [
+   {
+    "act": "question",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S32": [
+   {
+    "act": "quote",
+    "target": null,
+    "agent": "other",
+    "optional": true,
+    "note": "The fishmonger agrees to deliver"
+   }
+  ],
+  "S34": [
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S35": [
+   {
+    "act": "defer",
+    "target": "S34",
+    "agent": null
+   }
+  ],
+  "S36": [
+   {
+    "act": "request",
+    "target": null,
+    "agent": null
+   },
+   {
+    "act": "question",
+    "target": null,
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S37": [
+   {
+    "act": "quote",
+    "target": null,
+    "agent": "other"
+   }
+  ],
+  "S38": [
+   {
+    "act": "correct",
+    "target": "S8",
+    "agent": "Karim"
+   }
+  ],
+  "S39": [
+   {
+    "act": "challenge",
+    "target": "S6",
+    "agent": null
+   }
+  ],
+  "S40": [
+   {
+    "act": "commit",
+    "target": "S6",
+    "agent": "Karim"
+   },
+   {
+    "act": "decline",
+    "target": "S39",
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S41": [
+   {
+    "act": "request",
+    "target": "S17",
+    "agent": "Sophie"
+   }
+  ],
+  "S42": [
+   {
+    "act": "accept",
+    "target": "S41",
+    "agent": "Sophie"
+   }
+  ],
+  "S43": [
+   {
+    "act": "commit",
+    "target": "S9",
+    "agent": "Karim"
+   }
+  ],
+  "S44": [
+   {
+    "act": "withdraw",
+    "target": "S23",
+    "agent": null
+   }
+  ],
+  "S45": [
+   {
+    "act": "agree",
+    "target": "S44",
+    "agent": null,
+    "optional": true
+   }
+  ],
+  "S46": [
+   {
+    "act": "request",
+    "target": "S18",
+    "agent": "Sophie"
+   }
+  ],
+  "S47": [
+   {
+    "act": "decline",
+    "target": "S46",
+    "agent": null
+   }
+  ],
+  "S48": [
+   {
+    "act": "withdraw",
+    "target": "S25",
+    "agent": null
+   }
+  ],
+  "S49": [
+   {
+    "act": "propose",
+    "target": "S14",
+    "agent": null
+   }
+  ],
+  "S50": [
+   {
+    "act": "agree",
+    "target": "S49",
+    "agent": null
+   }
+  ],
+  "S51": [
+   {
+    "act": "agree",
+    "target": "S49",
+    "agent": null
+   }
+  ],
+  "S52": [
+   {
+    "act": "decide",
+    "target": "S49",
+    "agent": null,
+    "alt_targets": [
+     "S14"
+    ]
+   },
+   {
+    "act": "request",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S53": [
+   {
+    "act": "commit",
+    "target": "S52",
+    "agent": "Lucie"
+   }
+  ]
+ }
+}

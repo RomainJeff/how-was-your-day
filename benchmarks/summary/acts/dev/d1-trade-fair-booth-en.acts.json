@@ -1,0 +1,172 @@
+{
+ "schema": "hwyd-acts-gold/1",
+ "recording": "benchmarks/summary/ledger/dev/d1-trade-fair-booth-en.json",
+ "participants": [
+  "Hélène",
+  "Bastien",
+  "Mehdi"
+ ],
+ "turns": {
+  "S2": [
+   {
+    "act": "obligation",
+    "target": null,
+    "agent": null,
+    "optional": true,
+    "note": "Staffing need, not a task"
+   }
+  ],
+  "S3": [
+   {
+    "act": "commit",
+    "target": null,
+    "agent": "Mehdi"
+   }
+  ],
+  "S4": [
+   {
+    "act": "request",
+    "target": null,
+    "agent": "Bastien"
+   }
+  ],
+  "S5": [
+   {
+    "act": "decline",
+    "target": "S4",
+    "agent": null
+   },
+   {
+    "act": "defer",
+    "target": "S4",
+    "agent": null,
+    "optional": true
+   },
+   {
+    "act": "question",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S6": [
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S7": [
+   {
+    "act": "decline",
+    "target": "S6",
+    "agent": null
+   },
+   {
+    "act": "propose",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S8": [
+   {
+    "act": "agree",
+    "target": "S7",
+    "agent": null,
+    "optional": true,
+    "note": "Conditional feasibility"
+   }
+  ],
+  "S9": [
+   {
+    "act": "decide",
+    "target": "S7",
+    "agent": null,
+    "alt_targets": [
+     "S8"
+    ]
+   }
+  ],
+  "S10": [
+   {
+    "act": "agree",
+    "target": "S9",
+    "agent": null
+   }
+  ],
+  "S11": [
+   {
+    "act": "agree",
+    "target": "S9",
+    "agent": null
+   }
+  ],
+  "S12": [
+   {
+    "act": "obligation",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S13": [
+   {
+    "act": "request",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S14": [
+   {
+    "act": "quote",
+    "target": null,
+    "agent": "Bastien"
+   }
+  ],
+  "S15": [
+   {
+    "act": "defer",
+    "target": "S13",
+    "agent": null
+   },
+   {
+    "act": "request",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S16": [
+   {
+    "act": "commit",
+    "target": "S15",
+    "agent": "Hélène"
+   }
+  ],
+  "S17": [
+   {
+    "act": "commit",
+    "target": null,
+    "agent": null
+   }
+  ],
+  "S18": [
+   {
+    "act": "correct",
+    "target": "S3",
+    "agent": "Mehdi"
+   }
+  ],
+  "S19": [
+   {
+    "act": "request",
+    "target": null,
+    "agent": "Bastien"
+   }
+  ],
+  "S20": [
+   {
+    "act": "accept",
+    "target": "S19",
+    "agent": "Bastien"
+   }
+  ]
+ }
+}
