@@ -60,7 +60,7 @@ SIGN_IDENTITY='Your persistent code signing identity' scripts/build-app.sh debug
 open 'build/How Was Your Day.app'
 ```
 
-The developer default is the existing `No Bleeding Eyes Code Signing` identity. The build fails if that certificate is unavailable. For isolated development or CI only:
+The local default is an `Apple Development` identity (a free Apple ID added in Xcode is enough). Its team ID keeps keychain and privacy permissions valid across rebuilds. The build fails if no matching certificate is available. Release packaging keeps the `No Bleeding Eyes Code Signing` identity. For isolated development or CI only:
 
 ```sh
 SIGN_IDENTITY=- HWYD_ALLOW_ADHOC=1 scripts/build-app.sh debug

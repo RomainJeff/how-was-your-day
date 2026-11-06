@@ -4,7 +4,7 @@ Version de travail du 25 octobre 2026. Trois premières tranches fonctionnelles.
 
 ## Signature
 
-Le build utilise le certificat local existant `No Bleeding Eyes Code Signing`. Empreinte publique SHA-1 : `E9EA65E6060488008B4345D4EA527BAA7F88771F`.
+Le build local utilise par défaut une identité `Apple Development` (équipe personnelle Apple ID). Les releases publiques gardent le certificat `No Bleeding Eyes Code Signing`, empreinte publique SHA-1 : `E9EA65E6060488008B4345D4EA527BAA7F88771F`.
 
 Les identifiants sont fixes : `dev.lepee.hwyd`, `dev.lepee.hwyd.pipeline`, `dev.lepee.hwyd.mcp`. Deux exécutables différents signés avec ce certificat ont la même designated requirement. La vérification stricte passe. Aucun réglage de confiance système n’a été modifié. La continuité TCC reste à confirmer sur les prochains rebuilds. Le passage initial depuis ad hoc peut demander une nouvelle autorisation. Ce n’est pas une signature de distribution Developer ID.
 

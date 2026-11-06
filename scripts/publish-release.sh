@@ -13,7 +13,7 @@ gh auth status >/dev/null
 if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
     echo "Release $tag exists; refusing to overwrite artifacts." >&2; exit 1
 fi
-VERSION="$version" BUILD_NUMBER="$(git rev-list --count HEAD)" HWYD_APP_OUTPUT='build/release/How Was Your Day.app' scripts/build-app.sh release
+SIGN_IDENTITY="${SIGN_IDENTITY:-No Bleeding Eyes Code Signing}" VERSION="$version" BUILD_NUMBER="$(git rev-list --count HEAD)" HWYD_APP_OUTPUT='build/release/How Was Your Day.app' scripts/build-app.sh release
 scripts/package.sh
 git tag "$tag"
 git push origin HEAD "$tag"

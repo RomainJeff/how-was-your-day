@@ -6,7 +6,7 @@ if [[ -z "${DEVELOPER_DIR:-}" && -x /Applications/Xcode.app/Contents/Developer/u
 fi
 configuration="${1:-debug}"
 # A persistent certificate anchors TCC identity across rebuilds. Never silently use ad hoc.
-sign_identity="${SIGN_IDENTITY:-No Bleeding Eyes Code Signing}"
+sign_identity="${SIGN_IDENTITY:-Apple Development}"
 if [[ "$sign_identity" == "-" && "${HWYD_ALLOW_ADHOC:-0}" != "1" ]]; then
     echo "Ad hoc signing requires HWYD_ALLOW_ADHOC=1 (isolated tests only)." >&2
     exit 1
