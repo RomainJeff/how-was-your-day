@@ -101,6 +101,13 @@ import HWYDCore
         }
         notepad?.makeKeyAndOrderFront(nil)
     }
+    func application(_ application: NSApplication, open urls: [URL]) {
+        // Snapshot and test modes never act on external links.
+        guard !CommandLine.arguments.contains(where: { ["--asr-test", "--snapshot", "--self-test", "--ui-test"].contains($0) }),
+              let link = urls.lazy.compactMap(SessionLink.init).first else { return }
+        openWindow()
+        Task { await AppEnvironment.model.open(link) }
+    }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let model = AppEnvironment.model

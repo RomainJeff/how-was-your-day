@@ -100,6 +100,10 @@
         "echo_suspect_segments": {
           "type": "integer",
           "minimum": 0
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^hwyd://session/[0-9a-f-]{36}$"
         }
       },
       "required": [
@@ -113,7 +117,8 @@
         "participants",
         "echo_cancellation_engine",
         "echo_assessed_segments",
-        "echo_suspect_segments"
+        "echo_suspect_segments",
+        "source"
       ],
       "additionalProperties": false
     },

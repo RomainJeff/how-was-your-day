@@ -131,6 +131,10 @@ JSON Schema draft 2020-12. Le catalogue ci-dessous contient des `$defs` communs 
         "echo_suspect_segments": {
           "type": "integer",
           "minimum": 0
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^hwyd://session/[0-9a-f-]{36}$"
         }
       },
       "required": [
@@ -144,7 +148,8 @@ JSON Schema draft 2020-12. Le catalogue ci-dessous contient des `$defs` communs 
         "participants",
         "echo_cancellation_engine",
         "echo_assessed_segments",
-        "echo_suspect_segments"
+        "echo_suspect_segments",
+        "source"
       ],
       "additionalProperties": false
     },
@@ -816,11 +821,11 @@ Une synthèse absente retourne `status: unavailable` et `reason: not_generated_o
 
 | URI template | MIME | Contenu |
 |---|---|---|
-| `hwyd://recording/{id}/transcript.md` | `text/markdown` | Frontmatter minimal ID/révision/version + transcript courant |
-| `hwyd://recording/{id}/summary.md` | `text/markdown` | Frontmatter avec statut/provenance + synthèse ; indication de statut si absente |
-| `hwyd://recording/{id}/notes.md` | `text/markdown` | Frontmatter ID/révision/version + entrées horodatées et Markdown libre |
+| `hwyd://recording/{id}/transcript.md` | `text/markdown` | Transcript courant |
+| `hwyd://recording/{id}/summary.md` | `text/markdown` | Synthèse validée ; erreur `ARTIFACT_UNAVAILABLE` si absente (aucun texte de remplacement) |
+| `hwyd://recording/{id}/notes.md` | `text/markdown` | Entrées horodatées et Markdown libre |
 
-`resources/templates/list` expose ces trois modèles ; `resources/list` retourne une liste vide pour ne pas énumérer tout l'historique. `resources/read` accepte uniquement ces URI exactes avec UUID valide. Pas de `file://`, pas de chemins libres ni de paramètres non prévus. Le champ `source: hwyd://session/<id>` des exports est un identifiant canonique, pas une quatrième ressource ; l'ID est le même.
+`resources/templates/list` expose ces trois modèles ; `resources/list` retourne une liste vide pour ne pas énumérer tout l'historique. `resources/read` accepte uniquement ces URI exactes avec UUID valide. Pas de `file://`, pas de chemins libres ni de paramètres non prévus. Le champ `source: hwyd://session/<id>` des exports est un identifiant canonique, pas une quatrième ressource ; l'ID est le même. `RecordingMetadata.source` le renvoie pour chaque enregistrement. L'app déclare le schéma `hwyd` : ouvrir `hwyd://session/<id>` ou une URI de ressource affiche l'enregistrement correspondant (onglet transcript, notes ou synthèse).
 
 Schéma du contenu textuel encodé dans une réponse `resources/read` :
 
