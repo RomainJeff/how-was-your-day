@@ -30,7 +30,7 @@ struct LibraryView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass").foregroundStyle(Studio.muted)
                         TextField("Rechercher une session, une phrase…", text: $model.search).textFieldStyle(.plain).font(.system(size: 12))
-                        if !model.search.isEmpty { Button { model.search = "" } label: { Image(systemName: "xmark.circle.fill") }.buttonStyle(.plain).foregroundStyle(Studio.muted) }
+                        if !model.search.isEmpty { Button { model.search = "" } label: { Image(systemName: "xmark.circle.fill").frame(width: 20, height: 20).contentShape(Rectangle()) }.buttonStyle(.plain).foregroundStyle(Studio.muted) }
                     }.padding(10).background(Studio.inset, in: RoundedRectangle(cornerRadius: 6)).overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Studio.line))
                     Menu {
                         Button("Tous les types") { model.kindFilter = nil }
@@ -43,11 +43,17 @@ struct LibraryView: View {
                         EmptyPanel(symbol: "waveform.path", title: "La prochaine conversation commence ici.", detail: "Enregistrez une réunion, un appel ou une idée. Prenez vos notes pendant que la conversation suit son cours.")
                         Button("Explorer avec des exemples") { model.enterDemo() }.buttonStyle(StudioButtonStyle()).padding(.bottom, 35)
                     }
-                } else if model.filteredRecordings.isEmpty {
-                    EmptyPanel(symbol: "magnifyingglass", title: "Aucune session trouvée", detail: "Essayez un autre mot ou retirez le filtre de type.")
                 } else {
-                    if !model.todayRecordings.isEmpty { section("Aujourd’hui", items: model.todayRecordings) }
-                    if !model.olderRecordings.isEmpty { section("Précédemment", items: model.olderRecordings) }
+                    // Filter once per render: the search scans every transcript.
+                    let items = model.filteredRecordings
+                    let today = items.filter { Calendar.current.isDateInToday($0.startedAt) }
+                    let older = items.filter { !Calendar.current.isDateInToday($0.startedAt) }
+                    if items.isEmpty {
+                        EmptyPanel(symbol: "magnifyingglass", title: "Aucune session trouvée", detail: "Essayez un autre mot ou retirez le filtre de type.")
+                    } else {
+                        if !today.isEmpty { section("Aujourd’hui", items: today) }
+                        if !older.isEmpty { section("Précédemment", items: older) }
+                    }
                 }
                 Text("Les notes et transcripts sont conservés. La rétention audio sera appliquée une fois le pipeline intégré.").font(.system(size: 11)).foregroundStyle(Studio.muted).lineSpacing(4)
             }.padding(32).frame(maxWidth: 1000, alignment: .leading).frame(maxWidth: .infinity)

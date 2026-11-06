@@ -1,0 +1,89 @@
+import XCTest
+@testable import HWYDCore
+
+final class VoiceReviewTests: XCTestCase {
+    func testOverviewReportsStateAndSpeechPerVoice() {
+        var proposed = Speaker(label: "Camille", source: .system)
+        proposed.proposedIdentity = VoiceMatch(personID: UUID(), score: 0.8, margin: 0.2, channel: .remote)
+        let named = Speaker(label: "Vous", confirmed: true), unknown = Speaker(label: "Voix 3")
+        let item = Recording(title: "Test", speakers: [named, proposed, unknown], segments: [
+            .init(start: 0, end: 2, speakerID: named.id, source: .mic, text: "a"),
+            .init(start: 3, end: 4.5, speakerID: named.id, source: .mic, text: "b"),
+            .init(start: 5, end: 6, speakerID: proposed.id, source: .system, text: "c"),
+            .init(start: 7, end: 8, speakerID: nil, source: .mic, text: "d")])
+        let overview = item.voiceOverview
+        XCTAssertEqual(overview.map(\.state), [.confirmed, .proposed, .unidentified])
+        XCTAssertEqual(overview[0].segmentCount, 2)
+        XCTAssertEqual(overview[0].speechDuration, 3.5)
+        XCTAssertEqual(overview[0].spans, [.init(start: 0, end: 2), .init(start: 3, end: 4.5)])
+        XCTAssertEqual(overview[2].segmentCount, 0)
+    }
+
+    func testSameTrackMergeMovesSegmentsAndKeepsNamedIdentity() throws {
+        let named = Speaker(label: "Léa", confirmed: true), duplicate = Speaker(label: "Voix 2")
+        let other = Speaker(label: "Voix 3", source: .system)
+        let segments: [TranscriptSegment] = [
+            .init(start: 0, end: 1, speakerID: named.id, source: .mic, text: "a"),
+            .init(start: 1, end: 2, speakerID: duplicate.id, source: .mic, text: "b"),
+            .init(start: 2, end: 3, speakerID: other.id, source: .system, text: "c")]
+        var item = Recording(title: "Test", speakers: [named, duplicate, other], segments: segments, summary: "old")
+        // Dropping the named voice onto the unnamed one keeps the name on the survivor.
+        try item.mergeSpeaker(named.id, into: duplicate.id)
+        XCTAssertEqual(item.speakers.map(\.id), [duplicate.id, other.id])
+        XCTAssertEqual(item.speakers[0].label, "Léa")
+        XCTAssertTrue(item.speakers[0].confirmed)
+        XCTAssertEqual(item.segments.map(\.speakerID), [duplicate.id, duplicate.id, other.id])
+        XCTAssertEqual(item.segments.map(\.text), ["a", "b", "c"])
+        XCTAssertEqual(item.transcriptVersion, 2)
+        XCTAssertNil(item.summary)
+    }
+
+    func testCrossTrackMergeSharesNameWithoutMovingSegments() throws {
+        let person = VoicePerson(name: "Camille")
+        var remote = Speaker(label: "Voix 1", source: .system)
+        let room = Speaker(label: "Voix 2")
+        var item = Recording(title: "Test", speakers: [remote, room], segments: [
+            .init(start: 0, end: 1, speakerID: remote.id, source: .system, text: "a"),
+            .init(start: 1, end: 2, speakerID: room.id, source: .mic, text: "b")])
+        let unchanged = item
+        XCTAssertThrowsError(try item.mergeSpeaker(room.id, into: remote.id)) { XCTAssertEqual($0 as? VoiceReviewError, .unnamedMerge) }
+        XCTAssertEqual(item, unchanged)
+        try item.linkSpeaker(remote.id, to: person)
+        remote = item.speakers[0]
+        try item.mergeSpeaker(room.id, into: remote.id)
+        XCTAssertEqual(item.speakers.count, 2)
+        XCTAssertEqual(item.speakers.map(\.label), ["Camille", "Camille"])
+        XCTAssertEqual(item.speakers.map(\.personID), [person.id, person.id])
+        XCTAssertEqual(item.segments.map(\.speakerID), [remote.id, room.id])
+        XCTAssertEqual(item.participants.count, 1)
+    }
+
+    func testLinkRefusesOpposedPersonAndSelfMerge() {
+        let speaker = Speaker(label: "Voix 1")
+        var item = Recording(title: "Test", speakers: [speaker])
+        let original = item
+        XCTAssertThrowsError(try item.linkSpeaker(speaker.id, to: VoicePerson(name: "Exclu", opposed: true)))
+        XCTAssertThrowsError(try item.mergeSpeaker(speaker.id, into: speaker.id))
+        XCTAssertEqual(item, original)
+    }
+
+    func testPlaylistMergesOverlapsAndMapsElapsedTimeBack() {
+        let playlist = VoicePlaylist(spans: [.init(start: 10, end: 12), .init(start: 2, end: 4), .init(start: 3, end: 5)], gap: 0.5)
+        XCTAssertEqual(playlist.entries, [.init(from: 2, to: 5, at: 0), .init(from: 10, to: 12, at: 3.5)])
+        XCTAssertEqual(playlist.length, 5.5)
+        XCTAssertEqual(playlist.recordingTime(atElapsed: 1), 3)
+        XCTAssertEqual(playlist.recordingTime(atElapsed: 3.2), 10)
+        XCTAssertEqual(playlist.recordingTime(atElapsed: 4), 10.5)
+        XCTAssertEqual(playlist.recordingTime(atElapsed: 9), 12)
+        XCTAssertEqual(VoicePlaylist(spans: []).length, 0)
+    }
+
+    func testActiveSegmentsCoverOverlappingTracks() {
+        let a = TranscriptSegment(start: 0, end: 5, speakerID: nil, source: .mic, text: "a")
+        let b = TranscriptSegment(start: 4, end: 8, speakerID: nil, source: .system, text: "b")
+        let item = Recording(title: "Test", segments: [a, b])
+        XCTAssertEqual(item.segmentIDs(at: 4.5), [a.id, b.id])
+        XCTAssertEqual(item.segmentIDs(at: 5), [b.id])
+        XCTAssertEqual(item.segmentIDs(at: 9), [])
+    }
+}

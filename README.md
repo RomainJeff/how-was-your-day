@@ -30,6 +30,8 @@ brew upgrade --cask how-was-your-day
 - Calendar context and explicit meeting reminders through macOS accounts, including Google and Microsoft accounts configured in Calendar.
 - Light, dark and system appearance, menu bar access and a floating notepad.
 - Versioned Markdown/JSON exports and a standalone stdio MCP server with segment-aware pagination, structured transcripts and time/speaker/track filters.
+- Voice tiles in the session view: one per detected voice with its state (unidentified, proposed, confirmed). A click plays only that voice's passages back to back. Naming, confirming, linking to a known person or regrouping duplicates (menu or drag and drop) applies to the whole session and never creates a voice fingerprint. Two unnamed voices on different tracks must be named before they can be regrouped.
+- The transcript follows playback and highlights the passages being heard. Scrolling pauses the follow; « Suivre la lecture » resumes it.
 - Explicit local voice enrollment from the speaker editor, with automatic name suggestions after diarization. Voice vectors stay in the macOS keychain, never in exports.
 
 ## Current limitations

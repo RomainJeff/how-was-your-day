@@ -27,11 +27,8 @@ struct DetailView: View {
                     Label("\(event.calendarTitle) · \(event.start.formatted(date: .abbreviated, time: .shortened)) · \(event.participants.count) invité(s)", systemImage: "calendar")
                         .font(.system(size: 11)).foregroundStyle(Studio.muted)
                 }
-                HStack {
-                    Button("Identité des voix…") { model.showVoiceIdentity = true }.buttonStyle(StudioButtonStyle()).disabled(recording.isDemo || model.modelWorkBusy)
-                    Spacer()
-                }
                 audioPlayer
+                if model.activeTab == .transcript { VoiceTilesView(recording: recording) }
                 HStack(spacing: 26) {
                     ForEach(DetailTab.allCases, id: \.self) { tab in
                         Button { model.activeTab = tab } label: {
@@ -41,20 +38,20 @@ struct DetailView: View {
                                     if tab == .transcript && !recording.segments.isEmpty { Text("\(recording.segments.count)").font(.system(size: 9)).foregroundStyle(Studio.muted) }
                                 }.font(.system(size: 12, weight: model.activeTab == tab ? .medium : .regular))
                                 Rectangle().fill(model.activeTab == tab ? Studio.mint : Color.clear).frame(height: 2)
-                            }.foregroundStyle(model.activeTab == tab ? Studio.mint : Studio.muted)
+                            }.foregroundStyle(model.activeTab == tab ? Studio.mint : Studio.muted).padding(.top, 4).contentShape(Rectangle())
                         }.buttonStyle(.plain).fixedSize(horizontal: true, vertical: false)
                     }
                     Spacer()
                 }.overlay(alignment: .bottom) { Rectangle().fill(Studio.line).frame(height: 0.5) }
             }.padding(.horizontal, 32).padding(.top, 28)
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 15) {
-                    switch model.activeTab {
-                    case .transcript: transcript
-                    case .notes: NotesEditor(recording: recording)
-                    case .summary: summary
-                    }
-                }.frame(maxWidth: .infinity, alignment: .leading).padding(32).padding(.top, 0)
+            if model.activeTab == .transcript {
+                TranscriptPane(recording: recording, header: transcriptHeader, onSplit: { splittingSegment = $0 })
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 15) {
+                        if model.activeTab == .notes { NotesEditor(recording: recording) } else { summary }
+                    }.frame(maxWidth: .infinity, alignment: .leading).padding(32).padding(.top, 0)
+                }
             }
         }.background(Studio.background)
         .sheet(isPresented: $model.showVoiceIdentity) { VoiceIdentityView().environmentObject(model) }
@@ -70,7 +67,7 @@ struct DetailView: View {
         SessionPlayerView(recording: recording)
             .task(id: recording.id) { await model.loadWaveforms(for: recording) }
     }
-    @ViewBuilder private var transcript: some View {
+    @ViewBuilder private var transcriptHeader: some View {
         if !recording.isDemo {
             HStack {
                 if recording.transcriptState == .pending {
@@ -85,21 +82,6 @@ struct DetailView: View {
                         .buttonStyle(StudioButtonStyle()).disabled(model.modelWorkBusy || recording.audioChunks.isEmpty)
                 }
             }
-        }
-        if recording.segments.isEmpty {
-            EmptyPanel(symbol: "text.bubble", title: recording.transcriptState == .ready ? "Aucune parole reconnue" : "Votre transcript viendra ici", detail: recording.isDemo ? "Cet exemple ne contient pas de transcript." : "La transcription utilise les fichiers audio conservés. Vous pouvez continuer à écrire vos notes pendant le traitement.")
-        } else {
-            ForEach(recording.segments) { segment in
-                let speaker = recording.speakers.first { $0.id == segment.speakerID }
-                TranscriptRow(segment: segment, speaker: speaker,
-                    candidates: recording.speakers.filter { $0.source == segment.source },
-                    disabled: model.processingID == recording.id || recording.state == .recording,
-                    onPlay: { model.play(at: segment.start) },
-                    onEdit: { model.beginSpeakerEdit($0) },
-                    onAssign: { model.assignSpeaker($0, to: segment.id, recordingID: recording.id) },
-                    onSplit: { splittingSegment = segment }).equatable()
-            }
-            Label(recording.transcription?.echoCancellationEngine != nil ? "Écho du système atténué sur le micro avant transcription. Audio original conservé. Les empreintes mémorisées restent sur ce Mac." : recording.transcription?.diarizationEngine != nil ? "Voix séparées par piste. Rejet d’écho non appliqué. Les empreintes mémorisées restent sur ce Mac." : recording.speakers.isEmpty ? "Diarisation et rejet d’écho non appliqués à ce transcript." : "Nommer une voix ne crée pas d’empreinte vocale.", systemImage: "hand.raised").font(.system(size: 11)).foregroundStyle(Studio.muted).padding(.top, 6)
         }
     }
     @ViewBuilder private var summary: some View {
@@ -176,8 +158,9 @@ struct DetailView: View {
     private func summaryReferences(_ ids: [UUID]) -> some View {
         HStack(spacing: 12) {
             ForEach(recording.segments.filter { ids.contains($0.id) }) { segment in
-                Button(timeLabel(segment.start)) { model.seekPlayback(to: segment.start) }
-                    .buttonStyle(.plain).font(.system(size: 11, design: .monospaced)).foregroundStyle(Studio.mint)
+                Button { model.seekPlayback(to: segment.start) } label: {
+                    Text(timeLabel(segment.start)).padding(.vertical, 4).contentShape(Rectangle())
+                }.buttonStyle(.plain).font(.system(size: 11, design: .monospaced)).foregroundStyle(Studio.mint)
                     .help(segment.text)
             }
         }
@@ -207,22 +190,88 @@ struct NotesEditor: View {
     }
 }
 
+/// Transcript with playback follow. Reads only `activeSegmentIDs`, so the 5 Hz clock does not rebuild it.
+private struct TranscriptPane<Header: View>: View {
+    @EnvironmentObject var model: AppModel
+    let recording: Recording
+    let header: Header
+    let onSplit: (TranscriptSegment) -> Void
+    @State private var following = true
+    var body: some View {
+        let playback = model.playback
+        let active = playback.activeSegmentIDs
+        let playing = playback.isPlaying
+        // One lookup table per render instead of a linear search per row.
+        let speakers = Dictionary(recording.speakers.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let candidates = Dictionary(grouping: recording.speakers, by: \.source)
+        let disabled = model.processingID == recording.id || recording.state == .recording
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 15) {
+                    header
+                    if recording.segments.isEmpty {
+                        EmptyPanel(symbol: "text.bubble", title: recording.transcriptState == .ready ? "Aucune parole reconnue" : "Votre transcript viendra ici", detail: recording.isDemo ? "Cet exemple ne contient pas de transcript." : "La transcription utilise les fichiers audio conservés. Vous pouvez continuer à écrire vos notes pendant le traitement.")
+                    } else {
+                        ForEach(recording.segments) { segment in
+                            TranscriptRow(segment: segment, speaker: segment.speakerID.flatMap { speakers[$0] },
+                                candidates: candidates[segment.source] ?? [],
+                                disabled: disabled, isActive: active.contains(segment.id),
+                                onPlay: { model.play(at: segment.start) },
+                                onEdit: { model.beginSpeakerEdit($0) },
+                                onAssign: { model.assignSpeaker($0, to: segment.id, recordingID: recording.id) },
+                                onSplit: { onSplit(segment) }).equatable().id(segment.id)
+                        }
+                        Label(footnote, systemImage: "hand.raised").font(.system(size: 11)).foregroundStyle(Studio.muted).padding(.top, 6)
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(32).padding(.top, 0)
+            }
+            // A user scroll during playback pauses the follow; programmatic scrolls report `.animating`.
+            .onScrollPhaseChange { _, phase in
+                if phase == .interacting, model.playback.isPlaying { following = false }
+            }
+            .onChange(of: active) { _, ids in if following, playing { scroll(proxy, to: ids) } }
+            .onChange(of: playback.generation) { _, _ in following = true; scroll(proxy, to: model.playback.activeSegmentIDs) }
+            .overlay(alignment: .bottomTrailing) {
+                if !following && playing {
+                    Button { following = true; scroll(proxy, to: model.playback.activeSegmentIDs) } label: {
+                        Label("Suivre la lecture", systemImage: "arrow.down.to.line")
+                    }.buttonStyle(StudioButtonStyle(primary: true)).padding(20)
+                        .help("Revenir au passage en cours de lecture")
+                        .transition(.opacity)
+                }
+            }
+        }
+    }
+    private func scroll(_ proxy: ScrollViewProxy, to ids: Set<UUID>) {
+        guard let target = recording.segments.first(where: { ids.contains($0.id) })?.id else { return }
+        withAnimation(.easeInOut(duration: 0.35)) { proxy.scrollTo(target, anchor: UnitPoint(x: 0.5, y: 0.3)) }
+    }
+    private var footnote: String {
+        recording.transcription?.echoCancellationEngine != nil ? "Écho du système atténué sur le micro avant transcription. Audio original conservé. Les empreintes mémorisées restent sur ce Mac." : recording.transcription?.diarizationEngine != nil ? "Voix séparées par piste. Rejet d’écho non appliqué. Les empreintes mémorisées restent sur ce Mac." : recording.speakers.isEmpty ? "Diarisation et rejet d’écho non appliqués à ce transcript." : "Nommer une voix ne crée pas d’empreinte vocale."
+    }
+}
+
 // Playback ticks do not need to rebuild menus and selectable text for unchanged rows.
 private struct TranscriptRow: View, Equatable {
     let segment: TranscriptSegment
     let speaker: Speaker?
     let candidates: [Speaker]
     let disabled: Bool
+    let isActive: Bool
     let onPlay: () -> Void
     let onEdit: (Speaker) -> Void
     let onAssign: (UUID?) -> Void
     let onSplit: () -> Void
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.segment == rhs.segment && lhs.speaker == rhs.speaker && lhs.candidates == rhs.candidates && lhs.disabled == rhs.disabled
+        lhs.segment == rhs.segment && lhs.speaker == rhs.speaker && lhs.candidates == rhs.candidates && lhs.disabled == rhs.disabled && lhs.isActive == rhs.isActive
     }
     var body: some View {
                 HStack(alignment: .top, spacing: 16) {
-                    Button(timeLabel(segment.start)) { onPlay() }.buttonStyle(.plain).font(.system(size: 10, design: .monospaced)).foregroundStyle(Studio.muted).frame(width: 42).padding(.top, 6)
+                    Button { onPlay() } label: {
+                        Text(timeLabel(segment.start)).font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(isActive ? Studio.mint : Studio.muted)
+                            .frame(width: 46, height: 26, alignment: .leading).contentShape(Rectangle())
+                    }.buttonStyle(.plain).padding(.top, 1).help("Lire à partir de ce passage")
                     VStack(alignment: .leading, spacing: 9) {
                         if let speaker {
                             Button { onEdit(speaker) } label: {
@@ -231,6 +280,7 @@ private struct TranscriptRow: View, Equatable {
                                     if !speaker.confirmed { Image(systemName: "pencil"); Text(speaker.proposedIdentity == nil ? "à nommer" : "à confirmer") }
                                     else { Text("· \(speaker.source == .mic ? "micro" : "système")").foregroundStyle(Studio.muted) }
                                 }.font(.system(size: 11, weight: .medium)).foregroundStyle(speaker.confirmed ? Studio.mint : Studio.copper)
+                                    .padding(.vertical, 3).contentShape(Rectangle())
                             }.buttonStyle(.plain).disabled(disabled).help("Corriger cette voix dans toute la session").accessibilityIdentifier("speaker-\(segment.id)")
                         }
                         if speaker == nil {
@@ -267,6 +317,10 @@ private struct TranscriptRow: View, Equatable {
                         }
                         Text(segment.text).font(.system(size: 13)).lineSpacing(6).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }.padding(17).frame(maxWidth: .infinity, alignment: .leading).background(Studio.surface, in: RoundedRectangle(cornerRadius: 7))
+                }.padding(17).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(isActive ? Studio.mint.opacity(0.1) : Studio.surface, in: RoundedRectangle(cornerRadius: 7))
+                    .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(isActive ? Studio.mint.opacity(0.6) : .clear))
+                    .overlay(alignment: .leading) { if isActive { Rectangle().fill(Studio.mint).frame(width: 3).padding(.vertical, 10) } }
+                    .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }

@@ -31,6 +31,11 @@ import HWYDCore
         model.selectedID = model.recordings.first?.id
         model.activeTab = .transcript
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-transcript.png"))
+        // Playback follow: the passage heard at 0:25 is highlighted. No audio is played.
+        model.playbackTime = 25; model.updatePlaybackFocus()
+        render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-transcript-follow.png"))
+        model.playbackTime = 0; model.playback.activeSegmentIDs = []
+        renderVoiceTiles(model: model, to: directory.appendingPathComponent("studio-voices.png"))
         var splitExample = TranscriptSegment(start: 12, end: 16, speakerID: nil, source: .mic, text: "Oui. Bonjour à tous.")
         splitExample.words = [.init(text: "Oui.", start: 12, end: 12.5), .init(text: " Bonjour", start: 13, end: 14), .init(text: " à", start: 14, end: 14.5), .init(text: " tous.", start: 14.5, end: 16)]
         render(SegmentSplitView(recordingID: model.selectedID!, segment: splitExample).environmentObject(model), size: .init(width: 580, height: 490), to: directory.appendingPathComponent("studio-split.png"))
@@ -77,6 +82,23 @@ import HWYDCore
         model.recordings = []; model.activeCaptureID = nil; model.selectedID = nil; model.isDemoMode = false
         render(RootView().environmentObject(model), size: .init(width: 900, height: 700), to: directory.appendingPathComponent("studio-empty.png"))
         print("Snapshots: \(directory.path)")
+    }
+    /// Synthetic voices covering the three states. Audio chunks are references only; nothing is read or played.
+    private static func renderVoiceTiles(model: AppModel, to url: URL) {
+        let lea = VoicePerson(name: "Léa")
+        var proposed = Speaker(label: "Léa", source: .system)
+        proposed.proposedIdentity = VoiceMatch(personID: lea.id, score: 0.81, margin: 0.14, channel: .remote)
+        let room = Speaker(label: "Voix 1"), named = Speaker(label: "Camille", confirmed: true, source: .system), duplicate = Speaker(label: "Voix 4")
+        var example = Recording(title: "Voix synthétiques", speakers: [room, proposed, named, duplicate], segments: [
+            .init(start: 0, end: 48, speakerID: room.id, source: .mic, text: "a"),
+            .init(start: 50, end: 61, speakerID: proposed.id, source: .system, text: "b"),
+            .init(start: 62, end: 140, speakerID: named.id, source: .system, text: "c"),
+            .init(start: 141, end: 150, speakerID: duplicate.id, source: .mic, text: "d")])
+        example.audioChunks = [.init(source: .mic, relativePath: "preview-mic.caf", start: 0, duration: 150)]
+        let previousPeople = model.people, previousSelection = model.selectedID
+        model.people = [lea]; model.recordings.append(example); model.selectedID = example.id; model.playback.voiceID = room.id
+        render(VoiceTilesView(recording: example).environmentObject(model).padding(16), size: .init(width: 760, height: 110), to: url)
+        model.playback.voiceID = nil; model.people = previousPeople; model.recordings.removeAll { $0.id == example.id }; model.selectedID = previousSelection
     }
     private static func render<V: View>(_ view: V, size: CGSize, to url: URL) {
         let host = NSHostingView(rootView: view.frame(width: size.width, height: size.height).background(Studio.background))

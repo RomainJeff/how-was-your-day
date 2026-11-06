@@ -10,12 +10,50 @@ import HWYDCore
     private var startHostTime: UInt64 = 0
     private var offset: Double = 0
     private var end: Double = 0
+    private var playlist: VoicePlaylist?
     private(set) var running = false
 
+    private var elapsed: Double {
+        let now = mach_absolute_time()
+        return now > startHostTime ? AVAudioTime.seconds(forHostTime: now - startHostTime) : 0
+    }
+    /// Always in recording time, including during a voice playlist.
     var position: Double {
         guard running else { return offset }
-        let now = mach_absolute_time()
-        return min(end, offset + (now > startHostTime ? AVAudioTime.seconds(forHostTime: now - startHostTime) : 0))
+        if let playlist { return playlist.recordingTime(atElapsed: elapsed) }
+        return min(end, offset + elapsed)
+    }
+    var playlistFinished: Bool { running && playlist.map { elapsed >= $0.length } == true }
+    /// Plays only the given passages of one track, back to back.
+    func start(playlist: VoicePlaylist, source: AudioSource, chunks: [AudioChunk], store: SessionStore, offline: Bool = false) throws {
+        stop()
+        engine = AVAudioEngine()
+        do {
+            let track = chunks.filter { $0.source == source }.sorted { $0.start < $1.start }
+            let node = AVAudioPlayerNode()
+            engine.attach(node); nodes[source] = node
+            var opened: [UUID: AVAudioFile] = [:]
+            var connected = false
+            for entry in playlist.entries {
+                for chunk in track where chunk.start < entry.to && chunk.start + chunk.duration > entry.from {
+                    let file: AVAudioFile
+                    if let existing = opened[chunk.id] { file = existing }
+                    else { file = try AVAudioFile(forReading: store.audioURL(for: chunk)); opened[chunk.id] = file; files.append(file) }
+                    let rate = file.processingFormat.sampleRate
+                    if !connected { engine.connect(node, to: engine.mainMixerNode, format: file.processingFormat); connected = true }
+                    let from = max(entry.from, chunk.start), to = min(entry.to, chunk.start + chunk.duration)
+                    let first = AVAudioFramePosition((from - chunk.start) * rate)
+                    let count = min(file.length, AVAudioFramePosition((to - chunk.start) * rate)) - first
+                    guard count > 0 else { continue }
+                    let scheduled = AVAudioTime(sampleTime: AVAudioFramePosition((entry.at + from - entry.from) * rate), atRate: rate)
+                    node.scheduleSegment(file, startingFrame: first, frameCount: AVAudioFrameCount(count), at: scheduled)
+                }
+            }
+            guard connected else { throw PlaybackError.unavailable }
+            self.playlist = playlist
+            offset = playlist.entries.first?.from ?? 0; end = playlist.entries.last?.to ?? 0
+            try launch(offline: offline)
+        } catch { stop(); throw error }
     }
     func start(chunks: [AudioChunk], store: SessionStore, at time: Double, duration: Double, offline: Bool = false) throws {
         stop()
@@ -44,17 +82,20 @@ import HWYDCore
                 }
             }
             guard !files.isEmpty else { throw PlaybackError.unavailable }
-            // Headroom when summing the two raw signals.
-            engine.mainMixerNode.outputVolume = 0.5
-            if offline {
-                try engine.enableManualRenderingMode(.offline, format: AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1)!, maximumFrameCount: 4096)
-            }
-            try engine.start()
-            startHostTime = mach_absolute_time() + AVAudioTime.hostTime(forSeconds: 0.08)
-            let start = AVAudioTime(hostTime: startHostTime)
-            for node in nodes.values { node.play(at: offline ? nil : start) }
-            running = true
+            try launch(offline: offline)
         } catch { stop(); throw error }
+    }
+    private func launch(offline: Bool) throws {
+        // Headroom when summing the two raw signals.
+        engine.mainMixerNode.outputVolume = 0.5
+        if offline {
+            try engine.enableManualRenderingMode(.offline, format: AVAudioFormat(standardFormatWithSampleRate: 16_000, channels: 1)!, maximumFrameCount: 4096)
+        }
+        try engine.start()
+        startHostTime = mach_absolute_time() + AVAudioTime.hostTime(forSeconds: 0.08)
+        let start = AVAudioTime(hostTime: startHostTime)
+        for node in nodes.values { node.play(at: offline ? nil : start) }
+        running = true
     }
     func renderForTesting(frames: AVAudioFrameCount) throws -> [Float] {
         let buffer = AVAudioPCMBuffer(pcmFormat: engine.manualRenderingFormat, frameCapacity: frames)!
@@ -64,7 +105,7 @@ import HWYDCore
     func setAudible(_ source: AudioSource, _ audible: Bool) { nodes[source]?.volume = audible ? 1 : 0 }
     func stop() {
         if running { offset = position }
-        running = false
+        running = false; playlist = nil
         for node in nodes.values { node.stop() }
         engine.stop()
         if engine.isInManualRenderingMode { engine.disableManualRenderingMode() }

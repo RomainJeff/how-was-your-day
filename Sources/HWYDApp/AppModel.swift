@@ -22,8 +22,10 @@ final class AppModel: ObservableObject {
     @Published var micLevel: Float = 0
     @Published var systemLevel: Float = 0
     @Published var isStarting = false
-    @Published var isPlaying = false
-    @Published var playbackTime: Double = 0
+    /// Playback ticks live outside `objectWillChange`: only views reading them are invalidated.
+    let playback = PlaybackState()
+    var isPlaying: Bool { get { playback.isPlaying } set { playback.isPlaying = newValue } }
+    var playbackTime: Double { get { playback.time } set { playback.time = newValue } }
     @Published var mutedTracks: Set<AudioSource> = []
     @Published var soloTracks: Set<AudioSource> = []
     @Published var trackEnvelopes: [AudioSource: TrackEnvelope] = [:]
@@ -82,7 +84,7 @@ final class AppModel: ObservableObject {
     private var saveTask: Task<Void, Never>?
     private var timer: Timer?
     private var captureStart: ContinuousClock.Instant?
-    private let player = SessionPlayback()
+    let player = SessionPlayback()
     private var capture: CaptureController?
 
     init(directory: URL? = nil, preview: Bool = false, preferences: UserDefaults = .standard, appliesAppearance: Bool = true, persistPreferences: Bool? = nil) {
@@ -131,7 +133,7 @@ final class AppModel: ObservableObject {
     }
     var todayRecordings: [Recording] { filteredRecordings.filter { Calendar.current.isDateInToday($0.startedAt) } }
     var olderRecordings: [Recording] { filteredRecordings.filter { !Calendar.current.isDateInToday($0.startedAt) } }
-    func select(_ item: Recording) { showSettings = false; stopPlayback(); selectedID = item.id; activeTab = .transcript; playbackTime = 0; mutedTracks = []; soloTracks = []; trackEnvelopes = [:] }
+    func select(_ item: Recording) { showSettings = false; stopPlayback(); selectedID = item.id; activeTab = .transcript; playbackTime = 0; playback.activeSegmentIDs = []; mutedTracks = []; soloTracks = []; trackEnvelopes = [:] }
     func library() { showSettings = false; stopPlayback(); selectedID = nil; search = "" }
     func enterDemo() {
         guard activeCaptureID == nil, !modelWorkBusy, !hasUnsavedChanges else { return }
@@ -348,9 +350,12 @@ final class AppModel: ObservableObject {
     }
     private func startTicker() {
         guard timer == nil else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
+        // Common modes keep the playhead moving while the user scrolls or drags.
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
     private func tick() {
         if Date().timeIntervalSince(lastRefresh) > 3, refreshTask == nil, !isDemoMode, !hasUnsavedChanges, activeCaptureID == nil, !pipelineBusy, summaryID == nil, let store {
@@ -373,7 +378,11 @@ final class AppModel: ObservableObject {
                 if let failure = capture.failure { let id = activeCaptureID; stopCapture(); if let id { update(id) { $0.state = .interrupted } }; errorMessage = failure }
             }
         }
-        if isPlaying { playbackTime = player.position; if playbackTime >= (selected?.duration ?? 0) { stopPlayback() } }
+        if isPlaying {
+            playbackTime = player.position
+            if player.playlistFinished || playbackTime >= (selected?.duration ?? 0) { stopPlayback() }
+            updatePlaybackFocus()
+        }
     }
     func isTrackAudible(_ source: AudioSource) -> Bool {
         !mutedTracks.contains(source) && (soloTracks.isEmpty || soloTracks.contains(source))
@@ -396,7 +405,7 @@ final class AppModel: ObservableObject {
     func seekPlayback(to time: Double) {
         let resume = isPlaying
         stopPlayback(); playbackTime = min(max(0, time), selected?.duration ?? 0)
-        if resume { play(at: playbackTime) }
+        if resume { play(at: playbackTime) } else { updatePlaybackFocus() }
     }
     func play(at time: Double) {
         guard let item = selected, let store, !item.audioChunks.isEmpty else {
@@ -406,10 +415,10 @@ final class AppModel: ObservableObject {
         do {
             playbackTime = min(max(0, time), item.duration)
             try player.start(chunks: item.audioChunks, store: store, at: playbackTime, duration: item.duration)
-            applyTrackMix(); isPlaying = true
+            applyTrackMix(); isPlaying = true; playback.generation += 1; updatePlaybackFocus()
         } catch { errorMessage = "Lecture impossible : \(error.localizedDescription)" }
     }
-    func stopPlayback() { player.stop(); isPlaying = false }
+    func stopPlayback() { player.stop(); isPlaying = false; playback.voiceID = nil }
     func loadWaveforms(for item: Recording) async {
         trackEnvelopes = [:]; waveformError = nil
         guard let store, !item.audioChunks.isEmpty else { waveformLoading = false; return }

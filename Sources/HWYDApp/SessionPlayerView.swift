@@ -16,6 +16,7 @@ struct SessionPlayerView: View {
                     Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 13)).foregroundStyle(Studio.onAccent)
                         .frame(width: 34, height: 34).background(Studio.mint, in: RoundedRectangle(cornerRadius: 10))
+                        .contentShape(RoundedRectangle(cornerRadius: 10))
                 }.buttonStyle(.plain).disabled(!hasAudio).opacity(hasAudio ? 1 : 0.4)
                     .accessibilityLabel(model.isPlaying ? "Mettre en pause" : "Lire les pistes")
                 VStack(alignment: .leading, spacing: 3) {
@@ -81,9 +82,10 @@ struct SessionPlayerView: View {
     }
     private func trackButton(_ title: String, help: String, label: String, active: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.system(size: 9, weight: .semibold)).frame(width: 24, height: 19)
+            Text(title).font(.system(size: 10, weight: .semibold)).frame(width: 28, height: 22)
                 .foregroundStyle(active ? Studio.onAccent : Studio.muted)
                 .background(active ? Studio.mint : Studio.inset, in: RoundedRectangle(cornerRadius: 4))
+                .contentShape(RoundedRectangle(cornerRadius: 4))
         }.buttonStyle(.plain).help("\(help) : \(label)")
             .accessibilityLabel("\(help) \(label)").accessibilityValue(active ? "Activé" : "Désactivé")
     }

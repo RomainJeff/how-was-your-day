@@ -42,3 +42,9 @@ Retour retrouve la session ou la bibliothèque précédente. La capture reste ac
 ## Compte rendu de session
 
 Toutes les sessions utilisent une structure commune inspirée des notes Google Meet : Résumé et points clés, Décisions, Étapes suivantes, Détails par thème. Les sections sans contenu sont masquées. Chaque thème porte un titre et un paragraphe lisible. Les références horodatées positionnent le lecteur et révèlent le passage source au survol. Les anciennes synthèses restent affichées jusqu'à leur régénération.
+
+## Voice review
+
+The transcript tab shows one tile per detected voice under the player. A tile states the voice, its track and its speech time, plus its state: unidentified (dashed copper border), proposed (copper) or confirmed (mint). Clicking the tile plays only that voice's passages on its own track, back to back with a short silence. The tile action names or confirms the voice for the whole session; its menu also links it to a known person or regroups it with another voice. Dropping a tile onto another regroups them. On the same track, the passages move to the target voice; across tracks, both clusters keep their own audio and share the name. None of these actions enrolls a voice.
+
+During playback the transcript highlights the passages being heard and keeps them in view. A manual scroll pauses the follow; a « Suivre la lecture » button resumes it, and any new playback resumes it too.

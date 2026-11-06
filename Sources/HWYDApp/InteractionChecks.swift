@@ -135,6 +135,14 @@ import HWYDCore
         model.processingID = nil
         model.assignSpeaker(passage.speakerID, to: passage.id, recordingID: beforeCorrection.id)
         guard model.selected?.segments == beforeCorrection.segments else { throw CaptureFailure(message: "Segment restoration failed") }
+        // Regrouping two voices from the tiles is a transcript correction, never an enrollment.
+        let peopleBefore = model.people
+        guard let camille = model.selected?.speakers.first(where: { $0.label == "Camille" }) else { throw CaptureFailure(message: "Missing merge fixture") }
+        model.mergeSpeaker(unknown.id, into: camille.id)
+        guard let merged = model.selected, !merged.speakers.contains(where: { $0.id == unknown.id }),
+              !merged.segments.contains(where: { $0.speakerID == unknown.id }), model.people == peopleBefore, !model.voiceBusy else {
+            throw CaptureFailure(message: "Tile merge failed or triggered enrollment")
+        }
         var splitExample = TranscriptSegment(start: 0, end: 2, speakerID: nil, source: .mic, text: "Oui. Bonjour")
         splitExample.words = [.init(text: "Oui.", start: 0, end: 1), .init(text: " Bonjour", start: 1, end: 2)]
         let splitRecording = Recording(title: "Découpage synthétique", segments: [splitExample], isDemo: true)

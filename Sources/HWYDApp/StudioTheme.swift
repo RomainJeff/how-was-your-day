@@ -31,11 +31,17 @@ enum Studio {
 struct StudioButtonStyle: ButtonStyle {
     var primary = false
     var destructive = false
+    var compact = false
+    @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(.system(size: 12, weight: .medium)).padding(.horizontal, 14).padding(.vertical, 10)
+        configuration.label.font(.system(size: compact ? 11 : 12, weight: .medium))
+            .padding(.horizontal, compact ? 10 : 14).padding(.vertical, compact ? 6 : 10)
             .foregroundStyle(primary ? Studio.onAccent : Studio.text)
             .background((primary ? (destructive ? Studio.copper : Studio.mint) : Studio.surface).opacity(configuration.isPressed ? 0.7 : 1), in: RoundedRectangle(cornerRadius: 7))
             .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(primary ? .clear : Studio.line))
+            // The whole pill is clickable, not only the glyphs.
+            .contentShape(RoundedRectangle(cornerRadius: 7))
+            .opacity(isEnabled ? 1 : 0.45)
     }
 }
 struct Eyebrow: View {

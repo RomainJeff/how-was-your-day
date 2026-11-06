@@ -36,6 +36,16 @@ import HWYDCore
         let solo = try playback.renderForTesting(frames: 256)
         try magnitude(solo, 200, 0.2)
         playback.stop()
+        // One voice across a CAF boundary: two passages, a short gap, nothing from the other track.
+        let voiceChunks = try [chunk("voice1.caf", .mic, 0, 0.25), chunk("voice2.caf", .mic, 0.1, 0.35), chunk("other.caf", .system, 0, 0.45)]
+        let playlist = VoicePlaylist(spans: [.init(start: 0.02, end: 0.05), .init(start: 0.12, end: 0.15)], gap: 0.05)
+        try playback.start(playlist: playlist, source: .mic, chunks: voiceChunks, store: store, offline: true)
+        let voice = try playback.renderForTesting(frames: 2048)
+        try magnitude(voice, 200, 0.125)
+        try magnitude(voice, 900, 0)
+        try magnitude(voice, 1500, 0.175)
+        try magnitude(voice, 1900, 0)
+        playback.stop()
         let envelopes = try await WaveformReader().read(chunks: chunks, store: store, duration: 0.3, bins: 3)
         guard envelopes[.mic]?.peaks == [0.2, 0.2, 0], envelopes[.system]?.peaks == [0, 0.4, 0] else {
             throw CaptureFailure(message: "Waveform alignment failed")
@@ -58,6 +68,6 @@ import HWYDCore
         guard !model.isTrackAudible(.mic) else { throw CaptureFailure(message: "Mute must override solo") }
         model.toggleSolo(.system)
         guard model.isTrackAudible(.system) else { throw CaptureFailure(message: "Multi-solo failed") }
-        print("Offline playback: synchronized mix, CAF boundary, gap, seek, mute, solo and real waveforms: PASS")
+        print("Offline playback: synchronized mix, CAF boundary, gap, seek, mute, solo, voice playlist and real waveforms: PASS")
     }
 }

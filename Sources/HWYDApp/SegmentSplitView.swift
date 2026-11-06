@@ -24,6 +24,7 @@ struct SegmentSplitView: View {
                                     .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
                             }.font(.system(size: 12)).padding(10)
                                 .background(selectedIndex == index ? Studio.line : Studio.surface, in: RoundedRectangle(cornerRadius: 6))
+                                .contentShape(RoundedRectangle(cornerRadius: 6))
                         }.buttonStyle(.plain)
                     }
                 }
