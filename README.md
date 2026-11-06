@@ -23,6 +23,7 @@ brew upgrade --cask how-was-your-day
 ## Features
 
 - Record microphone and system audio as synchronized, separate tracks.
+- Pause and resume a recording without ending the session (button or ⌘⇧P). During a pause the audio device is stopped, so neither the microphone nor system audio is captured; the paused time is left out of the recording timeline, so notes stay aligned with the audio.
 - Local French transcription with Apple SpeechAnalyzer; optional offline speaker diarization with FluidAudio.
 - Review waveforms, play both tracks, solo or mute each track, and correct speaker assignments.
 - Keep editable notes alongside the transcript and audio.

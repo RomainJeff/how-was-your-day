@@ -47,6 +47,9 @@ import HWYDCore
         render(VoiceIdentityView().environmentObject(model), size: .init(width: 610, height: 700), to: directory.appendingPathComponent("studio-voice-identity.png"))
         model.activeCaptureID = model.selectedID; model.elapsed = 1122; model.micLevel = 0.65; model.systemLevel = 0.35
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 850), to: directory.appendingPathComponent("studio-capture.png"))
+        model.isCapturePaused = true; model.micLevel = 0; model.systemLevel = 0
+        render(RootView().environmentObject(model), size: .init(width: 1080, height: 850), to: directory.appendingPathComponent("studio-capture-paused.png"))
+        model.isCapturePaused = false
         render(NotepadWindow().environmentObject(model), size: .init(width: 500, height: 650), to: directory.appendingPathComponent("studio-notepad.png"))
         model.editingSpeakerID = model.selected?.speakers.first?.id
         render(SpeakerEditor().environmentObject(model), size: .init(width: 600, height: 360), to: directory.appendingPathComponent("studio-speaker.png"))

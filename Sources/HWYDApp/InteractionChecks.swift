@@ -158,6 +158,13 @@ import HWYDCore
         model.startCapture()
         try await Task.sleep(for: .milliseconds(650))
         guard let active = model.activeCapture, model.elapsed > 0 else { throw CaptureFailure(message: "Demo capture timer failed") }
+        model.toggleCapturePause()
+        let frozen = model.elapsed
+        try await Task.sleep(for: .milliseconds(450))
+        guard model.isCapturePaused, model.elapsed == frozen else { throw CaptureFailure(message: "Paused capture clock moved") }
+        model.toggleCapturePause()
+        try await Task.sleep(for: .milliseconds(450))
+        guard !model.isCapturePaused, model.elapsed > frozen, model.elapsed < frozen + 1 else { throw CaptureFailure(message: "Resumed capture clock wrong: \(model.elapsed) after \(frozen)") }
         model.update(active.id) { $0.notes = "Note pendant la session" }
         model.addTimestamp()
         model.stopCapture()

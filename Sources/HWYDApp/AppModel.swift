@@ -19,6 +19,8 @@ final class AppModel: ObservableObject {
     @Published var isLoading = true
     @Published var activeCaptureID: UUID?
     @Published var elapsed: Double = 0
+    /// The active capture is paused: no audio is captured and the clock is frozen.
+    @Published var isCapturePaused = false
     @Published var micLevel: Float = 0
     @Published var systemLevel: Float = 0
     @Published var isStarting = false
@@ -246,6 +248,24 @@ final class AppModel: ObservableObject {
         if let url = event.meetingURL { NSWorkspace.shared.open(url) }
         startCapture(meeting: event)
     }
+    /// Pauses or resumes the active capture without ending the session.
+    /// Paused time is left out of the recording timeline, so notes stay aligned with the audio.
+    func toggleCapturePause() {
+        guard activeCaptureID != nil else { return }
+        if isCapturePaused {
+            if let capture {
+                do { try capture.resume() } catch { errorMessage = error.localizedDescription; return }
+            }
+            captureStart = ContinuousClock.now.advanced(by: .milliseconds(-Int64((elapsed * 1000).rounded())))
+            isCapturePaused = false
+            notice = nil
+        } else {
+            tick()
+            capture?.pause()
+            captureStart = nil; micLevel = 0; systemLevel = 0
+            isCapturePaused = true
+        }
+    }
     func startCapture(meeting: CalendarContext? = nil) {
         guard activeCaptureID == nil, !isStarting else { showWindow?(); return }
         showSettings = false
@@ -276,7 +296,7 @@ final class AppModel: ObservableObject {
         let duration = elapsed
         let chunks = capture?.stop() ?? []
         let finalizationError = capture?.finalizationError
-        capture = nil; captureStart = nil; activeCaptureID = nil; micLevel = 0; systemLevel = 0
+        capture = nil; captureStart = nil; activeCaptureID = nil; micLevel = 0; systemLevel = 0; isCapturePaused = false
         update(id) { $0.duration = duration; $0.state = finalizationError == nil ? .sealed : .interrupted; $0.audioChunks = chunks }
         if let finalizationError { errorMessage = finalizationError }
         selectedID = id; activeTab = .notes

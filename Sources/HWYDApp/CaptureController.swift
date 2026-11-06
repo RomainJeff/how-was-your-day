@@ -18,12 +18,14 @@ struct CaptureFailure: LocalizedError {
     private var lockFD: Int32 = -1
     private var initialInput: AudioObjectID = 0
     private var initialOutput: AudioObjectID = 0
+    /// Paused: the device is stopped, so neither the microphone nor system audio is captured.
+    private(set) var isPaused = false
     var micLevel: Float { writer?.status().mic ?? 0 }
     var systemLevel: Float { writer?.status().system ?? 0 }
     var failure: String? {
         if let status = writer?.status() {
             if let error = status.error { return error }
-            if let lastPacket = status.lastPacket, ProcessInfo.processInfo.systemUptime - lastPacket > 3 {
+            if !isPaused, let lastPacket = status.lastPacket, ProcessInfo.processInfo.systemUptime - lastPacket > 3 {
                 return "Le périphérique ne fournit plus de données audio. La session a été arrêtée."
             }
         }
@@ -94,6 +96,20 @@ struct CaptureFailure: LocalizedError {
                 try await Task.sleep(for: .milliseconds(50))
             }
         } catch { _ = stop(); throw error }
+    }
+    /// Stops the device without ending the session. Buffered audio is written first.
+    /// The audio timeline skips the pause: chunks continue where the last frame ended.
+    func pause() {
+        guard !isPaused, let ioProc, aggregate != 0 else { return }
+        AudioDeviceStop(aggregate, ioProc)
+        writer?.pause()
+        isPaused = true
+    }
+    func resume() throws {
+        guard isPaused, let ioProc, aggregate != 0 else { return }
+        writer?.resume()
+        try check(AudioDeviceStart(aggregate, ioProc), "Reprise de la capture")
+        isPaused = false
     }
     func stop() -> [AudioChunk] {
         if let ioProc, aggregate != 0 { AudioDeviceStop(aggregate, ioProc); AudioDeviceDestroyIOProcID(aggregate, ioProc) }
@@ -192,6 +208,17 @@ private final class AudioWriter: @unchecked Sendable {
             return chunks
         }
     }
+    /// Called after the device stopped: writes what the ring still holds and silences the meters.
+    func pause() {
+        queue.sync {
+            drain()
+            statusLock.lock(); state.mic = 0; state.system = 0; statusLock.unlock()
+        }
+    }
+    /// Restarts the stall watchdog so the device has time to deliver its first buffer.
+    func resume() {
+        statusLock.lock(); state.lastPacket = ProcessInfo.processInfo.systemUptime; statusLock.unlock()
+    }
     func consumeForTest() { queue.sync { drain() } }
     private func setError(_ message: String) { statusLock.lock(); state.error = message; statusLock.unlock() }
     private func drain() {
@@ -285,6 +312,8 @@ extension CaptureController {
                 _ = HWYDIOProc(0, &time, pointer, &inputTime, pointer, &outputTime, UnsafeMutableRawPointer(ring))
             }
             writer.consumeForTest()
+            // A pause mid-capture must not drop, duplicate or desynchronize frames.
+            if block == Int(seconds * 50) { writer.pause(); writer.resume() }
         }
         let chunks = writer.finish()
         guard writer.status().error == nil, HWYDRingDropped(ring) == 0, chunks.count >= (seconds > 10 ? 2 : 6) else { throw CaptureFailure(message: "Synthetic capture failed: \(writer.status().error ?? "missing chunks")") }

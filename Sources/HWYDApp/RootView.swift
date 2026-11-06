@@ -35,7 +35,7 @@ struct RootView: View {
             nav("Toutes les sessions", symbol: "square.stack", selected: !model.showSettings && model.selectedID == nil) { model.library() }
             nav("Nouvelle session", symbol: "plus.circle", selected: false) { model.startCapture() }
             if let active = model.activeCapture {
-                nav("En cours · \(timeLabel(model.elapsed))", symbol: "record.circle", selected: !model.showSettings && model.selectedID == active.id) { model.select(active) }
+                nav("\(model.isCapturePaused ? "En pause" : "En cours") · \(timeLabel(model.elapsed))", symbol: model.isCapturePaused ? "pause.circle" : "record.circle", selected: !model.showSettings && model.selectedID == active.id) { model.select(active) }
             }
             if model.showSettings {
                 Eyebrow(text: "Réglages").padding(.top, 26).padding(.horizontal, 12).padding(.bottom, 8)
@@ -75,8 +75,9 @@ struct MenuContentView: View {
         VStack(alignment: .leading, spacing: 19) {
             HStack { Image(systemName: "waveform").foregroundStyle(Studio.mint); Text("How Was Your Day").font(.system(size: 14, weight: .semibold)); Spacer(); Image(systemName: "lock").foregroundStyle(Studio.muted) }
             if let active = model.activeCapture {
-                HStack { Circle().fill(Studio.copper).frame(width: 7, height: 7); Text(model.isDemoMode ? "Simulation" : "Enregistrement").font(.system(size: 11)).foregroundStyle(Studio.copper); Spacer(); Text(timeLabel(model.elapsed)).monospacedDigit() }
+                HStack { Circle().fill(model.isCapturePaused ? Studio.muted : Studio.copper).frame(width: 7, height: 7); Text(model.isCapturePaused ? "En pause" : model.isDemoMode ? "Simulation" : "Enregistrement").font(.system(size: 11)).foregroundStyle(model.isCapturePaused ? Studio.muted : Studio.copper); Spacer(); Text(timeLabel(model.elapsed)).monospacedDigit() }
                 Text(active.title).font(.system(size: 17, weight: .medium))
+                Button { model.toggleCapturePause() } label: { Label(model.isCapturePaused ? "Reprendre" : "Pause", systemImage: model.isCapturePaused ? "record.circle" : "pause.fill").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle(primary: model.isCapturePaused))
                 Button { model.stopCapture() } label: { Label("Terminer la session", systemImage: "stop.fill").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle(primary: true, destructive: true))
                 Button("Ouvrir les notes") { model.select(active); model.showWindow?() }.buttonStyle(StudioButtonStyle())
             } else {

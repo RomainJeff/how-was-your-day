@@ -12,7 +12,7 @@ import HWYDCore
         MenuBarExtra {
             MenuContentView().environmentObject(model)
         } label: {
-            if model.activeCaptureID != nil { Label(timeLabel(model.elapsed), systemImage: "record.circle") }
+            if model.activeCaptureID != nil { Label(timeLabel(model.elapsed), systemImage: model.isCapturePaused ? "pause.circle" : "record.circle") }
             else { Image(systemName: "waveform") }
         }.menuBarExtraStyle(.window)
         .commands {

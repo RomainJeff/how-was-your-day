@@ -9,8 +9,13 @@ struct CaptureView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 23) {
                 HStack(spacing: 8) {
-                    Circle().fill(Studio.copper).frame(width: 7, height: 7)
-                    Text(model.isDemoMode ? "Simulation de session" : "Enregistrement en cours").font(.system(size: 12, weight: .medium)).foregroundStyle(Studio.copper)
+                    if model.isCapturePaused {
+                        Image(systemName: "pause.fill").font(.system(size: 8)).foregroundStyle(Studio.muted)
+                        Text("En pause · rien n’est enregistré").font(.system(size: 12, weight: .medium)).foregroundStyle(Studio.muted)
+                    } else {
+                        Circle().fill(Studio.copper).frame(width: 7, height: 7)
+                        Text(model.isDemoMode ? "Simulation de session" : "Enregistrement en cours").font(.system(size: 12, weight: .medium)).foregroundStyle(Studio.copper)
+                    }
                     Spacer()
                     if model.isDemoMode { Badge(text: "AUCUN AUDIO CAPTURÉ", color: Studio.copper) }
                 }
@@ -24,7 +29,8 @@ struct CaptureView: View {
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(timeLabel(model.elapsed, hours: true)).font(.system(size: compact ? 38 : 52, weight: .light, design: .monospaced)).tracking(-2)
-                    Text(model.isDemoMode ? "simulées" : "enregistrées").font(.system(size: 11)).foregroundStyle(Studio.muted)
+                        .opacity(model.isCapturePaused ? 0.45 : 1)
+                    Text(model.isCapturePaused ? "en pause" : model.isDemoMode ? "simulées" : "enregistrées").font(.system(size: 11)).foregroundStyle(Studio.muted)
                     Spacer()
                     if !compact { Button { model.openNotepad?() } label: { Label("Détacher les notes", systemImage: "rectangle.on.rectangle") }.buttonStyle(StudioButtonStyle()) }
                 }
@@ -47,6 +53,10 @@ struct CaptureView: View {
             HStack {
                 Label(model.isDemoMode ? "Simulation" : "Sur ce Mac", systemImage: "lock").font(.system(size: 11)).foregroundStyle(Studio.muted)
                 Spacer()
+                Button { model.toggleCapturePause() } label: {
+                    Label(model.isCapturePaused ? "Reprendre" : "Pause", systemImage: model.isCapturePaused ? "record.circle" : "pause.fill")
+                }.buttonStyle(StudioButtonStyle(primary: model.isCapturePaused)).keyboardShortcut("p", modifiers: [.command, .shift])
+                    .help(model.isCapturePaused ? "Reprendre l’enregistrement dans la même session" : "Suspendre l’enregistrement sans terminer la session. Micro et audio système sont coupés pendant la pause.")
                 Button { model.stopCapture() } label: { Label("Terminer la session", systemImage: "stop.fill") }.buttonStyle(StudioButtonStyle(primary: true, destructive: true))
             }.padding(.horizontal, compact ? 23 : 32).padding(.vertical, 15).background(Studio.inset).overlay(alignment: .top) { Rectangle().fill(Studio.line).frame(height: 1) }
         }
