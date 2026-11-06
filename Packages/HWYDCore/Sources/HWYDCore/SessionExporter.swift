@@ -12,7 +12,7 @@ public enum SessionExporter {
     public static func artifact(_ item: Recording, _ name: String) -> String {
         switch name {
         case "notes": return item.noteEntries.sorted { $0.offset < $1.offset }.map { "- [\(timeLabel($0.offset, hours: true))] \($0.text)" }.joined(separator: "\n") + "\n\n" + item.notes
-        case "summary": return item.summary ?? "Synthèse non activée ou invalidée après correction."
+        case "summary": return item.summary ?? ""
         default:
             return item.segments.sorted { $0.start == $1.start ? $0.id.uuidString < $1.id.uuidString : $0.start < $1.start }.map { segment in
                 let label = item.speakers.first { $0.id == segment.speakerID }?.label ?? "Voix inconnue"
@@ -65,7 +65,7 @@ public enum SessionExporter {
         let front = object.filter { !["tracks", "speakers", "segments", "gaps", "notes", "provenance"].contains($0.key) }
         // JSON is a YAML subset; one serializer escapes every user-supplied frontmatter value.
         let yaml = String(decoding: try JSONSerialization.data(withJSONObject: front, options: [.sortedKeys, .withoutEscapingSlashes]), as: UTF8.self)
-        let markdown = Data(("---\n" + yaml + "\n---\n\n# " + escape(recording.title) + "\n\n## Notes\n\n" + artifact(recording, "notes") + "\n\n## Summary\n\n" + artifact(recording, "summary") + "\n\n## Transcript\n\n" + artifact(recording, "transcript") + "\n").utf8)
+        let markdown = Data(("---\n" + yaml + "\n---\n\n# " + escape(recording.title) + "\n\n## Notes\n\n" + artifact(recording, "notes") + (recording.summary.map { "\n\n## Summary\n\n" + $0 } ?? "") + "\n\n## Transcript\n\n" + artifact(recording, "transcript") + "\n").utf8)
         func hash(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
         let manifest = try JSONSerialization.data(withJSONObject: ["id": id, "revision": revision, "files": ["session.md": ["sha256": hash(markdown), "bytes": markdown.count], "session.json": ["sha256": hash(json), "bytes": json.count]]], options: [.sortedKeys])
         if FileManager.default.fileExists(atPath: generation.path) {

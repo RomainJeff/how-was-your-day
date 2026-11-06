@@ -38,7 +38,7 @@ actor MCPService {
     struct Cursor: Codable { var method: String; var filter: String; var sequence: Int; var offset: Int; var expires: Double }
     init(store: SessionStore, writes: Bool, schemaData: Data) { self.store = store; self.writes = writes; self.schemaData = schemaData }
     func metadata(_ r: Recording) -> [String: Any] {
-        ["id": r.id.uuidString, "revision": r.revision, "title": r.title, "kind": r.kind.rawValue, "started_at": r.startedAt.ISO8601Format(), "duration_us": Int64(r.duration * 1e6), "status": r.state == .recording ? "capturing" : r.transcriptState == .ready ? "complete" : "partial", "echo_cancellation_engine": nullable(r.transcription?.echoCancellationEngine), "echo_assessed_segments": r.segments.filter { $0.echoSuspect != nil }.count, "echo_suspect_segments": r.segments.filter { $0.echoSuspect == true }.count, "participants": r.participants.map { ["id": ($0.personID ?? $0.id).uuidString, "name": $0.label, "alias": NSNull(), "status": "named"] as [String: Any] }]
+        ["id": r.id.uuidString, "source": "hwyd://session/" + r.id.uuidString.lowercased(), "revision": r.revision, "title": r.title, "kind": r.kind.rawValue, "started_at": r.startedAt.ISO8601Format(), "duration_us": Int64(r.duration * 1e6), "status": r.state == .recording ? "capturing" : r.transcriptState == .ready ? "complete" : "partial", "echo_cancellation_engine": nullable(r.transcription?.echoCancellationEngine), "echo_assessed_segments": r.segments.filter { $0.echoSuspect != nil }.count, "echo_suspect_segments": r.segments.filter { $0.echoSuspect == true }.count, "participants": r.participants.map { ["id": ($0.personID ?? $0.id).uuidString, "name": $0.label, "alias": NSNull(), "status": "named"] as [String: Any] }]
     }
     func cursor(_ method: String, _ hash: String, _ seq: Int, _ offset: Int) throws -> String {
         let data = try JSONEncoder().encode(Cursor(method: method, filter: hash, sequence: seq, offset: offset, expires: Date().timeIntervalSince1970 + 900))
@@ -130,6 +130,8 @@ actor MCPService {
         let parts = url.path.split(separator: "/", omittingEmptySubsequences: false)
         guard parts.count == 3, parts[0].isEmpty, let id = UUID(uuidString: String(parts[1])), ["transcript.md", "summary.md", "notes.md"].contains(String(parts[2])), !uri.contains("%") else { throw IntegrationError("INVALID_RESOURCE_URI") }
         let r = try await store.recording(id)
+        // No placeholder text: an absent summary is reported, never promised.
+        guard parts[2] != "summary.md" || r.summary != nil else { throw IntegrationError("ARTIFACT_UNAVAILABLE") }
         let text = SessionExporter.artifact(r, String(parts[2].dropLast(3)))
         guard text.utf8.count <= 1_048_576 else { throw IntegrationError("RESOURCE_TOO_LARGE") }
         return text

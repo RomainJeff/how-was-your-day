@@ -8,7 +8,7 @@ Un enregistrement possède quatre artefacts logiques : audio, transcript, summar
 
 | Fichier | Fonction |
 |---|---|
-| `session-2026-10-23-<slug>-<uuid>.md` | Vue courante lisible, sections Notes / Summary / Transcript |
+| `session-2026-10-23-<slug>-<uuid>.md` | Vue courante lisible, sections Notes / Summary (si présente) / Transcript |
 | Même nom `.json` | Vue courante structurée |
 | `.hwyd/generations/<uuid>/<revision>/session.md` | Markdown immuable d'une génération publiée |
 | Même dossier `session.json` | JSON cohérent avec ce Markdown |
@@ -108,14 +108,14 @@ exported_at: "2026-10-23T08:31:00Z"
 Texte libre saisi après la session.
 
 ## Summary
-Synthèse non activée.
+Points clés validés de la session.
 
 ## Transcript
 **[00:00:12.000 - 00:00:13.400] Camille (micro)** : Bonjour.
 **[00:00:14.000 - 00:00:15.200] Speaker 2 (système)** : Bonjour.
 ```
 
-Ordre des sections fixe. Horodatages `HH:MM:SS.mmm`, heures non limitées à 23. Notes : entrées horodatées ordonnées par offset puis ID, suivies du Markdown libre. Sans notes, section vide. Summary : texte validé si ready ; sinon courte indication de statut. Un summary stale porte un avertissement et sa version source. Transcript : segments ordonnés par `start_us`, piste puis ID ; libellé confirmé ou Speaker N. Une proposition n'est pas affichée comme nom acquis. Aucun texte arbitraire n'est interprété comme HTML par l'app. Échapper noms/titres dans les marqueurs Markdown ; préserver le Markdown manuel comme contenu utilisateur.
+Ordre des sections fixe. Horodatages `HH:MM:SS.mmm`, heures non limitées à 23. Notes : entrées horodatées ordonnées par offset puis ID, suivies du Markdown libre. Sans notes, section vide. Summary : section présente seulement si une synthèse validée existe ; sinon section omise, sans texte de remplacement. Le statut reste dans le frontmatter (`summary.status`). Un summary stale porte un avertissement et sa version source. Transcript : segments ordonnés par `start_us`, piste puis ID ; libellé confirmé ou Speaker N. Une proposition n'est pas affichée comme nom acquis. Aucun texte arbitraire n'est interprété comme HTML par l'app. Échapper noms/titres dans les marqueurs Markdown ; préserver le Markdown manuel comme contenu utilisateur.
 
 Les fichiers exportés sont des vues gérées par HWYD. Éditer les notes dans l'app ou via MCP. Avant remplacement d'un fichier plat modifié hors HWYD, comparer au dernier hash publié et conserver une copie `.conflict-<timestamp>.md`. Signaler le conflit ; ne pas importer silencieusement le transcript édité ni perdre les notes externes. Les générations référencées par index sont immuables.
 
