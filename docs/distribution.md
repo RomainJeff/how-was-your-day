@@ -31,7 +31,7 @@ Existing releases are never overwritten. If publishing fails after the tag was p
 
 ## Signing status
 
-Initial releases use a persistent self-signed certificate, like No Bleeding Eyes. They are not Apple-notarized. Gatekeeper may block the first launch; use the macOS Privacy & Security interface. No script or cask disables quarantine or security checks.
+Releases up to 0.4.0 used a persistent self-signed certificate, like No Bleeding Eyes. From 0.5.0, releases are signed with a personal-team `Apple Development` identity (team `WBV98478T5`) with a secure timestamp. Updating from 0.4.0 changes the app identity once, so macOS asks again for microphone, audio capture and keychain access. Releases are not Apple-notarized. Gatekeeper may block the first launch; use the macOS Privacy & Security interface. No script or cask disables quarantine or security checks.
 
 Developer ID signing and notarization remain future work. The build supports `SIGN_IDENTITY` and `SIGN_TIMESTAMP=1`, but packaging does not submit artifacts for notarization.
 
