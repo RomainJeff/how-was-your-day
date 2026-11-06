@@ -86,4 +86,35 @@ final class VoiceReviewTests: XCTestCase {
         XCTAssertEqual(item.segmentIDs(at: 5), [b.id])
         XCTAssertEqual(item.segmentIDs(at: 9), [])
     }
+
+    func testIgnoredVoiceIsHiddenEverywhereAndReversible() throws {
+        let me = Speaker(label: "Vous", confirmed: true), echo = Speaker(label: "Voix 2")
+        let segments: [TranscriptSegment] = [
+            .init(start: 0, end: 1, speakerID: me.id, source: .mic, text: "bonjour"),
+            .init(start: 1, end: 2, speakerID: echo.id, source: .mic, text: "écho des enceintes"),
+            .init(start: 2, end: 3, speakerID: nil, source: .mic, text: "sans voix")]
+        var item = Recording(title: "Test", speakers: [me, echo], segments: segments, summary: "old")
+        let version = item.transcriptVersion
+        try item.setSpeakerIgnored(echo.id, true)
+        XCTAssertEqual(item.segments.count, 3, "segments are kept")
+        XCTAssertEqual(item.heardSegments.map(\.text), ["bonjour", "sans voix"])
+        XCTAssertEqual(item.voiceOverview.map(\.state), [.confirmed, .ignored])
+        XCTAssertEqual(item.transcriptVersion, version + 1)
+        XCTAssertNil(item.summary)
+        XCTAssertFalse(item.participantNames.contains("à nommer"))
+        XCTAssertFalse(SessionExporter.artifact(item, "transcript").contains("écho"))
+        XCTAssertFalse(item.searchableText.contains("écho"))
+        let document = try SessionExporter.document(item)
+        let flags = (document["segments"] as? [[String: Any]])?.compactMap { $0["flags"] as? [String] }
+        XCTAssertEqual(flags?[1], ["timing_coarse", "speaker_ignored"])
+        XCTAssertEqual(try SummaryPipeline.inputHash(item), try SummaryPipeline.inputHash(item.withoutIgnoredVoices))
+        try item.setSpeakerIgnored(echo.id, false)
+        XCTAssertEqual(item.heardSegments.count, 3)
+        XCTAssertTrue(SessionExporter.artifact(item, "transcript").contains("écho"))
+    }
+
+    func testLegacySpeakerPayloadDecodesAsNotIgnored() throws {
+        let json = #"{"id":"467F65AC-2420-4C18-9043-CEEA5CE60254","label":"Voix 1","confirmed":false,"source":"mic"}"#
+        XCTAssertFalse(try JSONDecoder().decode(Speaker.self, from: Data(json.utf8)).ignored)
+    }
 }

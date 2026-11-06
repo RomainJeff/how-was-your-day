@@ -807,7 +807,7 @@ Les curseurs opaques sont signés HMAC avec une clé éphémère du processus. I
 | `track` | `mic` pour le microphone, `system` pour le son des autres applications. |
 | `speaker` | UUID du groupe acoustique, pas l’ID de personne. Plusieurs groupes peuvent représenter une seule personne. |
 | `exclude_unattributed` | Exclut uniquement les segments sans `speaker_id`, pas les voix non nommées. |
-| `exclude_echo_suspect` | Exclut uniquement les segments marqués `true`. `null` indique un transcript non évalué ; aucune exclusion par défaut. |
+| `exclude_echo_suspect` | Exclut uniquement les segments marqués `true`. `null` indique un transcript non évalué ; aucune exclusion par défaut. Indépendamment de ce filtre, les segments d'une voix ignorée par l'utilisateur (écho, bruit) ne sont jamais renvoyés, ni dans les pages ni dans la ressource transcript. |
 | `total_chars`, `total_segments` | Volume du contenu sélectionné et nombre de segments du transcript après filtres. Les filtres concernent le transcript, pas les notes ou la synthèse. |
 | `page`, `total_pages`, `page_chars` | Numéro de page à partir de 1, nombre exact de pages pour ces options, taille de contenu de cette page. |
 

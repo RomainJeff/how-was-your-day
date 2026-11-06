@@ -6,8 +6,9 @@ struct VoiceTilesView: View {
     @EnvironmentObject var model: AppModel
     let recording: Recording
     var body: some View {
-        let voices = recording.voiceOverview
-        let pending = voices.filter { $0.state != .confirmed }.count
+        // Ignored voices go last: they are done, like confirmed ones, but rarely revisited.
+        let voices = recording.voiceOverview.filter { $0.state != .ignored } + recording.voiceOverview.filter { $0.state == .ignored }
+        let pending = voices.filter { $0.state == .unidentified || $0.state == .proposed }.count
         let playingID = model.playback.voiceID
         let locked = model.voiceEditingLocked
         let known = model.people.filter { !$0.opposed }
@@ -27,7 +28,7 @@ struct VoiceTilesView: View {
                     HStack(spacing: 8) {
                         ForEach(voices) { voice in
                             VoiceTile(voice: voice, playing: playingID == voice.id, canPlay: !recording.audioChunks.isEmpty && !voice.spans.isEmpty,
-                                      locked: locked, others: recording.speakers.filter { $0.id != voice.id }, people: known,
+                                      locked: locked, others: recording.speakers.filter { $0.id != voice.id && !$0.ignored }, people: known,
                                       proposed: voice.speaker.proposedIdentity.flatMap { match in known.first { $0.id == match.personID } })
                         }
                     }.padding(.vertical, 1)
@@ -47,7 +48,7 @@ private struct VoiceTile: View {
     let people: [VoicePerson]
     let proposed: VoicePerson?
     @State private var targeted = false
-    private var accent: Color { voice.state == .confirmed ? Studio.mint : Studio.copper }
+    private var accent: Color { voice.state == .confirmed ? Studio.mint : voice.state == .ignored ? Studio.muted : Studio.copper }
     var body: some View {
         HStack(spacing: 0) {
             Button { model.toggleVoicePlayback(voice.id) } label: {
@@ -57,7 +58,7 @@ private struct VoiceTile: View {
                         .frame(width: 24, height: 24).background(playing ? Studio.mint : accent.opacity(0.12), in: Circle())
                     VStack(alignment: .leading, spacing: 3) {
                         Text(voice.speaker.label).font(.system(size: 12, weight: .medium)).lineLimit(1)
-                        Text("\(sourceLabel(voice.speaker.source)) · \(speechLabel(voice.speechDuration))").font(.system(size: 10)).foregroundStyle(Studio.muted).lineLimit(1)
+                        Text("\(sourceLabel(voice.speaker.source)) · \(speechLabel(voice.speechDuration))" + (voice.state == .ignored ? " · ignorée" : "")).font(.system(size: 10)).foregroundStyle(Studio.muted).lineLimit(1)
                     }
                 }.padding(.leading, 10).padding(.trailing, 6).frame(maxHeight: .infinity).contentShape(Rectangle())
             }.buttonStyle(.plain).disabled(!canPlay)
@@ -73,6 +74,7 @@ private struct VoiceTile: View {
                 .help(stateHelp)
         }
         .frame(height: 44)
+        .opacity(voice.state == .ignored && !playing ? 0.6 : 1)
         .background(playing ? Studio.mint.opacity(0.1) : Studio.surface, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(targeted ? Studio.mint : accent.opacity(voice.state == .confirmed ? 0.35 : 0.7),
                                                                 style: StrokeStyle(lineWidth: targeted ? 2 : 1, dash: voice.state == .unidentified && !targeted ? [4, 3] : [])))
@@ -83,32 +85,43 @@ private struct VoiceTile: View {
                 .background(Studio.surface, in: RoundedRectangle(cornerRadius: 6))
         }
         .dropDestination(for: String.self) { items, _ in
-            guard !locked, let first = items.first, let source = UUID(uuidString: first), source != voice.id,
+            guard !locked, voice.state != .ignored, let first = items.first, let source = UUID(uuidString: first), source != voice.id,
                   others.contains(where: { $0.id == source }) else { return false }
             model.mergeSpeaker(source, into: voice.id)
             return true
-        } isTargeted: { targeted = $0 && !locked }
+        } isTargeted: { targeted = $0 && !locked && voice.state != .ignored }
     }
     private var stateDot: some View {
-        Circle().fill(voice.state == .confirmed ? Studio.mint : Studio.copper).frame(width: 6, height: 6)
+        Circle().fill(accent).frame(width: 6, height: 6)
             .opacity(voice.state == .unidentified ? 0.6 : 1)
             .accessibilityLabel(stateHelp)
     }
     private var actionTitle: String {
-        switch voice.state { case .unidentified: "Nommer"; case .proposed: proposed == nil ? "Nommer" : "Confirmer"; case .confirmed: "Modifier" }
+        switch voice.state { case .unidentified: "Nommer"; case .proposed: proposed == nil ? "Nommer" : "Confirmer"; case .confirmed: "Modifier"; case .ignored: "Rétablir" }
     }
     private var stateHelp: String {
         switch voice.state {
         case .unidentified: "Voix non identifiée"
         case .proposed: "Proposition à confirmer" + (voice.speaker.proposedIdentity.map { String(format: " (score %.2f)", $0.score) } ?? "")
         case .confirmed: "Voix confirmée"
+        case .ignored: "Voix ignorée : passages masqués du transcript, de l’export et de la synthèse"
         }
     }
     private func primaryAction() {
+        if voice.state == .ignored { model.setSpeakerIgnored(voice.id, false); return }
         if voice.state == .proposed, let proposed { model.linkSpeaker(voice.id, to: proposed) }
         else { model.beginSpeakerEdit(voice.speaker) }
     }
     @ViewBuilder private var menuContent: some View {
+        if voice.state == .ignored {
+            Button("Rétablir cette voix") { model.setSpeakerIgnored(voice.id, false) }
+        } else {
+            namingMenu
+            Divider()
+            Button("Ignorer cette voix (écho, bruit)") { model.setSpeakerIgnored(voice.id, true) }
+        }
+    }
+    @ViewBuilder private var namingMenu: some View {
         if voice.state == .proposed, let proposed {
             Button("Confirmer : \(proposed.name)") { model.linkSpeaker(voice.id, to: proposed) }
         }

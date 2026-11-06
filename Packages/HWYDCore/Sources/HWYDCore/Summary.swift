@@ -401,7 +401,7 @@ public enum SummaryPipeline {
     """
     public static func inputHash(_ recording: Recording) throws -> String {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
-        return SHA256.hash(data: try encoder.encode(SummaryInputFingerprint(title: recording.title, notes: recording.notes, segments: recording.segments, speakers: recording.speakers))).map { String(format: "%02x", $0) }.joined()
+        return SHA256.hash(data: try encoder.encode(SummaryInputFingerprint(title: recording.title, notes: recording.notes, segments: recording.heardSegments, speakers: recording.speakers))).map { String(format: "%02x", $0) }.joined()
     }
     /// Heuristics reject known failure modes, not a proof of semantic faithfulness.
     static func validateQuality(_ result: SummaryContent, segments: [TranscriptSegment]) throws {

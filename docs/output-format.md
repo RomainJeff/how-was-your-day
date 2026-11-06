@@ -131,6 +131,7 @@ Les champs racine du frontmatter sont repris avec les mêmes types. `type` vaut 
 | `speakers[].label` | string | Speaker N ou nom confirmé ; nom affiché séparé de l'ID |
 | `speakers[].track_id` | UUID | Référence une piste |
 | `speakers[].channel` | enum | near/room/remote |
+| `speakers[].ignored` | bool | `true` si l'utilisateur a ignoré cette voix (écho des enceintes, bruit). Ses segments restent dans le JSON avec le flag `speaker_ignored`, mais sont absents du Markdown, de la recherche et de la synthèse |
 | `speakers[].identity` | object | `{status, person_id, persistent_speaker_id, name, alias, proposed_person_id, scores}` |
 | `identity.status` | enum | anonymous/proposed/confirmed/opposed |
 | `identity.person_id`, `name`, `alias` | string ou null | Non null seulement pour identité confirmée ; alias peut rester null |
@@ -147,7 +148,7 @@ Les champs racine du frontmatter sont repris avec les mêmes types. `type` vaut 
 | `segments` | array | Objets `{id, start_us, end_us, track_id, speaker_id, text, confidence, flags, words}` |
 | `segments[].speaker_id` | string ou null | Référence speakers ; null si non aligné |
 | `segments[].confidence` | number ou null | [0,1], confiance ASR documentée par provider |
-| `segments[].flags` | array de strings | echo_uncertain/overlap/timing_coarse/absorbed_turn/boundary_conflict |
+| `segments[].flags` | array de strings | echo_uncertain/overlap/timing_coarse/absorbed_turn/boundary_conflict/speaker_ignored |
 | `segments[].words` | array | `{id, text, start_us, end_us, confidence, timing_quality}` ; timing_quality word/coarse |
 | `gaps` | array | `{track_id,start_us,end_us,reason}` |
 | `notes` | object | `{version, markdown, entries:[{id,offset_us,text}]}` ; offset null pour note hors capture |

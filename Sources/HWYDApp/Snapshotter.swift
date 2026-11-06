@@ -88,7 +88,8 @@ import HWYDCore
         let lea = VoicePerson(name: "Léa")
         var proposed = Speaker(label: "Léa", source: .system)
         proposed.proposedIdentity = VoiceMatch(personID: lea.id, score: 0.81, margin: 0.14, channel: .remote)
-        let room = Speaker(label: "Voix 1"), named = Speaker(label: "Camille", confirmed: true, source: .system), duplicate = Speaker(label: "Voix 4")
+        let room = Speaker(label: "Voix 1"), named = Speaker(label: "Camille", confirmed: true, source: .system)
+        var duplicate = Speaker(label: "Voix 4"); duplicate.ignored = true
         var example = Recording(title: "Voix synthétiques", speakers: [room, proposed, named, duplicate], segments: [
             .init(start: 0, end: 48, speakerID: room.id, source: .mic, text: "a"),
             .init(start: 50, end: 61, speakerID: proposed.id, source: .system, text: "b"),
@@ -97,7 +98,7 @@ import HWYDCore
         example.audioChunks = [.init(source: .mic, relativePath: "preview-mic.caf", start: 0, duration: 150)]
         let previousPeople = model.people, previousSelection = model.selectedID
         model.people = [lea]; model.recordings.append(example); model.selectedID = example.id; model.playback.voiceID = room.id
-        render(VoiceTilesView(recording: example).environmentObject(model).padding(16), size: .init(width: 760, height: 110), to: url)
+        render(VoiceTilesView(recording: example).environmentObject(model).padding(16), size: .init(width: 1040, height: 110), to: url)
         model.playback.voiceID = nil; model.people = previousPeople; model.recordings.removeAll { $0.id == example.id }; model.selectedID = previousSelection
     }
     private static func render<V: View>(_ view: V, size: CGSize, to url: URL) {

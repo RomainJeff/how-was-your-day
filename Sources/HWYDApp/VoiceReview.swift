@@ -53,6 +53,17 @@ extension AppModel {
             notice = "\(sourceLabel) regroupée avec \(name) dans cette session. Aucune empreinte vocale créée."
         } catch { errorMessage = error.localizedDescription }
     }
+    /// Hides an echo or noise voice from this session, or restores it. Segments are kept.
+    func setSpeakerIgnored(_ speakerID: UUID, _ ignored: Bool) {
+        guard let id = selectedID, !voiceEditingLocked, var item = selected else { return }
+        do {
+            try item.setSpeakerIgnored(speakerID, ignored)
+            if ignored, playback.voiceID == speakerID { stopPlayback() }
+            update(id) { $0 = item }
+            let label = item.speakers.first { $0.id == speakerID }?.label ?? "Voix"
+            notice = ignored ? "\(label) ignorée : ses passages sont masqués du transcript, de l’export et de la synthèse." : "\(label) rétablie dans le transcript."
+        } catch { errorMessage = error.localizedDescription }
+    }
     /// Names a voice after a known person. Does not enroll and does not read any voice print.
     func linkSpeaker(_ speakerID: UUID, to person: VoicePerson) {
         guard let id = selectedID, !voiceEditingLocked, var item = selected else { return }

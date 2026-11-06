@@ -19,8 +19,19 @@ public struct Speaker: Codable, Identifiable, Equatable, Sendable {
     public var proposedIdentity: VoiceMatch?
     public var confirmed: Bool
     public var source: AudioSource
+    /// Set by the user for a voice that is not a participant (speaker echo, noise).
+    /// Its segments stay stored but leave the transcript, exports, search and summaries.
+    public var ignored: Bool = false
     public init(id: UUID = UUID(), label: String, confirmed: Bool = false, source: AudioSource = .mic) {
         self.id = id; self.label = label; self.confirmed = confirmed; self.source = source
+    }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id); label = try c.decode(String.self, forKey: .label)
+        personID = try c.decodeIfPresent(UUID.self, forKey: .personID)
+        proposedIdentity = try c.decodeIfPresent(VoiceMatch.self, forKey: .proposedIdentity)
+        confirmed = try c.decode(Bool.self, forKey: .confirmed); source = try c.decode(AudioSource.self, forKey: .source)
+        ignored = try c.decodeIfPresent(Bool.self, forKey: .ignored) ?? false
     }
 }
 public struct TranscriptSegment: Codable, Identifiable, Equatable, Sendable {
@@ -89,14 +100,21 @@ public struct Recording: Codable, Identifiable, Equatable, Sendable {
     /// Unlinked names remain distinct: equal labels do not prove equal identity.
     public var participants: [Speaker] {
         var seen = Set<UUID>()
-        return speakers.filter { $0.confirmed && seen.insert($0.personID ?? $0.id).inserted }
+        return speakers.filter { $0.confirmed && !$0.ignored && seen.insert($0.personID ?? $0.id).inserted }
     }
     public var participantNames: String {
         let names = participants.map(\.label)
-        let unknown = speakers.filter { !$0.confirmed }.count
+        let unknown = speakers.filter { !$0.confirmed && !$0.ignored }.count
         return (names + (unknown > 0 ? ["\(unknown) voix à nommer"] : [])).joined(separator: ", ")
     }
-    public var searchableText: String { ([title, notes, summary ?? ""] + segments.map(\.text) + speakers.map(\.label)).joined(separator: " ") }
+    public var searchableText: String { ([title, notes, summary ?? ""] + heardSegments.map(\.text) + speakers.filter { !$0.ignored }.map(\.label)).joined(separator: " ") }
+    /// Segments of every voice the user did not ignore. Unattributed segments are kept.
+    public var heardSegments: [TranscriptSegment] {
+        let ignored = Set(speakers.lazy.filter(\.ignored).map(\.id))
+        return ignored.isEmpty ? segments : segments.filter { $0.speakerID.map { !ignored.contains($0) } ?? true }
+    }
+    /// Copy whose segments exclude ignored voices, for exports, search and summaries.
+    public var withoutIgnoredVoices: Recording { var copy = self; copy.segments = heardSegments; return copy }
     /// Correct this segment only. Naming and biometric enrollment are separate actions.
     public mutating func assignSpeaker(_ speakerID: UUID?, to segmentID: UUID) throws {
         guard let index = segments.firstIndex(where: { $0.id == segmentID }) else { throw StoreError.notFound }

@@ -9,13 +9,14 @@ public struct VoiceSpan: Equatable, Sendable {
 
 /// Per-voice review data for one recording. Derived from segments, never persisted.
 public struct VoiceOverview: Identifiable, Equatable, Sendable {
-    public enum State: Equatable, Sendable { case unidentified, proposed, confirmed }
+    public enum State: Equatable, Sendable { case unidentified, proposed, confirmed, ignored }
     public var speaker: Speaker
     public var segmentCount: Int
     public var speechDuration: Double
     public var spans: [VoiceSpan]
     public var id: UUID { speaker.id }
     public var state: State {
+        if speaker.ignored { return .ignored }
         if speaker.confirmed { return .confirmed }
         return speaker.proposedIdentity == nil ? .unidentified : .proposed
     }
@@ -117,6 +118,16 @@ extension Recording {
     private mutating func adoptIdentity(of identity: Speaker, at index: Int) {
         speakers[index].label = identity.label; speakers[index].personID = identity.personID
         speakers[index].confirmed = true; speakers[index].proposedIdentity = nil
+    }
+
+    /// Hides a voice that is not a participant (echo of the speakers, noise), or restores it.
+    /// Segments are kept, so the change is reversible. Identity and voice prints are untouched.
+    public mutating func setSpeakerIgnored(_ id: UUID, _ ignored: Bool) throws {
+        guard let index = speakers.firstIndex(where: { $0.id == id }) else { throw StoreError.notFound }
+        guard speakers[index].ignored != ignored else { return }
+        speakers[index].ignored = ignored
+        transcriptVersion += 1
+        summary = nil
     }
 
     /// Segments heard at `time`, on any track.

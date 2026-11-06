@@ -35,7 +35,7 @@ struct DetailView: View {
                             VStack(spacing: 12) {
                                 HStack(spacing: 6) {
                                     Text(tab.rawValue)
-                                    if tab == .transcript && !recording.segments.isEmpty { Text("\(recording.segments.count)").font(.system(size: 9)).foregroundStyle(Studio.muted) }
+                                    if tab == .transcript && !recording.segments.isEmpty { Text("\(recording.heardSegments.count)").font(.system(size: 9)).foregroundStyle(Studio.muted) }
                                 }.font(.system(size: 12, weight: model.activeTab == tab ? .medium : .regular))
                                 Rectangle().fill(model.activeTab == tab ? Studio.mint : Color.clear).frame(height: 2)
                             }.foregroundStyle(model.activeTab == tab ? Studio.mint : Studio.muted).padding(.top, 4).contentShape(Rectangle())
@@ -203,7 +203,9 @@ private struct TranscriptPane<Header: View>: View {
         let playing = playback.isPlaying
         // One lookup table per render instead of a linear search per row.
         let speakers = Dictionary(recording.speakers.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let candidates = Dictionary(grouping: recording.speakers, by: \.source)
+        let candidates = Dictionary(grouping: recording.speakers.filter { !$0.ignored }, by: \.source)
+        let heard = recording.heardSegments
+        let hidden = recording.segments.count - heard.count
         let disabled = model.processingID == recording.id || recording.state == .recording
         ScrollViewReader { proxy in
             ScrollView {
@@ -212,7 +214,7 @@ private struct TranscriptPane<Header: View>: View {
                     if recording.segments.isEmpty {
                         EmptyPanel(symbol: "text.bubble", title: recording.transcriptState == .ready ? "Aucune parole reconnue" : "Votre transcript viendra ici", detail: recording.isDemo ? "Cet exemple ne contient pas de transcript." : "La transcription utilise les fichiers audio conservés. Vous pouvez continuer à écrire vos notes pendant le traitement.")
                     } else {
-                        ForEach(recording.segments) { segment in
+                        ForEach(heard) { segment in
                             TranscriptRow(segment: segment, speaker: segment.speakerID.flatMap { speakers[$0] },
                                 candidates: candidates[segment.source] ?? [],
                                 disabled: disabled, isActive: active.contains(segment.id),
@@ -220,6 +222,10 @@ private struct TranscriptPane<Header: View>: View {
                                 onEdit: { model.beginSpeakerEdit($0) },
                                 onAssign: { model.assignSpeaker($0, to: segment.id, recordingID: recording.id) },
                                 onSplit: { onSplit(segment) }).equatable().id(segment.id)
+                        }
+                        if hidden > 0 {
+                            Label("\(hidden) passage\(hidden > 1 ? "s" : "") de voix ignorée\(hidden > 1 ? "s" : "") masqué\(hidden > 1 ? "s" : ""). Rétablissez la voix depuis sa tuile pour les revoir.", systemImage: "eye.slash")
+                                .font(.system(size: 11)).foregroundStyle(Studio.muted).padding(.top, 6)
                         }
                         Label(footnote, systemImage: "hand.raised").font(.system(size: 11)).foregroundStyle(Studio.muted).padding(.top, 6)
                     }
@@ -243,7 +249,7 @@ private struct TranscriptPane<Header: View>: View {
         }
     }
     private func scroll(_ proxy: ScrollViewProxy, to ids: Set<UUID>) {
-        guard let target = recording.segments.first(where: { ids.contains($0.id) })?.id else { return }
+        guard let target = recording.heardSegments.first(where: { ids.contains($0.id) })?.id else { return }
         withAnimation(.easeInOut(duration: 0.35)) { proxy.scrollTo(target, anchor: UnitPoint(x: 0.5, y: 0.3)) }
     }
     private var footnote: String {

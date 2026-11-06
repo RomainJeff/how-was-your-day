@@ -23,7 +23,7 @@ struct RecordingPages {
         let to = (input["to"] as? NSNumber)?.doubleValue ?? .infinity
         guard to > from else { throw IntegrationError("INVALID_ARGUMENTS") }
         let speakers = Dictionary(uniqueKeysWithValues: recording.speakers.map { ($0.id, $0) })
-        let selected = recording.segments.filter { segment in
+        let selected = recording.heardSegments.filter { segment in
             guard segment.end > from, segment.start < to else { return false }
             if let track = input["track"] as? String, segment.source.rawValue != track { return false }
             if let id = input["speaker"] as? String, segment.speakerID?.uuidString.lowercased() != id.lowercased() { return false }

@@ -43,6 +43,8 @@ extension SummaryPipeline {
                            inputCharacterLimit: Int = 24_000, cacheDirectory: URL? = nil, reuseCache: Bool = true,
                            providerIdentity: String = "local-openai-compatible",
                            progress: @Sendable (SummaryProgress) async -> Void = { _ in }) async throws -> SummaryProvenance {
+        // Ignored voices (echo, noise) never reach the model.
+        let recording = recording.withoutIgnoredVoices
         guard !recording.segments.isEmpty else { throw SummaryFailure.noTranscript }
         let limit = max(12_000, min(inputCharacterLimit, maximumInputCharacters))
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
