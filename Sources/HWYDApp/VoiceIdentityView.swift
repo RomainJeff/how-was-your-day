@@ -40,18 +40,7 @@ struct VoiceIdentityView: View {
                         model.runVoice(command: "enroll-voice", speakerID: speakerID, person: person, channel: channel)
                     }.buttonStyle(StudioButtonStyle(primary: true)).disabled(speakerID == nil || (personID == nil && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
                     Text("20 secondes minimum de parole propre. Aucun vecteur dans les fichiers, les exports ou SQLite.").font(.caption).foregroundStyle(Studio.muted)
-                    Divider()
-                    Text("Personnes mémorisées").font(.headline)
-                    ForEach(model.people) { person in
-                        HStack {
-                            VStack(alignment: .leading) { Text(person.name); Text((person.enrolledChannels ?? []).map(\.rawValue).joined(separator: " · ")).font(.caption).foregroundStyle(Studio.muted) }; Spacer()
-                            if person.opposed { Text("Opposition active").foregroundStyle(Studio.muted) }
-                            Button(person.opposed ? "Réessayer l’effacement" : "Effacer et opposer") {
-                                var opposed = person; opposed.opposed = true; opposed.consentedAt = nil
-                                model.runVoice(command: "forget-voice", person: opposed)
-                            }
-                        }
-                    }
+                    Text("Les personnes mémorisées se gèrent dans Réglages › Audio et voix.").font(.caption).foregroundStyle(Studio.muted)
                 }
             }.disabled(model.voiceBusy)
             if model.voiceBusy { ProgressView("Traitement local…") }

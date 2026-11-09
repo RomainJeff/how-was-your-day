@@ -13,11 +13,10 @@ struct VoiceTilesView: View {
         let locked = model.voiceEditingLocked
         let known = model.people.filter { !$0.opposed }
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 10) {
-                Eyebrow(text: voices.isEmpty ? "Voix" : pending == 0 ? "Voix détectées · \(voices.count)" : "Voix détectées · \(pending) à nommer")
+            HStack(spacing: 6) {
+                Eyebrow(text: voices.isEmpty ? "Voix" : pending == 0 ? "Voix · \(voices.count)" : "Voix · \(pending) à nommer")
                 if !voices.isEmpty {
-                    Text("Cliquez une voix pour écouter ses passages. Glissez-la sur une autre pour regrouper une même personne.")
-                        .font(.system(size: 10)).foregroundStyle(Studio.muted).lineLimit(1).truncationMode(.tail)
+                    HelpButton(text: "Cliquez une voix pour écouter ses passages. Glissez-la sur une autre pour regrouper une même personne.")
                 }
                 Spacer(minLength: 8)
                 Button("Identité des voix…") { model.showVoiceIdentity = true }.buttonStyle(StudioButtonStyle(compact: true))
@@ -57,8 +56,8 @@ private struct VoiceTile: View {
                         .foregroundStyle(playing ? Studio.onAccent : accent)
                         .frame(width: 24, height: 24).background(playing ? Studio.mint : accent.opacity(0.12), in: Circle())
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(voice.speaker.label).font(.system(size: 12, weight: .medium)).lineLimit(1)
-                        Text("\(sourceLabel(voice.speaker.source)) · \(speechLabel(voice.speechDuration))" + (voice.state == .ignored ? " · ignorée" : "")).font(.system(size: 10)).foregroundStyle(Studio.muted).lineLimit(1)
+                        Text(voice.speaker.label).font(.system(size: Studio.Size.body, weight: .medium)).lineLimit(1)
+                        Text("\(sourceLabel(voice.speaker.source)) · \(speechLabel(voice.speechDuration))" + (voice.state == .ignored ? " · ignorée" : "")).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).lineLimit(1)
                     }
                 }.padding(.leading, 10).padding(.trailing, 6).frame(maxHeight: .infinity).contentShape(Rectangle())
             }.buttonStyle(.plain).disabled(!canPlay)
@@ -66,9 +65,9 @@ private struct VoiceTile: View {
                 .accessibilityLabel(playing ? "Arrêter l’écoute de \(voice.speaker.label)" : "Écouter \(voice.speaker.label)")
             Rectangle().fill(Studio.line).frame(width: 0.5).padding(.vertical, 8)
             Menu { menuContent } label: {
-                Text(actionTitle).font(.system(size: 11, weight: .medium)).foregroundStyle(accent)
+                Text(actionTitle).font(.system(size: Studio.Size.caption, weight: .medium)).foregroundStyle(accent)
             } primaryAction: { primaryAction() }
-                .menuStyle(.borderlessButton).menuIndicator(.visible).controlSize(.small).font(.system(size: 11, weight: .medium)).tint(accent).fixedSize()
+                .menuStyle(.borderlessButton).menuIndicator(.visible).controlSize(.small).font(.system(size: Studio.Size.caption, weight: .medium)).tint(accent).fixedSize()
                 .padding(.horizontal, 10).frame(maxHeight: .infinity).contentShape(Rectangle())
                 .disabled(locked)
                 .help(stateHelp)
@@ -81,7 +80,7 @@ private struct VoiceTile: View {
         .overlay(alignment: .topTrailing) { stateDot.padding(6) }
         .contentShape(RoundedRectangle(cornerRadius: 8))
         .draggable(voice.id.uuidString) {
-            Label(voice.speaker.label, systemImage: "person.wave.2").font(.system(size: 12, weight: .medium)).padding(8)
+            Label(voice.speaker.label, systemImage: "person.wave.2").font(.system(size: Studio.Size.body, weight: .medium)).padding(8)
                 .background(Studio.surface, in: RoundedRectangle(cornerRadius: 6))
         }
         .dropDestination(for: String.self) { items, _ in

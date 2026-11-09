@@ -33,9 +33,11 @@ struct RootView: View {
                 Text("hwyd").font(.system(size: 24, weight: .semibold)).tracking(-1)
             }.padding(.vertical, 24).padding(.horizontal, 12)
             nav("Toutes les sessions", symbol: "square.stack", selected: !model.showSettings && model.selectedID == nil) { model.library() }
-            nav("Nouvelle session", symbol: "plus.circle", selected: false) { model.startCapture() }
+            // One entry for the capture: it starts a session, then becomes the running one.
             if let active = model.activeCapture {
                 nav("\(model.isCapturePaused ? "En pause" : "En cours") · \(timeLabel(model.elapsed))", symbol: model.isCapturePaused ? "pause.circle" : "record.circle", selected: !model.showSettings && model.selectedID == active.id) { model.select(active) }
+            } else {
+                nav("Nouvelle session", symbol: "record.circle", selected: false) { model.startCapture() }
             }
             if model.showSettings {
                 Eyebrow(text: "Réglages").padding(.top, 26).padding(.horizontal, 12).padding(.bottom, 8)
@@ -44,10 +46,10 @@ struct RootView: View {
                 }
             } else {
             Eyebrow(text: "Récentes").padding(.top, 26).padding(.horizontal, 12).padding(.bottom, 8)
-            ForEach(Array(model.recordings.prefix(5))) { item in
+            ForEach(Array(model.recordings.filter { $0.id != model.activeCaptureID }.prefix(5))) { item in
                 Button { model.select(item) } label: {
-                    HStack(spacing: 9) { Image(systemName: item.kind.symbol).frame(width: 14); Text(item.title).lineLimit(2); Spacer(minLength: 0) }
-                        .font(.system(size: 11)).foregroundStyle(model.selectedID == item.id ? Studio.mint : Studio.muted)
+                    HStack(spacing: 9) { Image(systemName: item.kind.symbol).frame(width: 14); Text(item.title).lineLimit(1).truncationMode(.tail); Spacer(minLength: 0) }
+                        .font(.system(size: Studio.Size.caption)).foregroundStyle(model.selectedID == item.id ? Studio.mint : Studio.muted)
                         .padding(.horizontal, 12).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading)
                         .background(model.selectedID == item.id ? Studio.mint.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
                         .contentShape(RoundedRectangle(cornerRadius: 6))
@@ -56,39 +58,39 @@ struct RootView: View {
             }
             Spacer()
             if model.hasUnsavedChanges {
-                Button { model.retrySave() } label: { Label("Enregistrer les notes", systemImage: "arrow.clockwise").contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(Studio.copper).padding(10)
+                Button { model.retrySave() } label: { Label("Enregistrer les notes", systemImage: "arrow.clockwise").contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.copper).padding(10)
             }
             nav("Réglages", symbol: "slider.horizontal.3", selected: model.showSettings) { model.showSettings = true }
-            HStack(spacing: 7) { Circle().fill(Studio.mint).frame(width: 5, height: 5); Text("Sur ce Mac").font(.system(size: 10)); Spacer(); Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev").font(.system(size: 10, design: .monospaced)) }.foregroundStyle(Studio.muted).padding(12)
+            HStack(spacing: 7) { Circle().fill(Studio.mint).frame(width: 5, height: 5); Text("Sur ce Mac").font(.system(size: Studio.Size.caption)); Spacer(); Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev").font(.system(size: Studio.Size.caption, design: .monospaced)) }.foregroundStyle(Studio.muted).padding(12)
         }.padding(.horizontal, 10).padding(.bottom, 8).background(Studio.inset)
     }
     private func nav(_ title: String, symbol: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Label(title, systemImage: symbol).font(.system(size: 12, weight: selected ? .medium : .regular)).frame(maxWidth: .infinity, alignment: .leading).padding(11).foregroundStyle(selected ? Studio.mint : Studio.text).background(selected ? Studio.mint.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 6)).contentShape(RoundedRectangle(cornerRadius: 6)) }.buttonStyle(.plain)
+        Button(action: action) { Label(title, systemImage: symbol).font(.system(size: Studio.Size.body, weight: selected ? .medium : .regular)).frame(maxWidth: .infinity, alignment: .leading).padding(11).foregroundStyle(selected ? Studio.mint : Studio.text).background(selected ? Studio.mint.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 6)).contentShape(RoundedRectangle(cornerRadius: 6)) }.buttonStyle(.plain)
     }
     private func banner(_ text: String, color: Color, button: String, action: @escaping () -> Void) -> some View {
-        HStack(spacing: 12) { Text(text).font(.system(size: 11)).lineSpacing(3); Spacer(); Button(action: action) { Text(button).padding(.horizontal, 8).padding(.vertical, 4).contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: 11, weight: .semibold)) }.foregroundStyle(color).padding(.horizontal, 23).padding(.vertical, 10).background(color.opacity(0.07))
+        HStack(spacing: 12) { Text(text).font(.system(size: Studio.Size.caption)).lineSpacing(3); Spacer(); Button(action: action) { Text(button).padding(.horizontal, 8).padding(.vertical, 4).contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: Studio.Size.caption, weight: .semibold)) }.foregroundStyle(color).padding(.horizontal, 23).padding(.vertical, 10).background(color.opacity(0.07))
     }
 }
 struct MenuContentView: View {
     @EnvironmentObject var model: AppModel
     var body: some View {
         VStack(alignment: .leading, spacing: 19) {
-            HStack { Image(systemName: "waveform").foregroundStyle(Studio.mint); Text("How Was Your Day").font(.system(size: 14, weight: .semibold)); Spacer(); Image(systemName: "lock").foregroundStyle(Studio.muted) }
+            HStack { Image(systemName: "waveform").foregroundStyle(Studio.mint); Text("How Was Your Day").font(.system(size: Studio.Size.body, weight: .semibold)); Spacer() }
             if let active = model.activeCapture {
-                HStack { Circle().fill(model.isCapturePaused ? Studio.muted : Studio.copper).frame(width: 7, height: 7); Text(model.isCapturePaused ? "En pause" : model.isDemoMode ? "Simulation" : "Enregistrement").font(.system(size: 11)).foregroundStyle(model.isCapturePaused ? Studio.muted : Studio.copper); Spacer(); Text(timeLabel(model.elapsed)).monospacedDigit() }
-                Text(active.title).font(.system(size: 17, weight: .medium))
+                HStack { Circle().fill(model.isCapturePaused ? Studio.muted : Studio.copper).frame(width: 7, height: 7); Text(model.isCapturePaused ? "En pause" : model.isDemoMode ? "Simulation" : "Enregistrement").font(.system(size: Studio.Size.caption)).foregroundStyle(model.isCapturePaused ? Studio.muted : Studio.copper); Spacer(); Text(timeLabel(model.elapsed)).monospacedDigit() }
+                Text(active.title).font(.system(size: Studio.Size.heading, weight: .medium))
                 Button { model.toggleCapturePause() } label: { Label(model.isCapturePaused ? "Reprendre" : "Pause", systemImage: model.isCapturePaused ? "record.circle" : "pause.fill").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle(primary: model.isCapturePaused))
                 Button { model.stopCapture() } label: { Label("Terminer la session", systemImage: "stop.fill").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle(primary: true, destructive: true))
-                Button("Ouvrir les notes") { model.select(active); model.showWindow?() }.buttonStyle(StudioButtonStyle())
+                Button { model.select(active); model.showWindow?() } label: { Label("Ouvrir les notes", systemImage: "macwindow.on.rectangle").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle())
             } else {
-                Text("Une conversation à garder ?").font(.system(size: 19, weight: .medium))
-                Text("Réunion, appel ou pensée du moment.").font(.system(size: 12)).foregroundStyle(Studio.muted)
-                Button { model.startCapture() } label: { Label(model.isStarting ? "Préparation…" : model.isDemoMode ? "Simuler une session" : "Commencer une session", systemImage: "record.circle.fill").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle(primary: true)).disabled(model.isStarting)
+                Text("Une conversation à garder ?").font(.system(size: Studio.Size.heading, weight: .medium))
+                Text("Réunion, appel ou pensée du moment.").font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted)
+                Button { model.startCapture() } label: { Label(model.isStarting ? "Préparation…" : model.isDemoMode ? "Simuler une session" : "Nouvelle session", systemImage: "record.circle").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle(primary: true)).disabled(model.isStarting)
             }
             Divider().overlay(Studio.line)
-            Button { model.library(); model.showWindow?() } label: { Label("Ouvrir les sessions", systemImage: "rectangle.on.rectangle").frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4).contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: 12))
-            Button { model.showWindow?(); model.showSettings = true } label: { Label("Réglages", systemImage: "slider.horizontal.3").frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4).contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: 12))
-            HStack { Text(model.isDemoMode ? "Exemples fictifs" : "Sur ce Mac").font(.system(size: 10)).foregroundStyle(Studio.muted); Spacer(); Button("Quitter") { NSApp.terminate(nil) }.buttonStyle(.plain).font(.system(size: 10)).foregroundStyle(Studio.muted) }
+            Button { model.library(); model.showWindow?() } label: { Label("Ouvrir les sessions", systemImage: "rectangle.on.rectangle").frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4).contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: Studio.Size.body))
+            Button { model.showWindow?(); model.showSettings = true } label: { Label("Réglages", systemImage: "slider.horizontal.3").frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4).contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: Studio.Size.body))
+            HStack { Spacer(); Button("Quitter") { NSApp.terminate(nil) }.buttonStyle(.plain).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted) }
         }.padding(23).frame(width: 340).foregroundStyle(Studio.text).background(Studio.background).preferredColorScheme(model.appearancePreference.colorScheme)
     }
 }

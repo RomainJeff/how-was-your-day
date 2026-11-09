@@ -4,7 +4,7 @@ public enum DemoContent {
     public static func recordings(now: Date = Date()) -> [Recording] {
         let me = Speaker(label: "Vous", confirmed: true)
         let camille = Speaker(label: "Camille", confirmed: true, source: .system)
-        let unknown = Speaker(label: "Speaker 3", source: .system)
+        let unknown = Speaker(label: "Voix 3", source: .system)
         let today = Calendar.current.startOfDay(for: now)
         var recordings = [Recording(title: "Le prochain chapitre", kind: .meeting, startedAt: today.addingTimeInterval(36_000), duration: 1934, state: .demo,
             notes: "Simplifier le premier lancement.\n\nUne session doit pouvoir commencer sans calendrier. Prévoir une correction des voix directement depuis le transcript.",

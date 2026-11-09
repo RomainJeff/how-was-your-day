@@ -63,6 +63,13 @@ final class AppModel: ObservableObject {
     }
     @Published var isInstallingModel = false
     private let pipelineRunner = PipelineRunner()
+    /// Known from an install done here, or from a transcript the model already produced. Shown in settings only.
+    var speechModelReady: Bool {
+        preferences.bool(forKey: "models.speechInstalled") || recordings.contains { !$0.isDemo && $0.transcriptVersion > 0 && $0.transcription != nil }
+    }
+    var diarizerReady: Bool {
+        preferences.bool(forKey: "models.diarizerInstalled") || recordings.contains { !$0.isDemo && $0.transcription?.diarizationEngine != nil }
+    }
     var pipelineBusy: Bool { processingID != nil || isInstallingModel || isInstallingDiarizer || voiceBusy }
     var modelWorkBusy: Bool { pipelineBusy || summaryID != nil }
     @Published var savedAt: Date?
@@ -318,6 +325,7 @@ final class AppModel: ObservableObject {
                 let directory = dataDirectory.appendingPathComponent("jobs")
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
                 try await pipelineRunner.run(arguments: ["install-model", "fr-FR"], log: directory.appendingPathComponent("install-model.log"))
+                if persistPreferences { preferences.set(true, forKey: "models.speechInstalled") }
                 notice = "Modèle français installé. La transcription reste locale."
             } catch { errorMessage = error.localizedDescription }
         }
@@ -331,6 +339,7 @@ final class AppModel: ObservableObject {
                 let directory = dataDirectory.appendingPathComponent("jobs")
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
                 try await pipelineRunner.run(arguments: ["install-diarizer", dataDirectory.path], log: directory.appendingPathComponent("install-diarizer.log"))
+                if persistPreferences { preferences.set(true, forKey: "models.diarizerInstalled") }
                 diarizationEnabled = true
                 notice = "Séparation des voix activée pour les prochains traitements."
             } catch { errorMessage = "Installation des voix : \(error.localizedDescription)" }

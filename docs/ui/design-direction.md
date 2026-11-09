@@ -29,13 +29,13 @@ Réglages propose **Système** (défaut), **Clair** et **Sombre**. Système suit
 
 ## Relecture multipiste
 
-Le lecteur présente deux lignes alignées sur la même durée : Micro et Système. Les formes d’onde proviennent des échantillons audio, avec un curseur commun. Un clic ou glissement sur une piste déplace les deux. Le slider reste disponible au clavier. La lecture enchaîne les tranches CAF et respecte les silences entre fichiers.
+Le lecteur présente deux lignes alignées sur la même durée : Micro et Système. Les formes d’onde proviennent des échantillons audio, avec un curseur commun. Un clic ou glissement sur une piste déplace les deux. Le lecteur tient sur deux lignes fines, sans titre ni slider : quand il a le focus, les flèches gauche et droite déplacent la lecture de 5 s, et la position affichée est ajustable par les technologies d’assistance. La lecture enchaîne les tranches CAF et respecte les silences entre fichiers.
 
 Les deux pistes sont audibles par défaut. **S** active Solo, **M** active Muet. Plusieurs solos sont possibles ; Muet reste prioritaire. Les commandes changent le mixage sans déplacer le curseur. Les réglages de mixage sont remis à zéro à l’ouverture d’une autre session. Aucune forme d’onde fictive n’est affichée quand l’audio est absent.
 
 ## Réglages intégrés
 
-Les réglages occupent le panneau principal de la fenêtre. La barre latérale présente six catégories : Général, Calendrier, Audio et voix, Synthèse, Données locales, Agents et exports. Chaque catégorie possède son en-tête et des cartes dans une zone défilante. La largeur du contenu est bornée pour garder une lecture confortable sur grand écran.
+Les réglages occupent le panneau principal de la fenêtre. La barre latérale présente cinq catégories : Général, Calendrier, Audio et voix, Synthèse, Données et agents. Chaque catégorie possède son en-tête et des cartes dans une zone défilante, avec un réglage par ligne : libellé à gauche, contrôle à droite. Les réglages s’appliquent au changement, sans bouton d’enregistrement. Les explications longues s’ouvrent depuis un bouton d’aide `(?)`. Les modèles affichent leur état (installé ou à installer). Les personnes mémorisées se gèrent dans Audio et voix. La rétention audio n’est pas proposée tant que la purge n’existe pas. La largeur du contenu est bornée pour garder une lecture confortable sur grand écran.
 
 Retour retrouve la session ou la bibliothèque précédente. La capture reste accessible. Le raccourci ⌘, ouvre ce même espace. Les liens depuis la synthèse sélectionnent directement la catégorie Synthèse. Aucun panneau modal supplémentaire.
 
@@ -45,6 +45,14 @@ Toutes les sessions utilisent une structure commune inspirée des notes Google M
 
 ## Voice review
 
-The transcript tab shows one tile per detected voice under the player. A tile states the voice, its track and its speech time, plus its state: unidentified (dashed copper border), proposed (copper) or confirmed (mint). Clicking the tile plays only that voice's passages on its own track, back to back with a short silence. The tile action names or confirms the voice for the whole session; its menu also links it to a known person or regroups it with another voice. A voice that is not a participant (usually the speakers' echo on the microphone) can be ignored from the menu: the tile turns grey, moves last and offers "Rétablir"; its passages leave the transcript, the export, search and summaries, but stay stored. Dropping a tile onto another regroups them. On the same track, the passages move to the target voice; across tracks, both clusters keep their own audio and share the name. None of these actions enrolls a voice.
+Every tab of a session shows one tile per detected voice under the player. A tile states the voice, its track and its speech time, plus its state: unidentified (dashed copper border), proposed (copper) or confirmed (mint). Clicking the tile plays only that voice's passages on its own track, back to back with a short silence. The tile action names or confirms the voice for the whole session; its menu also links it to a known person or regroups it with another voice. A voice that is not a participant (usually the speakers' echo on the microphone) can be ignored from the menu: the tile turns grey, moves last and offers "Rétablir"; its passages leave the transcript, the export, search and summaries, but stay stored. Dropping a tile onto another regroups them. On the same track, the passages move to the target voice; across tracks, both clusters keep their own audio and share the name. None of these actions enrolls a voice.
 
 During playback the transcript highlights the passages being heard and keeps them in view. A manual scroll pauses the follow; a « Suivre la lecture » button resumes it, and any new playback resumes it too.
+
+## Règles de sobriété (0.6.0)
+
+- Une action, un nom : démarrer s’appelle « Nouvelle session » partout, avec `record.circle`. Un SF Symbol ne porte qu’un sens : `waveform` reste le logo, `waveform.circle` le mémo vocal, `smallcircle.filled.circle` la session libre.
+- Quatre tailles de texte (`Studio.Size`) : 11, 13, 15 et 28 pt. Le chronomètre de capture et le logotype sont les seules exceptions.
+- L’interface ne s’explique pas en phrases : pas de slogan, pas de note de bas de page. Une explication utile passe par une infobulle ou un bouton d’aide `(?)`.
+- Dans la fenêtre principale, le mode découverte est annoncé par le bandeau ; la ligne d’état de la capture dit « Simulation » parce que le carnet détaché n’a pas de bandeau.
+- Les actions d’un passage du transcript tiennent dans un bouton `ellipsis.circle` en bout de ligne.
