@@ -2,7 +2,7 @@ import SwiftUI
 import HWYDCore
 
 enum SettingsCategory: String, CaseIterable, Identifiable {
-    case general = "Général", calendar = "Calendrier", audio = "Audio et voix", summary = "Synthèse", data = "Données locales", integrations = "Agents et exports"
+    case general = "Général", calendar = "Calendrier", audio = "Audio et voix", summary = "Synthèse", data = "Données et agents"
     var id: String { rawValue }
     var symbol: String {
         switch self {
@@ -11,21 +11,20 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
         case .audio: "waveform"
         case .summary: "sparkles"
         case .data: "internaldrive"
-        case .integrations: "externaldrive.connected.to.line.below"
         }
     }
     var subtitle: String {
         switch self {
         case .general: "Personnalisez votre espace de travail."
         case .calendar: "Retrouvez vos réunions et choisissez quand recevoir un rappel."
-        case .audio: "Configurez la transcription et la séparation des voix sur ce Mac."
+        case .audio: "Transcription, séparation des voix et personnes mémorisées sur ce Mac."
         case .summary: "Choisissez le modèle local qui résume vos sessions."
-        case .data: "Retrouvez vos fichiers et les préférences de conservation."
-        case .integrations: "Partagez vos sessions avec vos outils et contrôlez leurs accès."
+        case .data: "Retrouvez vos fichiers et contrôlez l’accès de vos outils."
         }
     }
 }
 
+/// Settings apply as they change: there is no save button.
 struct SettingsView: View {
     @EnvironmentObject var model: AppModel
     var body: some View {
@@ -33,8 +32,8 @@ struct SettingsView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 9) {
                     Eyebrow(text: "Réglages")
-                    Text(model.settingsCategory.rawValue).font(.system(size: 28, weight: .semibold))
-                    Text(model.settingsCategory.subtitle).font(.system(size: 12)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
+                    Text(model.settingsCategory.rawValue).font(.system(size: Studio.Size.title, weight: .semibold))
+                    Text(model.settingsCategory.subtitle).font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 16)
                 Button { model.showSettings = false } label: { Label("Retour", systemImage: "arrow.left") }
@@ -47,82 +46,135 @@ struct SettingsView: View {
                 }.frame(maxWidth: 820, alignment: .leading).padding(30).frame(maxWidth: .infinity, alignment: .leading)
             }.id(model.settingsCategory)
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .onChange(of: model.summaryEnabled) { _, _ in model.saveSummarySettings() }
+            .onChange(of: model.summaryEndpoint) { _, _ in model.saveSummarySettings() }
+            .onChange(of: model.summaryModel) { _, _ in model.saveSummarySettings() }
+            .onChange(of: model.summaryContextTokens) { _, _ in model.saveSummarySettings() }
+            .onChange(of: model.summaryReasoningDisabled) { _, _ in model.saveSummarySettings() }
             .onDisappear { model.saveSummarySettings() }
     }
     @ViewBuilder private var content: some View {
         switch model.settingsCategory {
         case .general:
-            section("APPARENCE", symbol: "circle.lefthalf.filled") {
-                Picker("Thème", selection: $model.appearancePreference) {
-                    ForEach(AppearancePreference.allCases) { preference in Text(preference.title).tag(preference) }
-                }.pickerStyle(.segmented)
-                Text("Système suit automatiquement l’apparence de macOS.").font(.system(size: 11)).foregroundStyle(Studio.muted)
+            section("Apparence", symbol: "circle.lefthalf.filled") {
+                row("Thème") {
+                    Picker("Thème", selection: $model.appearancePreference) {
+                        ForEach(AppearancePreference.allCases) { preference in Text(preference.title).tag(preference) }
+                    }.pickerStyle(.segmented).labelsHidden().frame(width: 260)
+                }
             }
-            section("DÉCOUVRIR HWYD", symbol: "rectangle.stack") {
-                Text("Explorez l’interface avec des sessions fictives, sans utiliser le micro.").font(.system(size: 12)).foregroundStyle(Studio.muted)
-                Button(model.isDemoMode ? "Quitter les exemples" : "Explorer des exemples") {
-                    model.showSettings = false
-                    if model.isDemoMode { model.leaveDemo() } else { model.enterDemo() }
-                }.buttonStyle(StudioButtonStyle()).disabled(model.modelWorkBusy || model.activeCaptureID != nil || model.hasUnsavedChanges)
+            section("Découvrir HWYD", symbol: "rectangle.stack") {
+                row("Sessions fictives, sans micro") {
+                    Button(model.isDemoMode ? "Quitter les exemples" : "Explorer des exemples") {
+                        model.showSettings = false
+                        if model.isDemoMode { model.leaveDemo() } else { model.enterDemo() }
+                    }.buttonStyle(StudioButtonStyle(compact: true)).disabled(model.modelWorkBusy || model.activeCaptureID != nil || model.hasUnsavedChanges)
+                }
             }
         case .calendar:
             CalendarSettingsView(calendar: model.calendar).disabled(model.isDemoMode)
         case .audio:
-            section("CAPTURE", symbol: "waveform") {
-                Text("Micro brut + audio système").font(.system(size: 14, weight: .medium))
-                Text("Deux pistes séparées, sans traitement de voix. Aucun démarrage automatique.").font(.system(size: 12)).foregroundStyle(Studio.muted).lineSpacing(4)
-            }
-            section("TRANSCRIPTION", symbol: "text.bubble") {
-                Text("Français · Apple Speech · traitement local").font(.system(size: 12))
-                Text("L’installation peut télécharger le modèle Apple. Aucun audio n’est envoyé pour la transcription.").font(.system(size: 11)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
-                Button(model.isInstallingModel ? "Installation en cours…" : "Installer le modèle français") { model.installSpeechModel() }
-                    .buttonStyle(StudioButtonStyle()).disabled(model.modelWorkBusy || model.isDemoMode)
-            }
-            section("SÉPARATION DES VOIX", symbol: "person.2.wave.2") {
-                Toggle("Séparer les voix après transcription", isOn: $model.diarizationEnabled).disabled(model.modelWorkBusy || model.isDemoMode)
-                Text("Community-1 · traitement local par piste. Les modèles se téléchargent une fois ; aucune empreinte personnelle n’est créée sans enrôlement explicite.").font(.system(size: 11)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
-                Button(model.isInstallingDiarizer ? "Installation des voix…" : "Installer les modèles de voix") { model.installDiarizer() }
-                    .buttonStyle(StudioButtonStyle()).disabled(model.modelWorkBusy || model.isDemoMode)
-            }
-        case .summary:
-            section("SYNTHÈSE LOCALE", symbol: "sparkles") {
-                Toggle("Activer la synthèse locale", isOn: $model.summaryEnabled).onChange(of: model.summaryEnabled) { _, _ in model.saveSummarySettings() }
-                Text("Adresse du serveur local").font(.system(size: 12, weight: .medium))
-                TextField("http://127.0.0.1:1234/v1", text: $model.summaryEndpoint).textFieldStyle(.roundedBorder)
-                Text("Modèle chargé").font(.system(size: 12, weight: .medium))
-                TextField("Identifiant du modèle", text: $model.summaryModel).textFieldStyle(.roundedBorder)
-                Toggle("Désactiver le raisonnement étendu", isOn: $model.summaryReasoningDisabled)
-                Text("Peut réduire le temps de génération. À activer si le modèle ne renvoie pas de synthèse avec les sorties structurées. Le serveur doit accepter cette option.").font(.caption).foregroundStyle(Studio.muted)
-                Picker("Contexte chargé dans le serveur", selection: $model.summaryContextTokens) {
-                    Text("16k tokens").tag(16384)
-                    Text("32k tokens").tag(32768)
-                    Text("64k tokens").tag(65536)
-                    Text("128k tokens").tag(131072)
+            section("Transcription", symbol: "text.bubble") {
+                row("Langue") { Text("Français").font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted) }
+                row("Modèle Apple Speech", help: "L’installation peut télécharger le modèle Apple. Aucun audio n’est envoyé pour la transcription.") {
+                    installControl(ready: model.speechModelReady, busy: model.isInstallingModel) { model.installSpeechModel() }
                 }
-                Text("Indiquez le contexte chargé dans LM Studio. HWYD traite les longues sessions par portions bornées et rédige chaque sujet à partir de ses sources. Un grand contexte serveur n’augmente pas automatiquement la taille des requêtes. Les étapes validées sont conservées pour reprendre après une interruption.").font(.caption).foregroundStyle(Studio.muted)
-                Text("Pour limiter la mémoire, chargez un seul modèle et une seule requête à la fois dans le serveur. Ce réglage ne modifie pas la mémoire allouée par LM Studio.").font(.caption).foregroundStyle(Studio.muted)
-                Button("Enregistrer le modèle") { model.saveSummarySettings() }.buttonStyle(StudioButtonStyle())
-                Text("LM Studio ou Ollama, API OpenAI-compatible et JSON Schema requis. Seules les adresses de boucle locale sont acceptées. Chaque synthèse est lancée manuellement depuis la session.").font(.system(size: 11)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
+            }
+            section("Séparation des voix", symbol: "person.2.wave.2") {
+                toggleRow("Séparer les voix après transcription", isOn: $model.diarizationEnabled).disabled(model.modelWorkBusy || model.isDemoMode)
+                row("Modèles de voix · Community-1", help: "Traitement local par piste. Les modèles se téléchargent une fois ; aucune empreinte personnelle n’est créée sans enrôlement explicite.") {
+                    installControl(ready: model.diarizerReady, busy: model.isInstallingDiarizer) { model.installDiarizer() }
+                }
+            }
+            section("Personnes mémorisées", symbol: "person.crop.circle", help: "Les empreintes restent dans le trousseau de ce Mac, jamais dans les exports. Une voix apprise en salle reste distincte de son empreinte en visio. Mémorisez une voix depuis une session.") {
+                if model.people.isEmpty {
+                    row("Aucune voix mémorisée") { EmptyView() }
+                }
+                ForEach(model.people) { person in
+                    row(person.name) {
+                        Text(person.opposed ? "Opposition active" : channels(person)).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
+                        Button(person.opposed ? "Réessayer l’effacement" : "Effacer et opposer") {
+                            var opposed = person; opposed.opposed = true; opposed.consentedAt = nil
+                            model.runVoice(command: "forget-voice", person: opposed)
+                        }.buttonStyle(StudioButtonStyle(compact: true))
+                    }
+                }
+            }.disabled(model.voiceBusy || model.isDemoMode)
+        case .summary:
+            section("Synthèse locale", symbol: "sparkles", help: "LM Studio ou Ollama, API OpenAI-compatible et JSON Schema requis. Seules les adresses de boucle locale sont acceptées. Chaque synthèse est lancée manuellement depuis la session.") {
+                toggleRow("Activer la synthèse locale", isOn: $model.summaryEnabled)
+                row("Adresse du serveur local") {
+                    TextField("http://127.0.0.1:1234/v1", text: $model.summaryEndpoint).textFieldStyle(.roundedBorder).frame(width: 280)
+                }
+                row("Modèle chargé") {
+                    TextField("Identifiant du modèle", text: $model.summaryModel).textFieldStyle(.roundedBorder).frame(width: 280)
+                }
+                row("Contexte chargé dans le serveur", help: "Indiquez le contexte chargé dans LM Studio. HWYD traite les longues sessions par portions bornées et rédige chaque sujet à partir de ses sources. Un grand contexte serveur n’augmente pas automatiquement la taille des requêtes. Les étapes validées sont conservées pour reprendre après une interruption. Pour limiter la mémoire, chargez un seul modèle et une seule requête à la fois : ce réglage ne modifie pas la mémoire allouée par le serveur.") {
+                    Picker("Contexte chargé dans le serveur", selection: $model.summaryContextTokens) {
+                        Text("16k tokens").tag(16384)
+                        Text("32k tokens").tag(32768)
+                        Text("64k tokens").tag(65536)
+                        Text("128k tokens").tag(131072)
+                    }.labelsHidden().frame(width: 150)
+                }
+                toggleRow("Désactiver le raisonnement étendu", help: "Peut réduire le temps de génération. À activer si le modèle ne renvoie pas de synthèse avec les sorties structurées. Le serveur doit accepter cette option.", isOn: $model.summaryReasoningDisabled)
             }.disabled(model.isDemoMode)
         case .data:
-            section("DONNÉES LOCALES", symbol: "internaldrive") {
-                HStack { Text("Rétention audio souhaitée"); Spacer(); Picker("Rétention", selection: $model.retentionHours) { Text("24 heures").tag(24); Text("72 heures").tag(72); Text("7 jours").tag(168) }.labelsHidden().frame(width: 145) }.font(.system(size: 12))
-                Text("Préférence enregistrée. La purge automatique attend l’intégration du pipeline ; aucun audio n’est supprimé automatiquement dans cette version.").font(.system(size: 11)).foregroundStyle(Studio.copper).lineSpacing(4).fixedSize(horizontal: false, vertical: true)
-                Button("Ouvrir le dossier de données") { NSWorkspace.shared.open(model.dataDirectory) }.buttonStyle(StudioButtonStyle())
+            section("Données locales", symbol: "internaldrive") {
+                row("Dossier de données") {
+                    Button("Ouvrir") { NSWorkspace.shared.open(model.dataDirectory) }.buttonStyle(StudioButtonStyle(compact: true))
+                }
             }
-        case .integrations:
-            section("AGENTS ET EXPORTS", symbol: "externaldrive.connected.to.line.below") {
-                Toggle("Autoriser les agents à modifier notes et noms", isOn: Binding(get: { model.mcpWritesEnabled }, set: { model.setMCPWrites($0) }))
-                Text("MCP reste en lecture seule par défaut. Les écritures exigent aussi --allow-write au lancement du serveur.").font(.system(size: 11)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
-                Button("Choisir le dossier de publication…") { model.chooseExportDirectory() }.buttonStyle(StudioButtonStyle())
-                if !model.exportDirectory.isEmpty { Text(model.exportDirectory).font(.system(size: 10)).foregroundStyle(Studio.muted).textSelection(.enabled) }
+            section("Agents et exports", symbol: "externaldrive.connected.to.line.below") {
+                toggleRow("Autoriser les agents à modifier notes et noms", help: "MCP reste en lecture seule par défaut. Les écritures exigent aussi --allow-write au lancement du serveur.", isOn: Binding(get: { model.mcpWritesEnabled }, set: { model.setMCPWrites($0) }))
+                row("Dossier de publication") {
+                    if !model.exportDirectory.isEmpty {
+                        Text(model.exportDirectory).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                    }
+                    Button("Choisir…") { model.chooseExportDirectory() }.buttonStyle(StudioButtonStyle(compact: true))
+                }
             }.disabled(model.isDemoMode)
         }
     }
-    private func section<Content: View>(_ title: String, symbol: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 8) { Image(systemName: symbol).foregroundStyle(Studio.mint); Eyebrow(text: title) }
+    private func channels(_ person: VoicePerson) -> String {
+        (person.enrolledChannels ?? []).map { (channel: VoiceChannel) -> String in
+            switch channel { case .near: "Proche"; case .room: "Salle"; case .remote: "Visio" }
+        }.joined(separator: " · ")
+    }
+    /// The state comes first; the action stays available to repair an installation.
+    @ViewBuilder private func installControl(ready: Bool, busy: Bool, action: @escaping () -> Void) -> some View {
+        if busy {
+            ProgressView().controlSize(.small)
+            Text("Installation…").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
+        } else {
+            if ready { Label("Installé", systemImage: "checkmark.circle.fill").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.mint) }
+            Button(ready ? "Réinstaller" : "Installer", action: action)
+                .buttonStyle(StudioButtonStyle(compact: true)).disabled(model.modelWorkBusy || model.isDemoMode)
+        }
+    }
+    private func section<Content: View>(_ title: String, symbol: String, help: String? = nil, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: symbol).foregroundStyle(Studio.mint)
+                Eyebrow(text: title)
+                if let help { HelpButton(text: help) }
+            }.frame(minHeight: 22).padding(.bottom, 10)
             content()
-        }.padding(24).frame(maxWidth: .infinity, alignment: .leading).background(Studio.surface, in: RoundedRectangle(cornerRadius: 10))
+        }.padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 12).frame(maxWidth: .infinity, alignment: .leading).background(Studio.surface, in: RoundedRectangle(cornerRadius: 10))
+    }
+    /// One setting per line: label on the left, control on the right.
+    private func row<Control: View>(_ title: String, help: String? = nil, @ViewBuilder control: () -> Control) -> some View {
+        HStack(spacing: 8) {
+            Text(title).font(.system(size: Studio.Size.body))
+            if let help { HelpButton(text: help) }
+            Spacer(minLength: 12)
+            control()
+        }.frame(minHeight: 26).padding(.vertical, 8)
+            .overlay(alignment: .top) { Rectangle().fill(Studio.line.opacity(0.55)).frame(height: 0.5) }
+    }
+    private func toggleRow(_ title: String, help: String? = nil, isOn: Binding<Bool>) -> some View {
+        row(title, help: help) {
+            Toggle(title, isOn: isOn).labelsHidden().toggleStyle(.switch).controlSize(.small).tint(Studio.mint)
+        }
     }
 }

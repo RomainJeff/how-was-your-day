@@ -6,7 +6,7 @@ public enum SessionKind: String, Codable, CaseIterable, Sendable {
         switch self { case .meeting: "Réunion"; case .call: "Appel"; case .conversation: "Conversation"; case .voiceMemo: "Mémo vocal"; case .adHoc: "Session libre" }
     }
     public var symbol: String {
-        switch self { case .meeting: "person.2.wave.2"; case .call: "phone"; case .conversation: "bubble.left.and.bubble.right"; case .voiceMemo: "waveform"; case .adHoc: "record.circle" }
+        switch self { case .meeting: "person.2.wave.2"; case .call: "phone"; case .conversation: "bubble.left.and.bubble.right"; case .voiceMemo: "waveform.circle"; case .adHoc: "smallcircle.filled.circle" }
     }
 }
 public enum CaptureState: String, Codable, Sendable { case recording, sealed, interrupted, demo }
