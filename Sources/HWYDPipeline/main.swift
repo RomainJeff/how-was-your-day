@@ -7,15 +7,14 @@ import HWYDCore
         let args = Array(CommandLine.arguments.dropFirst())
         do {
             switch args.first {
-            case let command where ["enroll-voice", "identify-voices", "forget-voice", "probe-voice"].contains(command ?? "") && args.count == 4:
+            case let command where ["enroll-voice", "identify-voices", "forget-voice", "forget-voice-source", "voice-sources", "probe-voice"].contains(command ?? "") && args.count == 4:
                 let store = try SessionStore(directory: URL(fileURLWithPath: args[1]))
                 let lock = open(store.directory.appendingPathComponent("pipeline.lock").path, O_CREAT | O_RDWR | O_CLOEXEC, 0o600)
                 guard lock >= 0 else { throw CLIError(message: "Verrou indisponible.") }
                 defer { close(lock) }
                 guard flock(lock, LOCK_EX | LOCK_NB) == 0 else { throw CLIError(message: "Un traitement est déjà en cours.") }
                 let job = try JSONDecoder().decode(VoiceJob.self, from: Data(contentsOf: URL(fileURLWithPath: args[2])))
-                let matches = try await VoiceStage.run(command: command!, store: store, job: job)
-                try JSONEncoder().encode(matches).write(to: URL(fileURLWithPath: args[3]), options: .atomic)
+                try await VoiceStage.run(command: command!, store: store, job: job).write(to: URL(fileURLWithPath: args[3]), options: .atomic)
             case "diagnose": print(await AppleSpeechRecognizer.diagnostics())
             case "install-model":
                 try await AppleSpeechRecognizer().install(locale: args.count > 1 ? args[1] : "fr-FR")

@@ -16,11 +16,18 @@ struct VoiceTilesView: View {
             HStack(spacing: 6) {
                 Eyebrow(text: voices.isEmpty ? "Voix" : pending == 0 ? "Voix · \(voices.count)" : "Voix · \(pending) à nommer")
                 if !voices.isEmpty {
-                    HelpButton(text: "Cliquez une voix pour écouter ses passages. Glissez-la sur une autre pour regrouper une même personne.")
+                    HelpButton(text: "Cliquez une voix pour écouter ses passages. Glissez-la sur une autre pour regrouper une même personne. Mémorisez une voix pour la reconnaître dans les prochaines sessions.")
+                }
+                if model.voiceBusy {
+                    ProgressView().controlSize(.small).padding(.leading, 4)
+                    Text("Traitement local…").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
                 }
                 Spacer(minLength: 8)
-                Button("Identité des voix…") { model.showVoiceIdentity = true }.buttonStyle(StudioButtonStyle(compact: true))
-                    .disabled(recording.isDemo || model.modelWorkBusy)
+                if !voices.isEmpty, model.people.contains(where: { $0.recognitionEnabled && !$0.channels.isEmpty }) {
+                    Button("Reconnaître les voix") { model.runVoice(command: "identify-voices") }.buttonStyle(StudioButtonStyle(compact: true))
+                        .disabled(recording.isDemo || model.modelWorkBusy || locked)
+                        .help("Compare les voix non confirmées de cette session aux personnes mémorisées. Chaque proposition reste à confirmer.")
+                }
             }
             if !voices.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -28,12 +35,25 @@ struct VoiceTilesView: View {
                         ForEach(voices) { voice in
                             VoiceTile(voice: voice, playing: playingID == voice.id, canPlay: !recording.audioChunks.isEmpty && !voice.spans.isEmpty,
                                       locked: locked, others: recording.speakers.filter { $0.id != voice.id && !$0.ignored }, people: known,
-                                      proposed: voice.speaker.proposedIdentity.flatMap { match in known.first { $0.id == match.personID } })
+                                      proposed: voice.speaker.proposedIdentity.flatMap { match in known.first { $0.id == match.personID } },
+                                      separable: recording.separableVoices(of: voice.id),
+                                      canRemember: !recording.isDemo && !model.modelWorkBusy,
+                                      opposed: model.people.contains { $0.opposed && ($0.id == voice.speaker.personID || $0.name == voice.speaker.label) })
                         }
                     }.padding(.vertical, 1)
                 }
             }
         }
+        .confirmationDialog(enrollmentTitle, isPresented: Binding(get: { model.enrollmentCandidateID != nil }, set: { if !$0 { model.enrollmentCandidateID = nil } }), titleVisibility: .visible) {
+            Button("Mémoriser") { model.confirmEnrollment() }
+            Button("Annuler", role: .cancel) { model.enrollmentCandidateID = nil }
+        } message: {
+            Text("Une empreinte de cette voix est ajoutée au trousseau de ce Mac pour la reconnaître dans les prochaines sessions. Faites-le seulement avec l’accord de la personne. Vous pourrez retirer cet apport dans Réglages › Audio et voix.")
+        }
+    }
+    private var enrollmentTitle: String {
+        let name = recording.speakers.first { $0.id == model.enrollmentCandidateID }?.label ?? "cette voix"
+        return "Mémoriser la voix de \(name) ?"
     }
 }
 
@@ -46,7 +66,12 @@ private struct VoiceTile: View {
     let others: [Speaker]
     let people: [VoicePerson]
     let proposed: VoicePerson?
+    let separable: [Speaker]
+    let canRemember: Bool
+    let opposed: Bool
     @State private var targeted = false
+    /// The model needs about 20 seconds of clean speech; overlaps are left out.
+    private var enoughSpeech: Bool { voice.speechDuration >= 20 }
     private var accent: Color { voice.state == .confirmed ? Studio.mint : voice.state == .ignored ? Studio.muted : Studio.copper }
     var body: some View {
         HStack(spacing: 0) {
@@ -117,7 +142,26 @@ private struct VoiceTile: View {
         } else {
             namingMenu
             Divider()
+            rememberButton
+            if !separable.isEmpty {
+                Section("Regroupements") {
+                    ForEach(separable) { other in Button("Séparer \(other.label)") { model.separateSpeaker(other.id, from: voice.id) } }
+                }
+            }
+            Divider()
             Button("Ignorer cette voix (écho, bruit)") { model.setSpeakerIgnored(voice.id, true) }
+        }
+    }
+    /// Enrollment is always a distinct, explicit request: naming or regrouping never stores a voice print.
+    @ViewBuilder private var rememberButton: some View {
+        if opposed {
+            Button("Mémoriser : exclue de la reconnaissance") {}.disabled(true)
+        } else if !enoughSpeech {
+            Button("Mémoriser : 20 s de parole minimum") {}.disabled(true)
+        } else if voice.state == .confirmed {
+            Button("Mémoriser cette voix…") { model.requestEnrollment(voice.id) }.disabled(!canRemember)
+        } else {
+            Button("Nommer et mémoriser…") { model.beginSpeakerEdit(voice.speaker) }.disabled(!canRemember)
         }
     }
     @ViewBuilder private var namingMenu: some View {

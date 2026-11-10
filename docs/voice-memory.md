@@ -1,18 +1,24 @@
 # Voice memory
 
-Use **Nommer et mémoriser** in a speaker's name editor to create a local voice fingerprint from that cluster. **Nommer seulement** edits the transcript without enrollment. The voice panel also supports adding examples to an existing person and forgetting a person.
+Memorize a voice from its tile in a session. A named voice offers **Mémoriser cette voix…**, which asks for confirmation; an unnamed one opens the name editor, where **Nommer et mémoriser** names it and memorizes it. **Nommer seulement**, confirming a proposal, linking to a known person and regrouping voices edit the transcript only: they never read or write a voice print.
 
 | Step | Behavior |
 | --- | --- |
-| Enrollment | At least 20 seconds, at most 60 seconds of non-overlapping speech from the selected cluster |
+| Enrollment | At least 20 seconds, at most 60 seconds of non-overlapping speech from the selected voice |
 | Microphone audio | Reuses offline echo cancellation before extracting the voice sample |
 | Embedding | FluidAudio 0.17.7, WeSpeaker 256 dimensions; one speaker is specified only for the already selected enrollment cluster |
-| Channels | `near`, `room`, `remote`; remote audio is never compared against microphone exemplars |
-| Matching | Runs automatically after diarization when voice memory exists; threshold and runner-up margin plus one-to-one assignment |
-| Result | Name suggestions appear on transcript rows with **à confirmer**; manual names stay separate from enrollment |
+| Channels | `mic` and `remote`, deduced from the voice's track. A voice is compared with the person's exemplars on its own channel; when the person has none there, the other channel is tried with a stricter threshold (0.85 instead of 0.75) and the proposal is flagged `cross_channel` in exports |
+| Matching | Runs automatically after diarization and after each enrollment; threshold and runner-up margin plus one-to-one assignment, so one person is proposed for at most one voice per session |
+| Result | Name suggestions appear on the tiles and transcript rows with **à confirmer**; manual names stay separate from enrollment |
+| Traceability | Each stored sample keeps the session and voice it came from, in the keychain only. Settings › Audio et voix lists, per person, what each session added and can withdraw it. Samples stored before 0.9 are grouped as unknown origin |
+| Withdrawal | **Retirer** removes one session's samples. **Effacer l’empreinte** removes all samples and keeps the person. **Effacer et opposer** also blocks enrollment and recognition until **Lever l’exclusion**, after which a new enrollment is required |
 | Failure | A locked keychain leaves a usable transcript and a visible warning |
-| Storage | Vectors only in the local keychain. SQLite holds person metadata and enrolled channel names |
+| Storage | Vectors and their origin only in the local keychain. SQLite holds person metadata and enrolled channel names |
 
-The personal-use UI records an explicit enrollment request in `enrollmentRequestedAt`. It does not manufacture a legal consent attestation in `consentedAt`. Existing consent metadata remains readable; opposition still disables recognition. This replaces the earlier multi-checkbox enrollment form. It does not claim legal compliance for deployment to other users.
+Corrections can be undone: each voice correction shows **Annuler** in its notification, and a voice merged into another on the same track can be split back later with **Séparer** in the tile menu.
 
-A synthetic TTS fixture validates actual model extraction, keychain enrollment, same-voice matching and channel metadata. This is a technical regression check, not a real-world speaker-identification accuracy benchmark. The synthetic keychain entry is removed after the test.
+Before 0.9 the microphone was split into `near` and `room`. Those samples move to `mic` the first time they are read, keeping at most 20 per channel.
+
+The personal-use UI records an explicit enrollment request in `enrollmentRequestedAt`. It does not manufacture a legal consent attestation in `consentedAt`. Existing consent metadata remains readable; opposition still disables recognition. It does not claim legal compliance for deployment to other users.
+
+`scripts/test-voice-memory.sh` checks enrollment per channel, the cross-channel proposal, sample origins and the withdrawal of one session with two synthetic TTS voices, in a throwaway store. It is a technical regression check, not a real-world speaker-identification accuracy benchmark. Its keychain entries are removed after the test.

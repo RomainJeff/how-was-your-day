@@ -82,7 +82,8 @@ extension Recording {
     }
 
     /// The user states that two detected voices are one person.
-    /// Same track: segments move to the target and the duplicate cluster disappears.
+    /// Same track: segments move to the target and the duplicate cluster disappears. Each segment
+    /// remembers its first detected voice, so `separateSpeaker` can undo the merge later.
     /// Different tracks: clusters stay separate (channel categories differ) and share the name.
     /// This is a transcript correction only. It never creates or changes a voice print.
     public mutating func mergeSpeaker(_ sourceID: UUID, into targetID: UUID) throws {
@@ -91,14 +92,45 @@ extension Recording {
               let t = speakers.firstIndex(where: { $0.id == targetID }) else { throw StoreError.notFound }
         let source = speakers[s], target = speakers[t]
         if source.source == target.source {
-            for index in segments.indices where segments[index].speakerID == sourceID { segments[index].speakerID = targetID }
+            for index in segments.indices where segments[index].speakerID == sourceID {
+                if segments[index].originalSpeakerID == nil { segments[index].originalSpeakerID = sourceID }
+                segments[index].speakerID = targetID
+            }
             if !target.confirmed && source.confirmed { adoptIdentity(of: source, at: t) }
+            absorbedSpeakers = (absorbedSpeakers ?? []).filter { $0.id != sourceID } + [source]
             speakers.remove(at: s)
         } else {
             guard let identity = target.confirmed ? target : source.confirmed ? source : nil else { throw VoiceReviewError.unnamedMerge }
             adoptIdentity(of: identity, at: s)
             adoptIdentity(of: identity, at: t)
         }
+        transcriptVersion += 1
+        summary = nil
+    }
+
+    /// Voices once merged into this one whose passages it still holds.
+    public func separableVoices(of speakerID: UUID) -> [Speaker] {
+        let held = Set(segments.lazy.filter { $0.speakerID == speakerID }.compactMap(\.originalSpeakerID))
+        return (absorbedSpeakers ?? []).filter { held.contains($0.id) }
+    }
+
+    /// Undoes a merge: the passages first detected as `absorbedID` and still held by `speakerID`
+    /// return to that voice, which reappears as it was when merged.
+    public mutating func separateSpeaker(_ absorbedID: UUID, from speakerID: UUID) throws {
+        guard let a = absorbedSpeakers?.firstIndex(where: { $0.id == absorbedID }),
+              speakers.contains(where: { $0.id == speakerID }) else { throw StoreError.notFound }
+        let moved = segments.indices.filter { segments[$0].speakerID == speakerID && segments[$0].originalSpeakerID == absorbedID }
+        guard !moved.isEmpty else { throw StoreError.notFound }
+        for index in moved { segments[index].speakerID = absorbedID; segments[index].originalSpeakerID = nil }
+        let voice = absorbedSpeakers!.remove(at: a)
+        if absorbedSpeakers?.isEmpty == true { absorbedSpeakers = nil }
+        // The voice kept the identity it had lent when merged: the other one gives it back.
+        if voice.confirmed, let t = speakers.firstIndex(where: { $0.id == speakerID }), speakers[t].confirmed,
+           speakers[t].label == voice.label, speakers[t].personID == voice.personID {
+            speakers[t].confirmed = false; speakers[t].personID = nil; speakers[t].proposedIdentity = nil
+            speakers[t].label = "Voix à nommer"
+        }
+        speakers.append(voice)
         transcriptVersion += 1
         summary = nil
     }

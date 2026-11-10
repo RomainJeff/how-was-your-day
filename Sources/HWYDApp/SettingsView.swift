@@ -95,20 +95,12 @@ struct SettingsView: View {
                     installControl(ready: model.diarizerReady, busy: model.isInstallingDiarizer) { model.installDiarizer() }
                 }
             }
-            section("Personnes mémorisées", symbol: "person.crop.circle", help: "Les empreintes restent dans le trousseau de ce Mac, jamais dans les exports. Une voix apprise en salle reste distincte de son empreinte en visio. Mémorisez une voix depuis une session.") {
+            section("Personnes mémorisées", symbol: "person.crop.circle", help: "Les empreintes restent dans le trousseau de ce Mac, jamais dans les exports. Une voix est apprise séparément au micro et en visio ; une personne connue sur un seul des deux peut être proposée sur l’autre, avec un seuil plus strict. Mémorisez une voix depuis les tuiles d’une session.") {
                 if model.people.isEmpty {
                     row("Aucune voix mémorisée") { EmptyView() }
                 }
-                ForEach(model.people) { person in
-                    row(person.name) {
-                        Text(person.opposed ? "Opposition active" : channels(person)).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
-                        Button(person.opposed ? "Réessayer l’effacement" : "Effacer et opposer") {
-                            var opposed = person; opposed.opposed = true; opposed.consentedAt = nil
-                            model.runVoice(command: "forget-voice", person: opposed)
-                        }.buttonStyle(StudioButtonStyle(compact: true))
-                    }
-                }
-            }.disabled(model.voiceBusy || model.isDemoMode)
+                ForEach(model.people) { person in VoicePersonRow(person: person) }
+            }.disabled(model.isDemoMode)
         case .summary:
             section("Synthèse", symbol: "sparkles", help: "Chaque synthèse est lancée manuellement depuis la session. Les étapes validées sont conservées pour reprendre après une interruption.") {
                 toggleRow("Activer la synthèse", isOn: $model.summaryEnabled)
@@ -227,11 +219,6 @@ struct SettingsView: View {
         let matches = typed.isEmpty ? model.summaryAvailableModels : model.summaryAvailableModels.filter { $0.lowercased().contains(typed) && $0.lowercased() != typed }
         return Array(matches.prefix(10))
     }
-    private func channels(_ person: VoicePerson) -> String {
-        (person.enrolledChannels ?? []).map { (channel: VoiceChannel) -> String in
-            switch channel { case .near: "Proche"; case .room: "Salle"; case .remote: "Visio" }
-        }.joined(separator: " · ")
-    }
     /// The state comes first; the action stays available to repair an installation.
     @ViewBuilder private func installControl(ready: Bool, busy: Bool, action: @escaping () -> Void) -> some View {
         if busy {
@@ -267,5 +254,103 @@ struct SettingsView: View {
         row(title, help: help) {
             Toggle(title, isOn: isOn).labelsHidden().toggleStyle(.switch).controlSize(.small).tint(Studio.mint)
         }
+    }
+}
+
+/// One remembered person: what their voice print holds, session by session, and how to withdraw it.
+struct VoicePersonRow: View {
+    @EnvironmentObject var model: AppModel
+    let person: VoicePerson
+    @State var expanded = false
+    @State private var confirmation: Confirmation?
+    private enum Confirmation: Identifiable { case erase, oppose; var id: Self { self } }
+    private var status: String {
+        if person.opposed { return "Exclue de la reconnaissance" }
+        let channels = person.channels.map(\.label)
+        return channels.isEmpty ? "Aucune empreinte" : channels.joined(separator: " · ")
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Button {
+                    expanded.toggle()
+                    if expanded { model.runVoice(command: "voice-sources", personID: person.id) }
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(Studio.muted)
+                            .rotationEffect(.degrees(expanded ? 90 : 0))
+                        Text(person.name).font(.system(size: Studio.Size.body))
+                    }.contentShape(Rectangle())
+                }.buttonStyle(.plain).disabled(person.opposed || person.channels.isEmpty || model.modelWorkBusy)
+                    .accessibilityLabel(expanded ? "Masquer le détail de \(person.name)" : "Afficher le détail de \(person.name)")
+                Spacer(minLength: 12)
+                Text(status).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
+                if person.opposed {
+                    Button("Réessayer l’effacement") { model.runVoice(command: "forget-voice", person: person) }
+                        .buttonStyle(StudioButtonStyle(compact: true)).disabled(model.modelWorkBusy)
+                        .help("Supprime de nouveau toutes ses empreintes, si un effacement précédent a échoué.")
+                    Button("Lever l’exclusion") { model.liftOpposition(person) }.buttonStyle(StudioButtonStyle(compact: true)).disabled(model.modelWorkBusy)
+                        .help("\(person.name) pourra de nouveau être reconnue après une nouvelle mémorisation.")
+                } else {
+                    Menu("Effacer") {
+                        Button("Effacer l’empreinte…") { confirmation = .erase }.disabled(person.channels.isEmpty)
+                        Button("Effacer et opposer…") { confirmation = .oppose }
+                    }.menuStyle(.borderlessButton).fixedSize().disabled(model.modelWorkBusy)
+                }
+            }.frame(minHeight: 26).padding(.vertical, 8)
+            if expanded { contributions.padding(.leading, 16).padding(.bottom, 8) }
+        }
+        .overlay(alignment: .top) { Rectangle().fill(Studio.line.opacity(0.55)).frame(height: 0.5) }
+        .confirmationDialog(confirmation == .oppose ? "Effacer et opposer \(person.name) ?" : "Effacer l’empreinte de \(person.name) ?",
+                            isPresented: Binding(get: { confirmation != nil }, set: { if !$0 { confirmation = nil } }), titleVisibility: .visible) {
+            if confirmation == .oppose {
+                Button("Effacer et opposer", role: .destructive) {
+                    var opposed = person; opposed.opposed = true; opposed.consentedAt = nil
+                    model.runVoice(command: "forget-voice", person: opposed)
+                }
+            } else {
+                Button("Effacer l’empreinte", role: .destructive) { model.runVoice(command: "forget-voice", personID: person.id) }
+            }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text(confirmation == .oppose
+                 ? "Toutes ses empreintes sont supprimées et sa voix ne pourra plus être mémorisée ni reconnue, jusqu’à ce que vous leviez l’exclusion."
+                 : "Toutes ses empreintes sont supprimées. Le nom reste dans vos sessions ; sa voix pourra être mémorisée à nouveau.")
+        }
+        .onChange(of: person.channels) { _, channels in if channels.isEmpty { expanded = false } }
+    }
+    /// Samples grouped by session; one withdrawal removes the session from both channels.
+    @ViewBuilder private var contributions: some View {
+        if let items = model.voiceContributions[person.id] {
+            let sessions = Dictionary(grouping: items, by: \.recordingID).sorted { ($0.value.compactMap(\.addedAt).max() ?? .distantPast) > ($1.value.compactMap(\.addedAt).max() ?? .distantPast) }
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(sessions, id: \.key) { recordingID, group in
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(title(recordingID)).font(.system(size: Studio.Size.body)).lineLimit(1)
+                            Text(detail(group)).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
+                        }
+                        Spacer(minLength: 12)
+                        Button("Retirer") { model.runVoice(command: "forget-voice-source", personID: person.id, sourceRecordingID: recordingID) }
+                            .buttonStyle(StudioButtonStyle(compact: true)).disabled(model.modelWorkBusy)
+                            .help("Retire de l’empreinte ce que cette session y a ajouté.")
+                    }
+                }
+            }
+        } else {
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("Lecture du trousseau…").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
+            }
+        }
+    }
+    private func title(_ id: UUID?) -> String {
+        guard let id else { return "Avant la version 0.9 · session inconnue" }
+        return model.recordings.first { $0.id == id }?.title ?? "Session supprimée"
+    }
+    private func detail(_ group: [VoiceContribution]) -> String {
+        let parts = group.sorted { $0.channel.rawValue < $1.channel.rawValue }.map { "\($0.channel.label) · \($0.count) exemple\($0.count > 1 ? "s" : "")" }
+        let date = group.compactMap(\.addedAt).max().map { " · " + $0.formatted(date: .abbreviated, time: .omitted) } ?? ""
+        return parts.joined(separator: ", ") + date
     }
 }

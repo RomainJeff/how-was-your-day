@@ -56,7 +56,10 @@ final class AppModel: ObservableObject {
     private var lastRefresh = Date.distantPast
     @Published var voiceBusy = false
     @Published var people: [VoicePerson] = []
-    @Published var showVoiceIdentity = false
+    /// Confirmed voice waiting for the user to confirm its enrollment.
+    @Published var enrollmentCandidateID: UUID?
+    /// What each session added to a person's voice print, loaded on demand in the settings.
+    @Published var voiceContributions: [UUID: [VoiceContribution]] = [:]
     private let voiceRunner = PipelineRunner()
     @Published var summaryID: UUID?
     @Published var summaryEnabled = UserDefaults.standard.bool(forKey: "summary.enabled")
@@ -227,29 +230,40 @@ final class AppModel: ObservableObject {
         update(id) { $0.noteEntries.append(.init(offset: elapsed)) }
     }
     func beginSpeakerEdit(_ speaker: Speaker) { editingSpeakerID = speaker.id; speakerName = speaker.confirmed || speaker.proposedIdentity != nil ? speaker.label : "" }
-    func rememberSpeaker(name: String, speakerID: UUID, channel: VoiceChannel) {
-        guard let item = selected, !pipelineBusy else { return }
+    /// Names the voice if needed, then adds a sample of it to the person's voice print. The
+    /// channel follows the voice's track. Only an explicit request from the user leads here.
+    func rememberSpeaker(name: String, speakerID: UUID) {
+        guard let id = selectedID, !voiceEditingLocked, !pipelineBusy, var item = selected,
+              let speaker = item.speakers.first(where: { $0.id == speakerID }) else { return }
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, name.count <= 120 else { errorMessage = "Le nom doit contenir entre 1 et 120 caractères."; return }
-        var person = people.first { $0.name.compare(name, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame } ?? VoicePerson(name: name)
-        guard !person.opposed else { errorMessage = "Cette personne est exclue de la reconnaissance."; return }
+        var person = people.first { $0.id == speaker.personID && $0.name == name }
+            ?? people.first { $0.name.compare(name, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame } ?? VoicePerson(name: name)
+        guard !person.opposed else { errorMessage = "\(person.name) est exclue de la reconnaissance. Levez l’exclusion dans Réglages › Audio et voix."; return }
         person.enrollmentRequestedAt = Date()
-        editingSpeakerID = speakerID; speakerName = name; confirmSpeaker()
-        guard selectedID == item.id, editingSpeakerID == nil else { return }
-        runVoice(command: "enroll-voice", speakerID: speakerID, person: person, channel: channel)
+        if !(speaker.confirmed && speaker.label == name) {
+            do { try item.renameSpeaker(speakerID, to: name); update(id) { $0 = item } } catch { errorMessage = error.localizedDescription; return }
+        }
+        editingSpeakerID = nil
+        runVoice(command: "enroll-voice", speakerID: speakerID, person: person)
+    }
+    /// Asks for confirmation before memorizing an already named voice.
+    func requestEnrollment(_ speakerID: UUID) { enrollmentCandidateID = speakerID }
+    func confirmEnrollment() {
+        guard let speakerID = enrollmentCandidateID, let speaker = selected?.speakers.first(where: { $0.id == speakerID }) else { return }
+        enrollmentCandidateID = nil
+        rememberSpeaker(name: speaker.label, speakerID: speakerID)
     }
     func confirmSpeaker() {
-        guard let id = selectedID, id != processingID, let speakerID = editingSpeakerID else { return }
-        do {
-            guard var item = selected else { return }
+        guard selectedID != processingID, let speakerID = editingSpeakerID else { return }
+        let name = speakerName.trimmingCharacters(in: .whitespacesAndNewlines), people = self.people
+        let applied = editVoices({ _ in "Voix nommée \(name) dans toute cette session." }) { item in
             let proposal = item.speakers.first { $0.id == speakerID }?.proposedIdentity
-            try item.renameSpeaker(speakerID, to: speakerName)
-            if let proposal, let person = people.first(where: { $0.id == proposal.personID && $0.recognitionEnabled }),
-               person.name == speakerName.trimmingCharacters(in: .whitespacesAndNewlines),
+            try item.renameSpeaker(speakerID, to: name)
+            if let proposal, let person = people.first(where: { $0.id == proposal.personID && $0.recognitionEnabled }), person.name == name,
                let index = item.speakers.firstIndex(where: { $0.id == speakerID }) { item.speakers[index].personID = person.id }
-            update(id) { $0 = item }; editingSpeakerID = nil
-            notice = "Voix corrigée dans toute cette session. Aucune empreinte vocale créée."
-        } catch { errorMessage = error.localizedDescription }
+        }
+        if applied { editingSpeakerID = nil }
     }
     func assignSpeaker(_ speakerID: UUID?, to segmentID: UUID, recordingID: UUID) {
         guard recordingID != processingID,
@@ -317,11 +331,11 @@ final class AppModel: ObservableObject {
         AccessibilityNotification.Announcement(toast.message).post()
     }
     /// Sets the matching message property without a second, plain toast.
-    func report(_ message: String, style: Toast.Style = .info, actions: [ToastAction] = [], sticky: Bool = false) {
+    func report(_ message: String, style: Toast.Style = .info, actions: [ToastAction] = [], sticky: Bool = false, optional: Bool = false) {
         bridgesToasts = false
         if style == .error { errorMessage = message } else { notice = message }
         bridgesToasts = true
-        postToast(Toast(style: style, message: message, actions: actions, sticky: sticky))
+        postToast(Toast(style: style, message: message, actions: actions, sticky: sticky, optional: optional))
     }
     func dismissToast(_ id: UUID) {
         toastTimers.removeValue(forKey: id)?.cancel()
@@ -551,9 +565,13 @@ final class AppModel: ObservableObject {
             waveformLoading = false; waveformError = "Formes d’onde indisponibles"
         }
     }
-    func runVoice(command: String, speakerID: UUID? = nil, person: VoicePerson? = nil, channel: VoiceChannel = .room) {
+    /// Runs a voice command in the helper, the only process that reads the keychain.
+    func runVoice(command: String, speakerID: UUID? = nil, person: VoicePerson? = nil, personID: UUID? = nil, sourceRecordingID: UUID? = nil,
+                  then: (@MainActor () async throws -> Void)? = nil) {
         guard !isDemoMode, !modelWorkBusy, let store else { return }
-        let item = selected ?? Recording(title: "Gestion des voix")
+        let item = command == "identify-voices" || command == "enroll-voice" ? selected ?? Recording(title: "Gestion des voix") : Recording(title: "Gestion des voix")
+        let personID = person?.id ?? personID
+        let name = person?.name ?? people.first { $0.id == personID }?.name ?? ""
         voiceBusy = true; voiceRunner.prepare()
         Task {
             defer { voiceBusy = false }
@@ -563,49 +581,60 @@ final class AppModel: ObservableObject {
                 try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
                 defer { try? FileManager.default.removeItem(at: folder) }
                 let request = folder.appendingPathComponent("request.json"), result = folder.appendingPathComponent("result.json")
-                try JSONEncoder().encode(VoiceJob(recording: item, speakerID: speakerID, personID: person?.id, channel: channel)).write(to: request, options: .atomic)
+                try JSONEncoder().encode(VoiceJob(recording: item, speakerID: speakerID, personID: personID, sourceRecordingID: sourceRecordingID)).write(to: request, options: .atomic)
                 try await voiceRunner.run(arguments: [command, dataDirectory.path, request.path, result.path], log: folder.appendingPathComponent("log.txt"))
-                if command == "identify-voices" {
-                    let matches = try JSONDecoder().decode([String: VoiceMatch].self, from: Data(contentsOf: result))
-                    guard recordings.first(where: { $0.id == item.id })?.transcriptVersion == item.transcriptVersion else { throw StoreError.conflict }
+                let output = try Data(contentsOf: result)
+                people = try await store.people()
+                switch command {
+                case "voice-sources":
+                    if let personID { voiceContributions[personID] = try JSONDecoder().decode([VoiceContribution].self, from: output) }
+                case "forget-voice":
+                    if let personID { voiceContributions[personID] = nil }
+                    notice = person?.opposed == true ? "Empreintes de \(name) supprimées. Opposition enregistrée."
+                        : "Empreinte de \(name) effacée. Sa voix ne sera plus reconnue avant une nouvelle mémorisation."
+                case "forget-voice-source":
+                    if let personID { voiceContributions[personID]?.removeAll { $0.recordingID == sourceRecordingID } }
+                    notice = "Apport retiré de l’empreinte de \(name)."
+                default:
+                    let matches = try JSONDecoder().decode([String: VoiceMatch].self, from: output)
+                    // A transcript edited meanwhile keeps the user's version.
+                    guard recordings.first(where: { $0.id == item.id })?.transcriptVersion == item.transcriptVersion else {
+                        notice = command == "enroll-voice" ? "Voix de \(name) mémorisée." : "La session a changé pendant la reconnaissance. Aucune proposition appliquée."
+                        return
+                    }
+                    var proposed = 0
                     update(item.id) { current in
+                        var changed = false
                         for index in current.speakers.indices {
-                            if let match = matches[current.speakers[index].id.uuidString] {
-                                current.speakers[index].proposedIdentity = match
-                                if !current.speakers[index].confirmed, let person = people.first(where: { $0.id == match.personID }) { current.speakers[index].label = person.name }
+                            let speaker = current.speakers[index]
+                            if command == "enroll-voice", speaker.id == speakerID, let person {
+                                current.speakers[index].personID = person.id; current.speakers[index].label = person.name
+                                current.speakers[index].confirmed = true; current.speakers[index].proposedIdentity = nil
+                                changed = true
+                            } else if !speaker.confirmed, !speaker.ignored, let match = matches[speaker.id.uuidString],
+                                      let known = people.first(where: { $0.id == match.personID }) {
+                                current.speakers[index].proposedIdentity = match; current.speakers[index].label = known.name
+                                proposed += 1
                             }
                         }
+                        if changed { current.transcriptVersion += 1; current.summary = nil }
                     }
-                    notice = "\(matches.count) correspondance(s) proposée(s), à confirmer."
                     await flush()
-                } else {
-                    people = try await store.people()
-                    if command == "enroll-voice", let person, let speakerID,
-                       recordings.first(where: { $0.id == item.id })?.transcriptVersion == item.transcriptVersion {
-                        update(item.id) { current in
-                            if let index = current.speakers.firstIndex(where: { $0.id == speakerID }) {
-                                current.speakers[index].personID = person.id
-                                current.speakers[index].label = person.name
-                                current.speakers[index].confirmed = true
-                                current.speakers[index].proposedIdentity = nil
-                                current.transcriptVersion += 1; current.summary = nil
-                            }
-                        }
-                        await flush()
-                    }
-                    notice = command == "enroll-voice" ? "Empreinte mémorisée. Cette voix sera recherchée dans les prochaines transcriptions." : "Empreintes supprimées. Opposition enregistrée."
+                    let found = proposed == 0 ? "" : proposed == 1 ? " Une autre voix ressemble à une personne connue, à confirmer." : " \(proposed) autres voix ressemblent à des personnes connues, à confirmer."
+                    notice = command == "enroll-voice" ? "Voix de \(name) mémorisée." + found : "\(proposed) correspondance(s) proposée(s), à confirmer."
                 }
+                try await then?()
             } catch { errorMessage = "Identité vocale : \(error.localizedDescription)" }
         }
     }
-    func confirmIdentity(speakerID: UUID, person: VoicePerson) {
-        guard let item = selected, !person.opposed else { return }
-        update(item.id) { recording in
-            guard let index = recording.speakers.firstIndex(where: { $0.id == speakerID }) else { return }
-            recording.speakers[index].personID = person.id
-            recording.speakers[index].label = person.name; recording.speakers[index].confirmed = true
-            recording.speakers[index].proposedIdentity = nil
-            recording.transcriptVersion += 1; recording.summary = nil
+    /// Ends an opposition. Any sample left by an interrupted erasure goes first, so recognition
+    /// resumes only after a new enrollment.
+    func liftOpposition(_ person: VoicePerson) {
+        guard let store else { return }
+        runVoice(command: "forget-voice", personID: person.id) { [weak self] in
+            try await store.liftOpposition(person.id)
+            self?.people = try await store.people()
+            self?.notice = "\(person.name) n’est plus exclue. Mémorisez sa voix depuis une session pour la reconnaître à nouveau."
         }
     }
     func saveSummarySettings() {

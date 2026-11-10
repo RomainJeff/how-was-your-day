@@ -225,12 +225,30 @@ import HWYDCore
         guard model.selected?.segments == beforeCorrection.segments else { throw CaptureFailure(message: "Segment restoration failed") }
         // Regrouping two voices from the tiles is a transcript correction, never an enrollment.
         let peopleBefore = model.people
-        guard let camille = model.selected?.speakers.first(where: { $0.label == "Camille" }) else { throw CaptureFailure(message: "Missing merge fixture") }
+        guard let camille = model.selected?.speakers.first(where: { $0.label == "Camille" }), let beforeMerge = model.selected else { throw CaptureFailure(message: "Missing merge fixture") }
         model.mergeSpeaker(unknown.id, into: camille.id)
         guard let merged = model.selected, !merged.speakers.contains(where: { $0.id == unknown.id }),
               !merged.segments.contains(where: { $0.speakerID == unknown.id }), model.people == peopleBefore, !model.voiceBusy else {
             throw CaptureFailure(message: "Tile merge failed or triggered enrollment")
         }
+        // The merge offers « Annuler » in a toast that still leaves on its own, and can be separated later.
+        guard let undo = model.toasts.last(where: { $0.actions.first?.title == "Annuler" }), !undo.staysOnScreen,
+              merged.separableVoices(of: camille.id).map(\.id) == [unknown.id] else { throw CaptureFailure(message: "Merge cannot be undone") }
+        model.runToastAction(undo.actions[0], of: undo)
+        guard let restored = model.selected, restored.segments == beforeMerge.segments, restored.speakers == beforeMerge.speakers,
+              restored.transcriptVersion == merged.transcriptVersion + 1 else { throw CaptureFailure(message: "Merge undo failed") }
+        model.mergeSpeaker(unknown.id, into: camille.id)
+        model.separateSpeaker(unknown.id, from: camille.id)
+        guard let separated = model.selected, separated.segments == beforeMerge.segments,
+              Set(separated.speakers.map(\.id)) == Set(beforeMerge.speakers.map(\.id)), separated.absorbedSpeakers == nil else {
+            throw CaptureFailure(message: "Separating a merged voice failed")
+        }
+        model.mergeSpeaker(unknown.id, into: camille.id)
+        // Memorizing a named voice waits for an explicit confirmation.
+        model.requestEnrollment(camille.id)
+        guard model.enrollmentCandidateID == camille.id, !model.voiceBusy, model.people == peopleBefore else { throw CaptureFailure(message: "Enrollment started without confirmation") }
+        model.enrollmentCandidateID = nil
+        for toast in model.toasts { model.dismissToast(toast.id) }
         var splitExample = TranscriptSegment(start: 0, end: 2, speakerID: nil, source: .mic, text: "Oui. Bonjour")
         splitExample.words = [.init(text: "Oui.", start: 0, end: 1), .init(text: " Bonjour", start: 1, end: 2)]
         let splitRecording = Recording(title: "Découpage synthétique", segments: [splitExample], isDemo: true)
@@ -259,6 +277,6 @@ import HWYDCore
         guard model.selected?.notes == "Note pendant la session", model.selected?.noteEntries.count == 1, model.activeTab == .notes else { throw CaptureFailure(message: "Capture handoff failed") }
         let afterDemo = try await reopened.all()
         guard afterDemo.count == 1 else { throw CaptureFailure(message: "Demo leaked into store") }
-        FileHandle.standardOutput.write(Data("UI persistence, speaker correction, capture timer, notes handoff and demo isolation: PASS\n".utf8))
+        FileHandle.standardOutput.write(Data("UI persistence, speaker correction, merge undo and separation, capture timer, notes handoff and demo isolation: PASS\n".utf8))
     }
 }

@@ -54,7 +54,6 @@ struct DetailView: View {
                 }
             }
         }.background(Studio.background)
-        .sheet(isPresented: $model.showVoiceIdentity) { VoiceIdentityView().environmentObject(model) }
         .sheet(item: $splittingSegment) { segment in
             SegmentSplitView(recordingID: recording.id, segment: segment).environmentObject(model)
         }

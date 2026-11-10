@@ -10,9 +10,11 @@ struct Toast: Identifiable {
     var actions: [ToastAction] = []
     /// Stays until closed, even without actions.
     var sticky = false
-    var staysOnScreen: Bool { sticky || !actions.isEmpty }
-    /// Long enough to read a sentence; errors get more time.
-    var lifetime: Duration { style == .error ? .seconds(8) : .seconds(5) }
+    /// Leaves on its own even with actions: an offer such as « Annuler » that does not need an answer.
+    var optional = false
+    var staysOnScreen: Bool { sticky || (!actions.isEmpty && !optional) }
+    /// Long enough to read a sentence; errors and optional actions get more time.
+    var lifetime: Duration { style == .error || !actions.isEmpty ? .seconds(8) : .seconds(5) }
 }
 
 struct ToastAction: Identifiable {
