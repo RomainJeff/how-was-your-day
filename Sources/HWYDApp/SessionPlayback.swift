@@ -114,7 +114,7 @@ import HWYDCore
     }
     enum PlaybackError: LocalizedError {
         case unavailable
-        var errorDescription: String? { "Aucun audio disponible à cet instant." }
+        var errorDescription: String? { String(localized: "Aucun audio disponible à cet instant.") }
     }
 }
 

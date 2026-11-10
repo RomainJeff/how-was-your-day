@@ -11,19 +11,19 @@ struct NewSessionView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 VStack(alignment: .leading, spacing: 9) {
-                    Eyebrow(text: "Nouvelle session")
+                    Eyebrow(text: String(localized: "Nouvelle session"))
                     Text("Que voulez-vous enregistrer ?").font(.system(size: Studio.Size.title, weight: .semibold)).tracking(-0.7)
                 }
                 VStack(alignment: .leading, spacing: 10) {
-                    Eyebrow(text: "Type")
+                    Eyebrow(text: String(localized: "Type"))
                     LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
                         ForEach(SessionKind.allCases, id: \.self) { kind in kindTile(kind) }
                     }
                 }
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 6) {
-                        Eyebrow(text: "Nom")
-                        HelpButton(text: "Facultatif. Sans nom, la session s’appelle d’après son type et l’heure de début. Vous pourrez le changer ensuite.")
+                        Eyebrow(text: String(localized: "Nom"))
+                        HelpButton(text: String(localized: "Facultatif. Sans nom, la session s’appelle d’après son type et l’heure de début. Vous pourrez le changer ensuite."))
                     }
                     TextField("Nom", text: $model.newSessionTitle, prompt: Text(NewSessionView.placeholder(model.newSessionKind)).foregroundStyle(Studio.muted))
                         .textFieldStyle(.plain).font(.system(size: Studio.Size.heading))
@@ -61,6 +61,6 @@ struct NewSessionView: View {
     /// What the session will be called if no name is typed.
     static func placeholder(_ kind: SessionKind) -> String {
         let time = Date().formatted(date: .omitted, time: .shortened)
-        return kind == .adHoc ? "Session du \(time)" : "\(kind.label) du \(time)"
+        return kind == .adHoc ? String(localized: "Session du \(time)") : String(localized: "\(kind.label) du \(time)")
     }
 }

@@ -8,7 +8,7 @@ struct RootView: View {
             sidebar.frame(width: 190)
             Rectangle().fill(Studio.line).frame(width: 1)
             VStack(spacing: 0) {
-                if model.isDemoMode { banner("Mode découverte · exemples fictifs", color: Studio.mint, button: "Quitter") { model.leaveDemo() } }
+                if model.isDemoMode { banner(String(localized: "Mode découverte · exemples fictifs"), color: Studio.mint, button: String(localized: "Quitter")) { model.leaveDemo() } }
                 if model.showSettings { SettingsView() }
                 else if model.showNewSession { NewSessionView() }
                 else if let item = model.selected {
@@ -32,20 +32,20 @@ struct RootView: View {
                 Image(systemName: "waveform").font(.system(size: 20)).foregroundStyle(Studio.mint)
                 Text("hwyd").font(.system(size: 24, weight: .semibold)).tracking(-1)
             }.padding(.vertical, 24).padding(.horizontal, 12)
-            nav("Toutes les sessions", symbol: "square.stack", selected: !model.showSettings && !model.showNewSession && model.selectedID == nil) { model.library() }
+            nav(String(localized: "Toutes les sessions"), symbol: "square.stack", selected: !model.showSettings && !model.showNewSession && model.selectedID == nil) { model.library() }
             // One entry for the capture: it starts a session, then becomes the running one.
             if let active = model.activeCapture {
-                nav("\(model.isCapturePaused ? "En pause" : "En cours") · \(timeLabel(model.elapsed))", symbol: model.isCapturePaused ? "pause.circle" : "record.circle", selected: !model.showSettings && model.selectedID == active.id) { model.select(active) }
+                nav("\(model.isCapturePaused ? String(localized: "En pause") : String(localized: "En cours")) · \(timeLabel(model.elapsed))", symbol: model.isCapturePaused ? "pause.circle" : "record.circle", selected: !model.showSettings && model.selectedID == active.id) { model.select(active) }
             } else {
-                nav("Nouvelle session", symbol: "record.circle", selected: model.showNewSession && !model.showSettings) { model.requestNewSession() }
+                nav(String(localized: "Nouvelle session"), symbol: "record.circle", selected: model.showNewSession && !model.showSettings) { model.requestNewSession() }
             }
             if model.showSettings {
-                Eyebrow(text: "Réglages").padding(.top, 26).padding(.horizontal, 12).padding(.bottom, 8)
+                Eyebrow(text: String(localized: "Réglages")).padding(.top, 26).padding(.horizontal, 12).padding(.bottom, 8)
                 ForEach(SettingsCategory.allCases) { category in
-                    nav(category.rawValue, symbol: category.symbol, selected: model.settingsCategory == category) { model.settingsCategory = category }
+                    nav(category.title, symbol: category.symbol, selected: model.settingsCategory == category) { model.settingsCategory = category }
                 }
             } else {
-            Eyebrow(text: "Récentes").padding(.top, 26).padding(.horizontal, 12).padding(.bottom, 8)
+            Eyebrow(text: String(localized: "Récentes")).padding(.top, 26).padding(.horizontal, 12).padding(.bottom, 8)
             ForEach(Array(model.recordings.filter { $0.id != model.activeCaptureID }.prefix(5))) { item in
                 Button { model.select(item) } label: {
                     HStack(spacing: 9) { Image(systemName: item.kind.symbol).frame(width: 14); Text(item.title).lineLimit(1).truncationMode(.tail); Spacer(minLength: 0) }
@@ -60,7 +60,7 @@ struct RootView: View {
             if model.hasUnsavedChanges {
                 Button { model.retrySave() } label: { Label("Enregistrer les notes", systemImage: "arrow.clockwise").contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.copper).padding(10)
             }
-            nav("Réglages", symbol: "slider.horizontal.3", selected: model.showSettings) { model.showSettings = true }
+            nav(String(localized: "Réglages"), symbol: "slider.horizontal.3", selected: model.showSettings) { model.showSettings = true }
             HStack(spacing: 7) { Circle().fill(Studio.mint).frame(width: 5, height: 5); Text("Sur ce Mac").font(.system(size: Studio.Size.caption)); Spacer(); Text(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev").font(.system(size: Studio.Size.caption, design: .monospaced)) }.foregroundStyle(Studio.muted).padding(12)
         }.padding(.horizontal, 10).padding(.bottom, 8).background(Studio.inset)
     }

@@ -7,7 +7,7 @@ extension Color {
 enum AppearancePreference: String, CaseIterable, Identifiable {
     case system, light, dark
     var id: String { rawValue }
-    var title: String { switch self { case .system: "Système"; case .light: "Clair"; case .dark: "Sombre" } }
+    var title: String { switch self { case .system: String(localized: "Système"); case .light: String(localized: "Clair"); case .dark: String(localized: "Sombre") } }
     var colorScheme: ColorScheme? { switch self { case .system: nil; case .light: .light; case .dark: .dark } }
     var appearance: NSAppearance? { switch self { case .system: nil; case .light: NSAppearance(named: .aqua); case .dark: NSAppearance(named: .darkAqua) } }
 }

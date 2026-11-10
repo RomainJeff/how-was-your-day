@@ -17,7 +17,7 @@ public enum VoiceChannel: String, Codable, CaseIterable, Sendable {
         }
     }
     public var other: VoiceChannel { self == .mic ? .remote : .mic }
-    public var label: String { self == .mic ? "Micro" : "Visio" }
+    public var label: String { self == .mic ? String(localized: "Micro", bundle: .hwyd) : String(localized: "Visio", bundle: .hwyd) }
 }
 public struct VoicePerson: Codable, Identifiable, Equatable, Sendable {
     public var id: UUID
@@ -86,10 +86,10 @@ public enum VoiceError: LocalizedError {
     case consentRequired, invalidVector, keychain(OSStatus), insufficientSpeech
     public var errorDescription: String? {
         switch self {
-        case .consentRequired: "La mémorisation de cette personne n’est pas activée ou une opposition est active."
-        case .invalidVector: "Empreinte vocale invalide."
-        case .keychain(let status): "Trousseau indisponible (\(status)). Aucune empreinte exportée."
-        case .insufficientSpeech: "Il faut au moins 20 secondes de parole propre pour cette voix, sans chevauchement."
+        case .consentRequired: String(localized: "La mémorisation de cette personne n’est pas activée ou une opposition est active.", bundle: .hwyd)
+        case .invalidVector: String(localized: "Empreinte vocale invalide.", bundle: .hwyd)
+        case .keychain(let status): String(localized: "Trousseau indisponible (\(status)). Aucune empreinte exportée.", bundle: .hwyd)
+        case .insufficientSpeech: String(localized: "Il faut au moins 20 secondes de parole propre pour cette voix, sans chevauchement.", bundle: .hwyd)
         }
     }
 }
