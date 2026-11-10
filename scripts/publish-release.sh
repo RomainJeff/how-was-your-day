@@ -13,15 +13,22 @@ gh auth status >/dev/null
 if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
     echo "Release $tag exists; refusing to overwrite artifacts." >&2; exit 1
 fi
+if git rev-parse -q --verify "refs/tags/$tag" >/dev/null || [[ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ]]; then
+    echo "Tag $tag already exists. If a previous run failed after pushing it, see docs/distribution.md." >&2; exit 1
+fi
 # Public releases are signed with Developer ID and notarized. NOTARY_PROFILE names a notarytool
 # keychain profile created once with `xcrun notarytool store-credentials`.
 identity="${SIGN_IDENTITY:-Developer ID Application}"
 profile="${NOTARY_PROFILE:-hwyd-notary}"
-if ! security find-identity -v -p codesigning | grep -F -- "$identity" >/dev/null; then
-    echo "Signing identity \"$identity\" missing from the keychain." >&2; exit 1
+# SIGN_IDENTITY may be a name prefix or a certificate SHA-1. After a renewal, two Developer ID
+# certificates match the prefix and codesign refuses an ambiguous name: pass the SHA-1 then.
+matches="$(security find-identity -v -p codesigning | grep -F -- "$identity" || true)"
+[[ -n "$matches" ]] || { echo "Signing identity \"$identity\" missing from the keychain." >&2; exit 1; }
+if [[ "$(printf '%s\n' "$matches" | wc -l | tr -d ' ')" -gt 1 ]]; then
+    echo "Several identities match \"$identity\". Set SIGN_IDENTITY to one SHA-1:" >&2; printf '%s\n' "$matches" >&2; exit 1
 fi
 notarize=0
-if [[ "$identity" == "Developer ID Application"* ]]; then
+if [[ "$matches" == *'"Developer ID Application'* ]]; then
     xcrun notarytool history --keychain-profile "$profile" >/dev/null || { echo "Notary profile \"$profile\" unavailable. See docs/distribution.md." >&2; exit 1; }
     notarize=1
 elif [[ "${HWYD_ALLOW_UNNOTARIZED:-0}" != "1" ]]; then
@@ -30,7 +37,8 @@ fi
 app='build/release/How Was Your Day.app'
 SIGN_IDENTITY="$identity" SIGN_TIMESTAMP=1 VERSION="$version" BUILD_NUMBER="$(git rev-list --count HEAD)" HWYD_APP_OUTPUT="$app" scripts/build-app.sh release
 if [[ "$notarize" == 1 ]]; then
-    submission="$(mktemp -d)/HowWasYourDay.zip"
+    scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
+    submission="$scratch/HowWasYourDay.zip"
     ditto -c -k --keepParent "$app" "$submission"
     xcrun notarytool submit "$submission" --keychain-profile "$profile" --wait
     xcrun stapler staple "$app"

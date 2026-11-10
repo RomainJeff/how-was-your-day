@@ -35,7 +35,9 @@ Releases up to 0.4.0 used a persistent self-signed certificate. From 0.5.0 to 0.
 
 `scripts/publish-release.sh` now requires a `Developer ID Application` identity and notarizes the release: the app and both helpers are signed with the hardened runtime and a secure timestamp, the app is submitted to the notary service and stapled, then the DMG is signed, notarized and stapled. `spctl` checks both before publishing. Publishing without notarization needs `HWYD_ALLOW_UNNOTARIZED=1` and a different `SIGN_IDENTITY`.
 
-The first notarized release changes the app's signing team, so macOS asks once more for microphone, audio capture and keychain access.
+The first notarized release changes the app's signing team, so macOS asks once more for microphone, audio capture and keychain access. Apple Speech reserves language models per application identity: after this change, check in Settings > Audio et voix that the installed languages are still listed, and reinstall them if needed (the download is skipped when macOS already has the model).
+
+With several valid Developer ID certificates (after a renewal), set `SIGN_IDENTITY` to the SHA-1 of the one to use; the script refuses an ambiguous name.
 
 ### One-time setup
 
