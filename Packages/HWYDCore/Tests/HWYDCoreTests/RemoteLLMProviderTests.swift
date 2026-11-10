@@ -91,4 +91,31 @@ final class RemoteLLMProviderTests: XCTestCase {
         XCTAssertEqual(RemoteLLMProvider.errorDetail(Data(#"[{"error":{"message":"Quota"}}]"#.utf8)), "Quota")
         XCTAssertEqual(RemoteLLMProvider.errorDetail(Data(#"{"message":"Unauthorized"}"#.utf8)), "Unauthorized")
     }
+
+    func testModelCatalogRequests() throws {
+        let anthropic = try SummaryModelCatalog.makeRequest(service: .anthropic, apiKey: "k")
+        XCTAssertEqual(anthropic.url?.absoluteString, "https://api.anthropic.com/v1/models?limit=1000")
+        XCTAssertEqual(anthropic.value(forHTTPHeaderField: "x-api-key"), "k")
+        let gemini = try SummaryModelCatalog.makeRequest(service: .gemini, apiKey: "k")
+        XCTAssertEqual(gemini.url?.absoluteString, "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000")
+        XCTAssertEqual(gemini.value(forHTTPHeaderField: "x-goog-api-key"), "k")
+        XCTAssertFalse(gemini.url!.absoluteString.contains("key="))
+        let openai = try SummaryModelCatalog.makeRequest(service: .openai, apiKey: "k")
+        XCTAssertEqual(openai.url?.absoluteString, "https://api.openai.com/v1/models")
+        XCTAssertEqual(openai.value(forHTTPHeaderField: "Authorization"), "Bearer k")
+        XCTAssertThrowsError(try SummaryModelCatalog.makeRequest(service: .mistral, apiKey: " "))
+    }
+
+    func testModelCatalogKeepsTextModels() throws {
+        func data(_ value: Any) throws -> Data { try JSONSerialization.data(withJSONObject: value) }
+        XCTAssertEqual(try SummaryModelCatalog.parse(data(["data": [["id": "gpt-5-mini"], ["id": "text-embedding-3-large"], ["id": "o4-mini"], ["id": "whisper-1"], ["id": "gpt-4o-realtime-preview"], ["id": "dall-e-3"]]]), service: .openai),
+                       ["gpt-5-mini", "o4-mini"])
+        XCTAssertEqual(try SummaryModelCatalog.parse(data(["data": [["id": "mistral-medium-latest", "capabilities": ["completion_chat": true]], ["id": "mistral-embed", "capabilities": ["completion_chat": false]], ["id": "mistral-medium-latest", "capabilities": ["completion_chat": true]]]]), service: .mistral),
+                       ["mistral-medium-latest"])
+        XCTAssertEqual(try SummaryModelCatalog.parse(data(["models": [["name": "models/gemini-flash-latest", "supportedGenerationMethods": ["generateContent"]], ["name": "models/gemini-embedding-001", "supportedGenerationMethods": ["embedContent"]], ["name": "models/imagen-4", "supportedGenerationMethods": ["predict"]]]]), service: .gemini),
+                       ["gemini-flash-latest"])
+        XCTAssertEqual(try SummaryModelCatalog.parse(data(["data": [["id": "claude-opus-5-5"], ["id": "claude-haiku-5-5"]]]), service: .anthropic),
+                       ["claude-haiku-5-5", "claude-opus-5-5"])
+        XCTAssertThrowsError(try SummaryModelCatalog.parse(Data("[]".utf8), service: .openai))
+    }
 }

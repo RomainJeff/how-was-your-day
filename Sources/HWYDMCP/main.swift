@@ -30,13 +30,22 @@ func validate(_ input: [String: Any], schema: [String: Any]) throws {
 }
 import CoreFoundation
 
+/// Set when HWYD launches this server for one agent summary: only `submit_summary` is offered.
+struct SummaryHandoff: Sendable {
+    let directory: URL
+    let recordingID: UUID
+    let inputHash: String
+}
+
 actor MCPService {
     let store: SessionStore
     let writes: Bool
     let schemaData: Data
+    var handoff: SummaryHandoff?
     let cursorKey = SymmetricKey(size: .bits256)
     struct Cursor: Codable { var method: String; var filter: String; var sequence: Int; var offset: Int; var expires: Double }
     init(store: SessionStore, writes: Bool, schemaData: Data) { self.store = store; self.writes = writes; self.schemaData = schemaData }
+    func setHandoff(_ value: SummaryHandoff?) { handoff = value }
     func metadata(_ r: Recording) -> [String: Any] {
         ["id": r.id.uuidString, "source": "hwyd://session/" + r.id.uuidString.lowercased(), "revision": r.revision, "title": r.title, "kind": r.kind.rawValue, "started_at": r.startedAt.ISO8601Format(), "duration_us": Int64(r.duration * 1e6), "status": r.state == .recording ? "capturing" : r.transcriptState == .ready ? "complete" : "partial", "echo_cancellation_engine": nullable(r.transcription?.echoCancellationEngine), "echo_assessed_segments": r.segments.filter { $0.echoSuspect != nil }.count, "echo_suspect_segments": r.segments.filter { $0.echoSuspect == true }.count, "participants": r.participants.map { ["id": ($0.personID ?? $0.id).uuidString, "name": $0.label, "alias": NSNull(), "status": "named"] as [String: Any] }]
     }
@@ -56,6 +65,16 @@ actor MCPService {
         let tools = schemas["tools"] as! [String: [String: Any]]
         guard let schema = tools[method]?["inputSchema"] as? [String: Any], let input = try JSONSerialization.jsonObject(with: Data(arguments.utf8)) as? [String: Any] else { throw IntegrationError("INVALID_ARGUMENTS") }
         try validate(input, schema: schema)
+        if method == "submit_summary" {
+            guard let handoff else { throw IntegrationError("SUMMARY_HANDOFF_DISABLED") }
+            let recording = try await store.recording(handoff.recordingID)
+            guard try SummaryPipeline.inputHash(recording) == handoff.inputHash else { throw IntegrationError("RECORDING_CHANGED") }
+            let summary = try JSONSerialization.data(withJSONObject: input["summary"] ?? [String: Any]())
+            let content = try AgentSummaryTask.accept(summary, recording: recording)
+            try AgentSummaryTask.writeHandoff(content, inputHash: handoff.inputHash, directory: handoff.directory)
+            return try json(["status": "accepted"])
+        }
+        guard handoff == nil else { throw IntegrationError("INVALID_ARGUMENTS") }
         if ["set_notes", "rename_speaker"].contains(method) {
             guard writes else { throw IntegrationError("WRITE_DISABLED") }
             let receipt = try await store.mutate(id: UUID(uuidString: input["id"] as! String)!, expectedRevision: input["expected_revision"] as! Int, requestID: UUID(uuidString: input["request_id"] as! String)!, notes: input["markdown"] as? String, speaker: (input["speaker"] as? String).flatMap(UUID.init(uuidString:)), personID: (input["person"] as? String).flatMap(UUID.init(uuidString:)))
@@ -140,18 +159,29 @@ actor MCPService {
 
 let args = Array(CommandLine.arguments.dropFirst())
 if args.contains("--help") {
-    print("hwyd-mcp [--store /absolute/path] [--allow-write | --read-only]\nTransport stdio. Écritures soumises aussi au réglage de l’app.")
+    print("hwyd-mcp [--store /absolute/path] [--allow-write | --read-only]\nTransport stdio. Écritures soumises aussi au réglage de l’app.\nhwyd-mcp --summary-handoff /dir --recording UUID --input-hash HASH [--store /path] : lancé par HWYD pour une synthèse par agent, n’offre que submit_summary.")
 } else {
     do {
         var path = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/HWYD").path
         var index = 0
+        var handoffPath: String?, handoffRecording: UUID?, handoffHash: String?
         while index < args.count {
             if args[index] == "--store", index + 1 < args.count { index += 1; path = args[index] }
+            else if args[index] == "--summary-handoff", index + 1 < args.count { index += 1; handoffPath = args[index] }
+            else if args[index] == "--recording", index + 1 < args.count { index += 1; handoffRecording = UUID(uuidString: args[index]) }
+            else if args[index] == "--input-hash", index + 1 < args.count { index += 1; handoffHash = args[index] }
             else if !["--allow-write", "--read-only"].contains(args[index]) { throw IntegrationError("INVALID_ARGUMENTS") }
             index += 1
         }
         guard path.hasPrefix("/") else { throw IntegrationError("INVALID_ARGUMENTS") }
-        let requestedWrites = args.contains("--allow-write") && !args.contains("--read-only")
+        var handoff: SummaryHandoff?
+        if handoffPath != nil || handoffRecording != nil || handoffHash != nil {
+            guard let handoffPath, handoffPath.hasPrefix("/"), let handoffRecording, let handoffHash, !handoffHash.isEmpty else { throw IntegrationError("INVALID_ARGUMENTS") }
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: handoffPath, isDirectory: &isDirectory), isDirectory.boolValue else { throw IntegrationError("INVALID_ARGUMENTS") }
+            handoff = SummaryHandoff(directory: URL(fileURLWithPath: handoffPath), recordingID: handoffRecording, inputHash: handoffHash)
+        }
+        let requestedWrites = handoff == nil && args.contains("--allow-write") && !args.contains("--read-only")
         let store = try SessionStore(directory: URL(fileURLWithPath: path), readOnly: !requestedWrites, migrate: false)
         let writeSetting = try await store.setting("mcp_writes_enabled")
         let writes = requestedWrites && writeSetting == "true"
@@ -159,12 +189,15 @@ if args.contains("--help") {
         let schemas = try JSONSerialization.jsonObject(with: schemaData) as! [String: Any]
         let definitions = schemas["$defs"]!
         let toolSchemas = schemas["tools"] as! [String: [String: Any]]
-        let toolList = try toolSchemas.keys.sorted().filter { writes || !["set_notes", "rename_speaker"].contains($0) }.map { name in
+        let toolList = try toolSchemas.keys.sorted().filter { name in
+            handoff != nil ? name == "submit_summary" : name != "submit_summary" && (writes || !["set_notes", "rename_speaker"].contains(name))
+        }.map { name in
             var input = toolSchemas[name]!["inputSchema"] as! [String: Any]; input["$defs"] = definitions
             var output = toolSchemas[name]!["outputSchema"] as! [String: Any]; output["$defs"] = definitions
-            return try Tool(name: name, description: toolSchemas[name]!["description"] as? String ?? name, inputSchema: value(input), annotations: .init(readOnlyHint: !["set_notes", "rename_speaker"].contains(name), destructiveHint: false, idempotentHint: true, openWorldHint: false), outputSchema: value(output))
+            return try Tool(name: name, description: toolSchemas[name]!["description"] as? String ?? name, inputSchema: value(input), annotations: .init(readOnlyHint: !["set_notes", "rename_speaker", "submit_summary"].contains(name), destructiveHint: false, idempotentHint: true, openWorldHint: false), outputSchema: value(output))
         }
         let service = MCPService(store: store, writes: writes, schemaData: schemaData)
+        await service.setHandoff(handoff)
         let server = Server(name: "hwyd", version: "0.4.0", capabilities: .init(resources: .init(subscribe: false, listChanged: false), tools: .init(listChanged: false)))
         await server.withMethodHandler(ListTools.self) { _ in .init(tools: toolList) }
         await server.withMethodHandler(CallTool.self) { params in
@@ -172,6 +205,9 @@ if args.contains("--help") {
                 let arguments = String(decoding: try JSONEncoder().encode(params.arguments ?? [:]), as: UTF8.self)
                 let text = try await service.call(params.name, arguments: arguments)
                 return try .init(content: [.text(text)], structuredContent: try JSONDecoder().decode(Value.self, from: Data(text.utf8)), isError: false)
+            } catch let failure as SummaryFailure {
+                // The agent needs the reason to correct and resubmit its summary.
+                return .init(content: [.text(try json(["code": "SUMMARY_REJECTED", "message": failure.localizedDescription, "retryable": true, "current_revision": NSNull()]))], isError: true)
             } catch {
                 let code = (error as? IntegrationError)?.code ?? "INTERNAL_ERROR"
                 return .init(content: [.text(try json(["code": code, "message": code, "retryable": ["STORE_BUSY", "CURSOR_STALE"].contains(code), "current_revision": NSNull()]))], isError: true)

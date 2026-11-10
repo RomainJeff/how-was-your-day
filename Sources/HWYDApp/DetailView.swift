@@ -134,7 +134,7 @@ struct DetailView: View {
             }
             if recording.isDemo { Badge(text: "SYNTHÈSE FICTIVE · EXEMPLE D’INTERFACE").padding(.top, 15) }
         } else {
-            EmptyPanel(symbol: "sparkles", title: model.summaryEnabled ? "Pas encore de synthèse" : "La synthèse est facultative", detail: model.summaryEnabled ? model.summaryService.isRemote ? "Le transcript sera envoyé à \(model.summaryService.displayName). Vos notes restent sur ce Mac." : "Lancez la génération avec votre modèle local. Vos notes et votre transcript restent indépendants." : "Activez un modèle dans les réglages pour générer une synthèse.")
+            EmptyPanel(symbol: "sparkles", title: model.summaryEnabled ? "Pas encore de synthèse" : "La synthèse est facultative", detail: model.summaryEnabled ? model.summaryService == .agent ? "Votre agent ACP rédigera la synthèse à partir du transcript et de son propre contexte. Vos notes restent sur ce Mac." : model.summaryService.isRemote ? "Le transcript sera envoyé à \(model.summaryService.displayName). Vos notes restent sur ce Mac." : "Lancez la génération avec votre modèle local. Vos notes et votre transcript restent indépendants." : "Activez un modèle dans les réglages pour générer une synthèse.")
             Button("Voir les réglages") { model.settingsCategory = .summary; model.showSettings = true }.buttonStyle(StudioButtonStyle())
         }
     }

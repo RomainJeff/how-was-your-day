@@ -5,8 +5,10 @@ import CryptoKit
 private actor WorkflowProvider: LLMProvider {
     nonisolated let requestCharacterCeiling: Int
     nonisolated let extractionWindowCharacters: Int
-    init(requestCharacterCeiling: Int = SummaryPipeline.maximumInputCharacters, extractionWindowCharacters: Int = 12_000) {
+    nonisolated let retriesRejectedOutput: Bool
+    init(requestCharacterCeiling: Int = SummaryPipeline.maximumInputCharacters, extractionWindowCharacters: Int = 12_000, retriesRejectedOutput: Bool = false) {
         self.requestCharacterCeiling = requestCharacterCeiling; self.extractionWindowCharacters = extractionWindowCharacters
+        self.retriesRejectedOutput = retriesRejectedOutput
     }
     var prompts: [String] = []
     var failWriting = false
@@ -98,6 +100,26 @@ final class SummaryWorkflowTests: XCTestCase, @unchecked Sendable {
         try "Elapsed seconds: \(Date().timeIntervalSince(started))\nModel: \(model)\n".write(to: directory.appendingPathComponent("timing.txt"), atomically: true, encoding: .utf8)
         XCTAssertFalse(result.structured.details?.isEmpty ?? true)
     }
+    /// Replays a stored session against a hosted provider. Opt-in only: reads the key from the
+    /// keychain (macOS asks first) and sends the transcript to the provider.
+    func testHostedRecordingWhenExplicitlyRequested() async throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let raw = env["HWYD_HOSTED_SUMMARY_SERVICE"], let service = SummaryService(rawValue: raw), service.isRemote,
+              let store = env["HWYD_SUMMARY_STORE"], let id = env["HWYD_SUMMARY_RECORDING_ID"].flatMap(UUID.init(uuidString:)),
+              let output = env["HWYD_SUMMARY_OUTPUT"] else { throw XCTSkip("Hosted replay not requested") }
+        let recording = try await SessionStore(directory: URL(fileURLWithPath: store), readOnly: true, migrate: false).recording(id)
+        let key = try XCTUnwrap(SummaryKeychain.key(for: service), "No stored key")
+        let provider = try RemoteLLMProvider(service: service, model: env["HWYD_LIVE_LLM_MODEL"] ?? service.defaultModel, apiKey: key)
+        let directory = URL(fileURLWithPath: output)
+        do {
+            let result = try await SummaryPipeline.run(recording, provider: provider, model: provider.model, inputCharacterLimit: provider.requestCharacterCeiling,
+                cacheDirectory: directory.appendingPathComponent("cache"), providerIdentity: provider.identity) { print("HOSTED \($0.stage) \($0.completed)/\($0.total) cached=\($0.cached)") }
+            try result.structured.markdown.write(to: directory.appendingPathComponent("summary.md"), atomically: true, encoding: .utf8)
+        } catch {
+            print("HOSTED FAILURE: \(error.localizedDescription)")
+            throw error
+        }
+    }
 }
 
 private actor BenchmarkProvider: LLMProvider {
@@ -124,6 +146,17 @@ private actor BenchmarkProvider: LLMProvider {
 }
 
 extension SummaryWorkflowTests {
+    func testHostedProvidersRetryARejectedOutputOnce() async throws {
+        let hosted = WorkflowProvider(retriesRejectedOutput: true)
+        await hosted.failNextWriting()
+        _ = try await SummaryPipeline.run(fixture(), provider: hosted, model: "fixture")
+        let prompts = await hosted.prompts
+        XCTAssertEqual(prompts.filter { $0.hasPrefix("write:") }.count, 2, "One failed writing, then one retry")
+        let local = WorkflowProvider()
+        await local.failNextWriting()
+        do { _ = try await SummaryPipeline.run(fixture(), provider: local, model: "fixture"); XCTFail("Local servers never retry") }
+        catch SummaryFailure.invalidResponse {}
+    }
     func testHostedContextReadsWholeSessionInOneExtraction() async throws {
         let provider = WorkflowProvider(requestCharacterCeiling: 200_000, extractionWindowCharacters: 120_000)
         var recording = fixture()
