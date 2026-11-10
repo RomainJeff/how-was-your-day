@@ -76,11 +76,7 @@ struct CaptureFailure: LocalizedError {
             let formats = try aggregateStreams.map { try format($0) }
             // The explicitly ordered subdevice list precedes the tap. Verify its stream layout.
             let starts = try aggregateStreams.map { try scalar($0, kAudioStreamPropertyStartingChannel, as: UInt32.self) }
-            guard starts == [1, micChannels + 1], formats[0].mChannelsPerFrame == micChannels,
-                  formats[1].mChannelsPerFrame == 2, formats.allSatisfy({ $0.mFormatID == kAudioFormatLinearPCM && $0.mBitsPerChannel == 32 && ($0.mFormatFlags & kAudioFormatFlagIsFloat) != 0 }),
-                  formats[0].mSampleRate == formats[1].mSampleRate, micChannels + 2 <= 16 else {
-                throw CaptureFailure(message: "Le format ou l’ordre des pistes n’est pas pris en charge. Aucun enregistrement n’a démarré.")
-            }
+            try validateLayout(starts: starts, formats: formats, micChannels: micChannels, micName: (try? string(initialInput, kAudioObjectPropertyName)) ?? "le micro")
             guard let created = HWYDRingCreate(micChannels + 2) else { throw CaptureFailure(message: "Mémoire insuffisante pour préparer la capture.") }
             ring = created
             writer = try AudioWriter(ring: created, channels: Int(micChannels + 2), micChannels: Int(micChannels), sampleRate: formats[0].mSampleRate, id: id, directory: directory)
@@ -123,6 +119,36 @@ struct CaptureFailure: LocalizedError {
         if lockFD >= 0 { flock(lockFD, LOCK_UN); close(lockFD); lockFD = -1 }
         return chunks
     }
+    /// Each check reports what it read, so a failure on another Mac can be diagnosed from the message alone.
+    /// The ring buffer and the writer assume one interleaved frame and one sample rate for every track.
+    private func validateLayout(starts: [UInt32], formats: [AudioStreamBasicDescription], micChannels: UInt32, micName: String) throws {
+        let suffix = " Aucun enregistrement n’a démarré."
+        guard micChannels + 2 <= 16 else {
+            throw CaptureFailure(message: "\(micName) expose \(micChannels) canaux, au-delà des 16 canaux pris en charge.\(suffix)")
+        }
+        guard starts == [1, micChannels + 1] else {
+            throw CaptureFailure(message: "Ordre des pistes inattendu : canaux de départ \(starts.map(String.init).joined(separator: ", ")), attendus 1, \(micChannels + 1).\(suffix)")
+        }
+        guard formats[0].mChannelsPerFrame == micChannels else {
+            throw CaptureFailure(message: "\(micName) expose \(formats[0].mChannelsPerFrame) canaux dans le graphe audio, \(micChannels) attendus.\(suffix)")
+        }
+        guard formats[1].mChannelsPerFrame == 2 else {
+            throw CaptureFailure(message: "L’audio système expose \(formats[1].mChannelsPerFrame) canaux, 2 attendus.\(suffix)")
+        }
+        for (label, format) in [(micName, formats[0]), ("L’audio système", formats[1])] {
+            guard format.mFormatID == kAudioFormatLinearPCM, format.mBitsPerChannel == 32, format.mFormatFlags & kAudioFormatFlagIsFloat != 0 else {
+                throw CaptureFailure(message: "\(label) fournit un format non pris en charge (\(fourCC(format.mFormatID)), \(format.mBitsPerChannel) bits), PCM flottant 32 bits attendu.\(suffix)")
+            }
+        }
+        guard formats[0].mSampleRate == formats[1].mSampleRate else {
+            throw CaptureFailure(message: "Fréquences différentes : \(micName) à \(hertz(formats[0].mSampleRate)), audio système à \(hertz(formats[1].mSampleRate)).\(suffix) Choisissez un autre micro ou alignez les fréquences dans Configuration audio et MIDI.")
+        }
+    }
+    private func fourCC(_ code: UInt32) -> String {
+        let bytes = [24, 16, 8, 0].map { UInt8((code >> $0) & 0xFF) }
+        return bytes.allSatisfy({ (0x20...0x7E).contains($0) }) ? String(decoding: bytes, as: UTF8.self) : String(code)
+    }
+    private func hertz(_ rate: Float64) -> String { rate.rounded() == rate ? "\(Int(rate)) Hz" : "\(rate) Hz" }
     private func address(_ selector: AudioObjectPropertySelector, scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal) -> AudioObjectPropertyAddress {
         .init(mSelector: selector, mScope: scope, mElement: kAudioObjectPropertyElementMain)
     }
