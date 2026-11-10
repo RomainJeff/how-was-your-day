@@ -31,7 +31,7 @@ Existing releases are never overwritten. If publishing fails after the tag was p
 
 ## Signing status
 
-Releases up to 0.4.0 used a persistent self-signed certificate. From 0.5.0 to 0.10.0, releases were signed with a personal-team `Apple Development` identity and were not notarized.
+Releases up to 0.4.0 used a persistent self-signed certificate. From 0.5.0 to 0.10.0, releases were signed with an `Apple Development` identity and were not notarized. From 0.11.0, releases are signed with `Developer ID Application: Antoine Lépée (WBV98478T5)` and notarized.
 
 `scripts/publish-release.sh` now requires a `Developer ID Application` identity and notarizes the release: the app and both helpers are signed with the hardened runtime and a secure timestamp, the app is submitted to the notary service and stapled, then the DMG is signed, notarized and stapled. `spctl` checks both before publishing. Publishing without notarization needs `HWYD_ALLOW_UNNOTARIZED=1` and a different `SIGN_IDENTITY`.
 
