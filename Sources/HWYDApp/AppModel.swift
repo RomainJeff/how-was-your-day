@@ -147,6 +147,12 @@ final class AppModel: ObservableObject {
         return (requested, installedSpeechLocales, SpeechLanguage.fallback(installed: installedSpeechLocales),
                 supportedSpeechLocales.filter { !installed.contains(SpeechLanguage.languageCode(of: $0)) })
     }
+    /// Opens the session and its reprocessing choices, wherever the user is.
+    func chooseLanguage(for id: UUID) {
+        guard recordings.contains(where: { $0.id == id }) else { return }
+        showSettings = false; showNewSession = false; selectedID = id; activeTab = .transcript
+        languageChoiceID = id; showWindow?()
+    }
     /// Offers to install a language detection recognized, or to choose one when nothing fits.
     private func reportLanguageFindings(_ detections: [LanguageDetection], id: UUID) {
         let label = { (source: AudioSource) in source == .mic ? String(localized: "la piste Micro") : String(localized: "la piste Système") }
@@ -155,10 +161,10 @@ final class AppModel: ObservableObject {
             let name = SpeechLanguage.displayName(locale) + (other.map { String(localized: " (ou \(SpeechLanguage.displayName($0)))") } ?? "")
             report(String(localized: "La langue de \(label(suggestion.source)) semble être : \(name). Ce modèle n’est pas installé."), actions: [
                 ToastAction(title: String(localized: "Installer et retranscrire")) { [weak self] in self?.installSpeechModel(locale) { self?.transcribe(id, language: SpeechLanguage.automatic) } },
-                ToastAction(title: String(localized: "Choisir la langue")) { [weak self] in self?.languageChoiceID = id }], sticky: true)
+                ToastAction(title: String(localized: "Choisir la langue")) { [weak self] in self?.chooseLanguage(for: id) }], sticky: true)
         } else if let unknown = detections.first(where: { $0.unrecognized == true }) {
             report(String(localized: "La langue de \(label(unknown.source)) n’a pas été reconnue parmi les langues installées."), actions: [
-                ToastAction(title: String(localized: "Choisir la langue")) { [weak self] in self?.languageChoiceID = id }], sticky: true)
+                ToastAction(title: String(localized: "Choisir la langue")) { [weak self] in self?.chooseLanguage(for: id) }], sticky: true)
         }
     }
     var diarizerReady: Bool {
@@ -562,7 +568,7 @@ final class AppModel: ObservableObject {
             } catch {
                 update(id) { $0.transcriptState = .failed }
                 report(String(localized: "Transcription : \(error.localizedDescription)"), style: .error,
-                       actions: [ToastAction(title: String(localized: "Réessayer")) { [weak self] in self?.transcribe(id) }])
+                       actions: [ToastAction(title: String(localized: "Réessayer")) { [weak self] in self?.transcribe(id, language: language) }])
                 await flush()
             }
         }

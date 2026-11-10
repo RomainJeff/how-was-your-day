@@ -9,7 +9,7 @@ Keys are the French text as written in the code, as the Swift compiler sees them
   scripts/l10n.py sync      extract, then add new keys to the catalog and drop keys no longer in code.
   scripts/l10n.py check     Guard: fails when a key lacks a fr or en translation, when the code
                             uses a key missing from the catalog, or when a French-looking literal
-                            in Sources/HWYDApp is not localizable. --fast skips the build and only
+                            in the app, the helper or HWYDCore is not localizable. --fast skips the build and only
                             compares literals with catalog keys.
 
 A French literal that must stay as is (demo data, diagnostics) ends its line with `// l10n:ignore`.
@@ -179,8 +179,15 @@ def strip_interpolations(text):
     return "".join(out)
 
 
+# Model-facing text, demo data and export formats stay French on purpose (docs/localization.md).
+UNTRANSLATED_FILES = {"Summary.swift", "SummaryWorkflow.swift", "RemoteLLMProvider.swift", "AgentSummary.swift",
+                      "DemoContent.swift", "SessionExporter.swift"}
+SCANNED = ("Sources/HWYDApp", "Sources/HWYDPipeline", "Packages/HWYDCore/Sources/HWYDCore")
+
+
 def french_literals():
-    for path in sorted((ROOT / "Sources/HWYDApp").glob("*.swift")):
+    paths = [path for folder in SCANNED for path in sorted((ROOT / folder).glob("*.swift")) if path.name not in UNTRANSLATED_FILES]
+    for path in paths:
         for number, line in enumerate(path.read_text().splitlines(), 1):
             code = line.split("//", 1)[0] if IGNORE not in line else ""
             if not code or '"""' in code:
