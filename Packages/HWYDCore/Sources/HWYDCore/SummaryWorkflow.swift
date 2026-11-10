@@ -105,9 +105,26 @@ extension SummaryPipeline {
                 }
                 result = value; cached = true
             } else {
-                result = try await planning ? provider.plan(prompt: prompt, evidenceIDs: segments.map(\.id)) : provider.generate(prompt: prompt, evidenceIDs: segments.map(\.id))
-                try validate(result, segments: segments, speakers: recording.speakers, maximumEvidenceReferences: planning ? 64 : 3)
-                try validateStage(result)
+                func attempt() async throws -> SummaryContent {
+                    let value = try await planning ? provider.plan(prompt: prompt, evidenceIDs: segments.map(\.id)) : provider.generate(prompt: prompt, evidenceIDs: segments.map(\.id))
+                    try validate(value, segments: segments, speakers: recording.speakers, maximumEvidenceReferences: planning ? 64 : 3)
+                    try validateStage(value)
+                    return value
+                }
+                do { result = try await attempt() }
+                catch let failure as SummaryFailure {
+                    // Hosted models sample differently on each call: one identical retry usually
+                    // passes. Only content failures qualify, never network, quota or truncation.
+                    let contentFailure: Bool
+                    switch failure {
+                    case .invalidContent, .invalidResponse, .unreliableContent: contentFailure = true
+                    default: contentFailure = false
+                    }
+                    guard contentFailure, provider.retriesRejectedOutput else { throw failure }
+                    try Task.checkCancellation()
+                    await progress(.init(stage: stage + ", nouvel essai", completed: completed, total: total, cached: false))
+                    result = try await attempt()
+                }
                 try Task.checkCancellation()
                 if let file {
                     try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])

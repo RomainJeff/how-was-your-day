@@ -284,6 +284,178 @@
         "text_total_chars",
         "partial"
       ]
+    },
+    "AgentSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overview",
+        "decisions",
+        "action_items",
+        "details"
+      ],
+      "properties": {
+        "overview": {
+          "type": "string",
+          "description": "Une à trois phrases sur la session."
+        },
+        "key_points": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "evidence_segment_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^S[0-9]+$"
+                },
+                "minItems": 1,
+                "maxItems": 5,
+                "description": "Identifiants S<n> des passages du transcript qui étayent l'élément."
+              }
+            },
+            "required": [
+              "title",
+              "text",
+              "evidence_segment_ids"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "details": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "evidence_segment_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^S[0-9]+$"
+                },
+                "minItems": 1,
+                "maxItems": 5,
+                "description": "Identifiants S<n> des passages du transcript qui étayent l'élément."
+              }
+            },
+            "required": [
+              "title",
+              "text",
+              "evidence_segment_ids"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Compte rendu par thème, dans l'ordre de la session."
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "evidence_segment_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^S[0-9]+$"
+                },
+                "minItems": 1,
+                "maxItems": 5,
+                "description": "Identifiants S<n> des passages du transcript qui étayent l'élément."
+              }
+            },
+            "required": [
+              "text",
+              "evidence_segment_ids"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "action_items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "assignee_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "due_date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "evidence_segment_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^S[0-9]+$"
+                },
+                "minItems": 1,
+                "maxItems": 5,
+                "description": "Identifiants S<n> des passages du transcript qui étayent l'élément."
+              }
+            },
+            "required": [
+              "text",
+              "evidence_segment_ids"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "context": {
+          "type": "array",
+          "maxItems": 8,
+          "description": "Apports du contexte de l'utilisateur, séparés du contenu de la session.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "sources": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "title",
+              "text",
+              "sources"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
     }
   },
   "tools": {
@@ -737,6 +909,36 @@
         "$ref": "#/$defs/MutationReceipt"
       },
       "description": "Link an acoustic speaker cluster to an existing person using expected_revision and a unique request_id. Requires --allow-write and the app write setting. Does not enroll voice fingerprints."
+    },
+    "submit_summary": {
+      "description": "Envoie la synthèse de la session à HWYD. Disponible uniquement quand HWYD confie une synthèse à un agent. La synthèse est validée : en cas de refus, la raison est renvoyée, corrige et renvoie. Une synthèse acceptée remplace la précédente pour ce passage.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "$ref": "#/$defs/AgentSummary"
+          }
+        },
+        "required": [
+          "summary"
+        ],
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      }
     }
   }
 }

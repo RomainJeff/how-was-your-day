@@ -100,7 +100,7 @@ struct SummaryStageRequest {
     static func decode(_ content: String, references: [String: String], limits: [String: Any]? = nil) throws -> SummaryContent {
         guard let json = content.data(using: .utf8) else { throw SummaryFailure.invalidResponse }
         do {
-            guard let parsed = try JSONSerialization.jsonObject(with: json) as? [String: Any] else { throw SummaryFailure.invalidResponse }
+            guard let parsed = try? JSONSerialization.jsonObject(with: json) as? [String: Any] else { throw SummaryFailure.invalidContent("réponse qui n’est pas un objet JSON") }
             guard var output = (limits.map { enforceArrayLimits(parsed, schema: $0) } ?? parsed) as? [String: Any] else { throw SummaryFailure.invalidResponse }
             if !references.isEmpty {
                 if var overview = output["overview"] as? String {
@@ -108,11 +108,11 @@ struct SummaryStageRequest {
                     output["overview"] = overview.trimmingCharacters(in: .whitespacesAndNewlines)
                 }
                 for key in ["decisions", "action_items", "key_points", "details"] {
-                    guard var entries = output[key] as? [[String: Any]] else { throw SummaryFailure.invalidResponse }
+                    guard var entries = output[key] as? [[String: Any]] else { throw SummaryFailure.invalidContent("champ \(key) absent ou mal formé") }
                     for index in entries.indices {
-                        guard let ids = entries[index]["evidence_segment_ids"] as? [String] else { throw SummaryFailure.invalidResponse }
+                        guard let ids = entries[index]["evidence_segment_ids"] as? [String] else { throw SummaryFailure.invalidContent("références absentes dans \(key)") }
                         entries[index]["evidence_segment_ids"] = try ids.map { id in
-                            guard let uuid = references[id] else { throw SummaryFailure.invalidResponse }
+                            guard let uuid = references[id] else { throw SummaryFailure.invalidContent("référence inconnue « \(id.prefix(40)) » dans \(key)") }
                             return uuid
                         }
                     }
@@ -129,19 +129,24 @@ struct SummaryStageRequest {
                     output[key] = entries
                 }
             }
-            return try JSONDecoder().decode(SummaryContent.self, from: JSONSerialization.data(withJSONObject: output))
-        } catch { throw SummaryFailure.invalidResponse }
+            do { return try JSONDecoder().decode(SummaryContent.self, from: JSONSerialization.data(withJSONObject: output)) }
+            catch { throw SummaryFailure.invalidContent("structure JSON différente du schéma") }
+        } catch let failure as SummaryFailure { throw failure }
+        catch { throw SummaryFailure.invalidResponse }
     }
 }
 
-/// Where summaries are generated. Only `.local` keeps the transcript on this Mac.
+/// Where summaries are generated. `.local` keeps the transcript on this Mac; hosted APIs receive it
+/// with each summary; `.agent` hands it to the user's own ACP agent, which also uses its own context.
 public enum SummaryService: String, CaseIterable, Identifiable, Sendable {
-    case local, mistral, openai, anthropic, gemini
+    case local, agent, mistral, openai, anthropic, gemini
     public var id: String { rawValue }
-    public var isRemote: Bool { self != .local }
+    /// A hosted API called with the user's key.
+    public var isRemote: Bool { ![.local, .agent].contains(self) }
     public var displayName: String {
         switch self {
         case .local: "Serveur local"
+        case .agent: "Agent (ACP)"
         case .mistral: "Mistral"
         case .openai: "OpenAI"
         case .anthropic: "Anthropic"
@@ -151,7 +156,7 @@ public enum SummaryService: String, CaseIterable, Identifiable, Sendable {
     /// Editable starting point; the user can enter any model their account offers.
     public var defaultModel: String {
         switch self {
-        case .local: ""
+        case .local, .agent: ""
         case .mistral: "mistral-medium-latest"
         case .openai: "gpt-5-mini"
         case .anthropic: "claude-opus-5-5"
@@ -160,7 +165,7 @@ public enum SummaryService: String, CaseIterable, Identifiable, Sendable {
     }
     public var baseURL: URL? {
         switch self {
-        case .local: nil
+        case .local, .agent: nil
         case .mistral: URL(string: "https://api.mistral.ai/v1")
         case .openai: URL(string: "https://api.openai.com/v1")
         case .anthropic: URL(string: "https://api.anthropic.com/v1")
@@ -184,6 +189,7 @@ public struct RemoteLLMProvider: LLMProvider {
     /// About 200,000 characters stay well below 128k tokens, with room for output.
     public var requestCharacterCeiling: Int { 200_000 }
     public var extractionWindowCharacters: Int { 120_000 }
+    public var retriesRejectedOutput: Bool { true }
     /// Above this count, segment references are not enumerated in the schema: hosted engines cap
     /// enum sizes. Unknown references are still rejected when the response is decoded.
     static let evidenceEnumLimit = 200
@@ -193,8 +199,9 @@ public struct RemoteLLMProvider: LLMProvider {
                 intermediateLanguage: SummaryIntermediateLanguage = .french) throws {
         let model = model.trimmingCharacters(in: .whitespacesAndNewlines)
         let apiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard service.isRemote, let url = baseURL ?? service.baseURL, !model.isEmpty else { throw SummaryFailure.invalidEndpoint }
+        guard service.isRemote, let url = baseURL ?? service.baseURL else { throw SummaryFailure.invalidEndpoint }
         guard !apiKey.isEmpty else { throw SummaryFailure.apiKeyMissing(service.displayName) }
+        guard !model.isEmpty else { throw SummaryFailure.modelMissing(service.displayName) }
         self.service = service; self.model = model; self.apiKey = apiKey; self.baseURL = url
         self.intermediateLanguage = intermediateLanguage
     }
@@ -289,6 +296,78 @@ public struct RemoteLLMProvider: LLMProvider {
             ?? (object as? [String: Any])?["message"] as? String ?? ""
         let line = message.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
         return line.count > 300 ? String(line.prefix(300)) + "…" : line
+    }
+}
+
+/// Lists the models a hosted provider offers for this key. Doubles as a key check: a rejected
+/// key throws `SummaryFailure.remoteRejected` with status 401 or 403.
+public enum SummaryModelCatalog {
+    public static func models(service: SummaryService, apiKey: String, baseURL: URL? = nil) async throws -> [String] {
+        let request = try makeRequest(service: service, apiKey: apiKey, baseURL: baseURL)
+        let config = URLSessionConfiguration.ephemeral; config.timeoutIntervalForRequest = 30; config.timeoutIntervalForResource = 60
+        let session = URLSession(configuration: config, delegate: NoRedirects(), delegateQueue: nil)
+        defer { session.invalidateAndCancel() }
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, data.count <= 5_000_000 else { throw SummaryFailure.invalidResponse }
+        guard http.statusCode == 200 else {
+            throw SummaryFailure.remoteRejected(service: service.displayName, status: http.statusCode, detail: RemoteLLMProvider.errorDetail(data))
+        }
+        return try parse(data, service: service)
+    }
+
+    static func makeRequest(service: SummaryService, apiKey: String, baseURL: URL? = nil) throws -> URLRequest {
+        let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard service.isRemote, var url = baseURL ?? service.baseURL else { throw SummaryFailure.invalidEndpoint }
+        guard !key.isEmpty else { throw SummaryFailure.apiKeyMissing(service.displayName) }
+        var request: URLRequest
+        switch service {
+        case .anthropic:
+            url = url.appendingPathComponent("models")
+            request = URLRequest(url: URL(string: url.absoluteString + "?limit=1000")!)
+            request.setValue(key, forHTTPHeaderField: "x-api-key")
+            request.setValue(RemoteLLMProvider.anthropicVersion, forHTTPHeaderField: "anthropic-version")
+        case .gemini:
+            // The native endpoint reports which models support generation; the key goes in a header, not the URL.
+            url = url.deletingLastPathComponent().appendingPathComponent("models")
+            request = URLRequest(url: URL(string: url.absoluteString + "?pageSize=1000")!)
+            request.setValue(key, forHTTPHeaderField: "x-goog-api-key")
+        default:
+            request = URLRequest(url: url.appendingPathComponent("models"))
+            request.setValue("Bearer " + key, forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
+    /// Keeps text generation models only, deduplicated and sorted alphabetically.
+    static func parse(_ data: Data, service: SummaryService) throws -> [String] {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw SummaryFailure.invalidResponse }
+        var ids: [String] = []
+        switch service {
+        case .gemini:
+            for model in object["models"] as? [[String: Any]] ?? [] {
+                guard let name = model["name"] as? String,
+                      (model["supportedGenerationMethods"] as? [String])?.contains("generateContent") == true else { continue }
+                let id = name.hasPrefix("models/") ? String(name.dropFirst("models/".count)) : name
+                if id.hasPrefix("gemini"), !id.contains("embedding"), !id.contains("image"), !id.contains("tts") { ids.append(id) }
+            }
+        case .mistral:
+            for model in object["data"] as? [[String: Any]] ?? [] {
+                guard let id = model["id"] as? String else { continue }
+                let capabilities = model["capabilities"] as? [String: Any]
+                if capabilities?["completion_chat"] as? Bool ?? true, !id.contains("embed"), !id.contains("moderation"), !id.contains("ocr") { ids.append(id) }
+            }
+        case .openai:
+            let excluded = ["embedding", "tts", "whisper", "dall-e", "image", "audio", "realtime", "moderation", "transcribe", "search", "instruct", "codex", "computer-use", "babbage", "davinci"]
+            for model in object["data"] as? [[String: Any]] ?? [] {
+                guard let id = model["id"] as? String else { continue }
+                let chat = id.hasPrefix("gpt-") || id.hasPrefix("chatgpt-") || id.range(of: #"^o\d"#, options: .regularExpression) != nil
+                if chat, !excluded.contains(where: id.contains) { ids.append(id) }
+            }
+        default:
+            ids = (object["data"] as? [[String: Any]] ?? []).compactMap { $0["id"] as? String }
+        }
+        guard !ids.isEmpty || object["data"] != nil || object["models"] != nil else { throw SummaryFailure.invalidResponse }
+        return Array(Set(ids)).sorted()
     }
 }
 

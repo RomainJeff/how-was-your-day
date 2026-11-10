@@ -60,9 +60,9 @@ import HWYDCore
         model.calendar.selectedCalendars = ["preview"]
         model.calendar.status = "1 réunion dans les 7 prochains jours"
         model.calendar.notificationStatus = "Aperçu synthétique, aucune notification envoyée"
-        model.calendar.upcoming = [.init(id: "preview-meeting", title: "Point produit", start: Date().addingTimeInterval(600), end: Date().addingTimeInterval(2400), calendarTitle: "Travail")]
+        model.calendar.upcoming = [.init(id: "preview-meeting", title: "Point produit", start: Date().addingTimeInterval(600), end: Date().addingTimeInterval(2400), calendarTitle: "Travail", meetingURL: URL(string: "https://meet.google.com/abc-defg-hij")), .init(id: "preview-room", title: "Atelier en salle", start: Date().addingTimeInterval(4200), end: Date().addingTimeInterval(6000), calendarTitle: "Travail")]
         render(CalendarSettingsView(calendar: model.calendar), size: .init(width: 500, height: 760), to: directory.appendingPathComponent("studio-calendar-settings.png"))
-        render(UpcomingMeetingsView(calendar: model.calendar).environmentObject(model), size: .init(width: 780, height: 130), to: directory.appendingPathComponent("studio-calendar-upcoming.png"))
+        render(UpcomingMeetingsView(calendar: model.calendar).environmentObject(model), size: .init(width: 780, height: 210), to: directory.appendingPathComponent("studio-calendar-upcoming.png"))
         model.calendar.enabled = false; model.calendar.upcoming = []; model.calendar.calendars = []
         model.showSettings = true
         for category in SettingsCategory.allCases {
@@ -74,6 +74,8 @@ import HWYDCore
         // Preview models never read the keychain or persist this choice.
         model.selectSummaryService(.anthropic)
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-settings-summary-remote.png"))
+        model.selectSummaryService(.agent)
+        render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-settings-summary-agent.png"))
         model.selectSummaryService(.local)
         model.showSettings = false
         model.activeCaptureID = nil; model.isDemoMode = false

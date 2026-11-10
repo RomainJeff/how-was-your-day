@@ -17,6 +17,13 @@ public struct SummaryTopic: Codable, Equatable, Sendable {
     public var text: String
     public var evidence_segment_ids: [UUID]
 }
+/// Context an agent adds from its own knowledge of the user, with the sources it consulted.
+public struct SummaryContextNote: Codable, Equatable, Sendable {
+    public var title: String
+    public var text: String
+    public var sources: [String]
+    public init(title: String, text: String, sources: [String]) { self.title = title; self.text = text; self.sources = sources }
+}
 public struct SummaryContent: Codable, Equatable, Sendable {
     public var overview: String
     public var decisions: [SummaryDecision]
@@ -24,6 +31,9 @@ public struct SummaryContent: Codable, Equatable, Sendable {
     // Optional for decoding summaries saved before summary-v4.
     public var key_points: [SummaryTopic]? = nil
     public var details: [SummaryTopic]? = nil
+    /// Agent mode only: links to the user's own context (people, projects, earlier decisions).
+    /// Kept apart from the session content, which only reports what was said.
+    public var context: [SummaryContextNote]? = nil
     public var markdown: String {
         var text = "## Résumé\n\n" + overview
         for point in key_points ?? [] { text += "\n\n### " + point.title + "\n\n" + point.text }
@@ -32,6 +42,13 @@ public struct SummaryContent: Codable, Equatable, Sendable {
         if let details, !details.isEmpty {
             text += "\n\n## Détails"
             for topic in details { text += "\n\n### " + topic.title + "\n\n" + topic.text }
+        }
+        if let context, !context.isEmpty {
+            text += "\n\n## Contexte"
+            for note in context {
+                text += "\n\n### " + note.title + "\n\n" + note.text
+                if !note.sources.isEmpty { text += "\n\nSources : " + note.sources.joined(separator: ", ") }
+            }
         }
         return text
     }
@@ -54,6 +71,9 @@ public protocol LLMProvider: Sendable {
     var requestCharacterCeiling: Int { get }
     /// Largest transcript window, in source characters, read by one extraction request.
     var extractionWindowCharacters: Int { get }
+    /// Whether one identical retry can succeed after an output fails validation. True for hosted
+    /// models, which sample without a fixed temperature; local requests use temperature 0.
+    var retriesRejectedOutput: Bool { get }
     func plan(prompt: String, evidenceIDs: [UUID]) async throws -> SummaryContent
     func generate(prompt: String) async throws -> SummaryContent
     func generate(prompt: String, evidenceIDs: [UUID]) async throws -> SummaryContent
@@ -62,12 +82,13 @@ extension LLMProvider {
     public var intermediateLanguage: SummaryIntermediateLanguage { .french }
     public var requestCharacterCeiling: Int { SummaryPipeline.maximumInputCharacters }
     public var extractionWindowCharacters: Int { 12_000 }
+    public var retriesRejectedOutput: Bool { false }
     public func plan(prompt: String, evidenceIDs: [UUID]) async throws -> SummaryContent { try await generate(prompt: prompt, evidenceIDs: evidenceIDs) }
     public func generate(prompt: String, evidenceIDs: [UUID]) async throws -> SummaryContent { try await generate(prompt: prompt) }
 }
 public enum SummaryFailure: LocalizedError {
     case contextTooSmall, invalidEndpoint, invalidResponse, noTranscript, stale, authenticationRequired, serverError(Int), outputTruncated, incompatibleSchema, unreliableContent
-    case apiKeyMissing(String), remoteConsentMissing(String), remoteRejected(service: String, status: Int, detail: String), refused(String)
+    case invalidContent(String), apiKeyMissing(String), modelMissing(String), remoteRejected(service: String, status: Int, detail: String), refused(String)
     public var errorDescription: String? {
         switch self {
         case .contextTooSmall: "Un passage ou une étape dépasse le budget de traitement borné. La synthèse n’a pas été enregistrée. Un contexte serveur plus grand ne supprime pas cette limite."
@@ -78,10 +99,11 @@ public enum SummaryFailure: LocalizedError {
         case .outputTruncated: "Le modèle a atteint la limite de sortie avant de terminer la synthèse. Aucun résultat partiel n’a été enregistré."
         case .incompatibleSchema: "Le moteur local ne prend pas en charge le schéma JSON demandé. Vérifiez sa compatibilité avec les sorties structurées."
         case .invalidResponse: "Le modèle a renvoyé une synthèse invalide ou des références inconnues."
+        case .invalidContent(let reason): "Le modèle a renvoyé une synthèse incohérente : \(reason). Aucun résultat n’a été enregistré."
         case .noTranscript: "Un transcript est nécessaire pour générer une synthèse."
         case .stale: "La session a changé pendant la génération. Relancez la synthèse."
         case .apiKeyMissing(let service): "Enregistrez une clé API \(service) dans les réglages de synthèse."
-        case .remoteConsentMissing(let service): "Autorisez l’envoi des transcripts à \(service) dans les réglages de synthèse."
+        case .modelMissing(let service): "Choisissez un modèle \(service) dans les réglages de synthèse."
         case .remoteRejected(let service, let status, let detail):
             status == 401 || status == 403 ? "\(service) a refusé la clé API (HTTP \(status)). \(detail)"
                 : status == 429 ? "\(service) limite les requêtes ou le quota est épuisé (HTTP 429). \(detail)"
@@ -366,28 +388,38 @@ public enum SummaryPipeline {
     }
 
     public static func validate(_ result: SummaryContent, segments: [TranscriptSegment], speakers: [Speaker] = [], maximumEvidenceReferences: Int = 3, maximumDetails: Int = 16) throws {
+        func fail(_ reason: String) -> SummaryFailure { .invalidContent(reason) }
+        func quoted(_ text: String) -> String { "« " + (text.count > 60 ? String(text.prefix(60)) + "…" : text) + " »" }
         let ids = Set(segments.map(\.id))
-        guard !result.overview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, result.overview.count <= 20_000 else { throw SummaryFailure.invalidResponse }
+        guard !result.overview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw fail("résumé vide") }
+        guard result.overview.count <= 20_000 else { throw fail("résumé trop long") }
         try validateQuality(result, segments: segments)
-        guard (result.key_points ?? []).count <= 4, (result.details ?? []).count <= maximumDetails else { throw SummaryFailure.invalidResponse }
+        guard (result.key_points ?? []).count <= 4 else { throw fail("plus de quatre points essentiels") }
+        guard (result.details ?? []).count <= maximumDetails else { throw fail("plus de \(maximumDetails) thèmes") }
         for topic in (result.key_points ?? []) + (result.details ?? []) {
-            guard !topic.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, topic.title.count <= 160,
-                  !topic.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, topic.text.count <= 2200,
-                  (1...maximumEvidenceReferences).contains(topic.evidence_segment_ids.count), Set(topic.evidence_segment_ids).isSubset(of: ids) else { throw SummaryFailure.invalidResponse }
+            guard !topic.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, topic.title.count <= 160 else { throw fail("titre de thème vide ou trop long " + quoted(topic.title)) }
+            guard !topic.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, topic.text.count <= 2200 else { throw fail("paragraphe vide ou de plus de 2 200 caractères pour " + quoted(topic.title)) }
+            guard (1...maximumEvidenceReferences).contains(topic.evidence_segment_ids.count) else { throw fail("\(topic.evidence_segment_ids.count) références pour " + quoted(topic.title) + ", 1 à \(maximumEvidenceReferences) attendues") }
+            guard Set(topic.evidence_segment_ids).isSubset(of: ids) else { throw fail("référence hors des passages fournis pour " + quoted(topic.title)) }
         }
         for decision in result.decisions {
-            guard !decision.text.isEmpty, !decision.evidence_segment_ids.isEmpty, Set(decision.evidence_segment_ids).isSubset(of: ids) else { throw SummaryFailure.invalidResponse }
+            guard !decision.text.isEmpty, !decision.evidence_segment_ids.isEmpty else { throw fail("décision vide ou sans référence") }
+            guard Set(decision.evidence_segment_ids).isSubset(of: ids) else { throw fail("référence hors des passages fournis pour la décision " + quoted(decision.text)) }
         }
         for action in result.action_items {
-            guard !action.text.isEmpty, action.assignee_person_id == nil, !action.evidence_segment_ids.isEmpty, Set(action.evidence_segment_ids).isSubset(of: ids) else { throw SummaryFailure.invalidResponse }
+            guard !action.text.isEmpty, action.assignee_person_id == nil, !action.evidence_segment_ids.isEmpty else { throw fail("action vide ou sans référence") }
+            guard Set(action.evidence_segment_ids).isSubset(of: ids) else { throw fail("référence hors des passages fournis pour l’action " + quoted(action.text)) }
             if let name = action.assignee_name {
                 let candidates = speakers.filter { $0.label == name }
                 let evidence = segments.filter { action.evidence_segment_ids.contains($0.id) }
-                guard !candidates.isEmpty, evidence.contains(where: { segment in candidates.contains(where: { $0.id == segment.speakerID }) || segment.text.contains(name) }) else { throw SummaryFailure.invalidResponse }
+                guard !candidates.isEmpty else { throw fail("action " + quoted(action.text) + " attribuée à « \(name) », qui n’est pas une voix de la session") }
+                guard evidence.contains(where: { segment in candidates.contains(where: { $0.id == segment.speakerID }) || segment.text.contains(name) }) else {
+                    throw fail("action " + quoted(action.text) + " attribuée à \(name) sans passage cité où \(name) parle ou est nommé")
+                }
             }
             if let date = action.due_date {
                 guard date.range(of: "^\\d{4}-\\d{2}-\\d{2}$", options: .regularExpression) != nil,
-                      segments.filter({ action.evidence_segment_ids.contains($0.id) }).contains(where: { $0.text.contains(date) }) else { throw SummaryFailure.invalidResponse }
+                      segments.filter({ action.evidence_segment_ids.contains($0.id) }).contains(where: { $0.text.contains(date) }) else { throw fail("échéance \(date) absente des passages cités pour " + quoted(action.text)) }
             }
         }
     }

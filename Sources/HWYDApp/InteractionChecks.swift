@@ -97,10 +97,69 @@ import HWYDCore
               model.errorMessage == nil else { throw CaptureFailure(message: "Retry after cancellation failed") }
         print("Real Apple ASR through bundled helper: tracks, timestamps, persistence, concurrent notes, cancellation and retry: PASS")
     }
+    /// Agent summaries through the bundled `hwyd-mcp`: a scripted ACP agent connects to the real
+    /// helper, sees only `submit_summary`, gets a rejection it can read, then an acceptance.
+    private static func checkAgentSummary(directory: URL) async throws {
+        let model = AppModel(directory: directory, appliesAppearance: false)
+        await model.load()
+        let camille = Speaker(label: "Camille", confirmed: true)
+        var recording = Recording(title: "Agent fixture", speakers: [camille])
+        recording.segments = [TranscriptSegment(start: 0, end: 4, speakerID: camille.id, source: .mic, text: "On valide le lancement."),
+                              TranscriptSegment(start: 4, end: 8, speakerID: camille.id, source: .mic, text: "Je rédigerai l'annonce.")]
+        model.recordings = [recording]; model.selectedID = recording.id
+        model.update(recording.id) { $0.title = "Agent fixture" }
+        await model.flush()
+        guard let stored = try await model.store?.recording(recording.id) else { throw CaptureFailure(message: "Agent fixture not stored") }
+        let script = directory.appendingPathComponent("agent.py")
+        try """
+        import json, subprocess, sys
+        def send(obj): sys.stdout.write(json.dumps(obj) + "\\n"); sys.stdout.flush()
+        server = None
+        for line in sys.stdin:
+            msg = json.loads(line); m = msg.get("method")
+            if m == "initialize": send({"jsonrpc": "2.0", "id": msg["id"], "result": {"protocolVersion": 1, "agentInfo": {"name": "scripted", "version": "1"}}})
+            elif m == "session/new":
+                server = msg["params"]["mcpServers"][0]
+                send({"jsonrpc": "2.0", "id": msg["id"], "result": {"sessionId": "s"}})
+            elif m == "session/prompt":
+                mcp = subprocess.Popen([server["command"], *server["args"]], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+                number = [0]
+                def rpc(method, params):
+                    number[0] += 1
+                    mcp.stdin.write(json.dumps({"jsonrpc": "2.0", "id": number[0], "method": method, "params": params}) + "\\n"); mcp.stdin.flush()
+                    while True:
+                        reply = json.loads(mcp.stdout.readline())
+                        if reply.get("id") == number[0]: return reply
+                rpc("initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "scripted", "version": "1"}})
+                mcp.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\\n"); mcp.stdin.flush()
+                tools = [t["name"] for t in rpc("tools/list", {})["result"]["tools"]]
+                assert tools == ["submit_summary"], tools
+                bad = {"overview": "Lancement validé.", "decisions": [], "action_items": [], "details": [{"title": "Lancement", "text": "Validé.", "evidence_segment_ids": ["S9"]}]}
+                rejected = rpc("tools/call", {"name": "submit_summary", "arguments": {"summary": bad}})["result"]
+                assert rejected.get("isError") and "S9" in rejected["content"][0]["text"], rejected
+                good = {"overview": "Camille valide le lancement.", "decisions": [{"text": "Le lancement est validé.", "evidence_segment_ids": ["S1"]}],
+                        "action_items": [{"text": "Rédiger l'annonce.", "assignee_name": "Camille", "evidence_segment_ids": ["S2"]}],
+                        "details": [{"title": "Lancement", "text": "Le lancement est validé ; Camille rédigera l'annonce.", "evidence_segment_ids": ["S1", "S2"]}],
+                        "context": [{"title": "Projet", "text": "Prolonge une décision antérieure.", "sources": ["notes/projet.md"]}]}
+                accepted = rpc("tools/call", {"name": "submit_summary", "arguments": {"summary": good}})["result"]
+                assert not accepted.get("isError"), accepted
+                mcp.stdin.close(); mcp.wait(timeout=10)
+                send({"jsonrpc": "2.0", "id": msg["id"], "result": {"stopReason": "end_turn"}})
+        """.write(to: script, atomically: true, encoding: .utf8)
+        let helper = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/hwyd-mcp")
+        let result = try await ACPSummaryAgent.run(stored, command: "python3 " + script.path, workingDirectory: directory,
+                                                   mcpExecutable: helper, storeDirectory: directory)
+        guard result.structured.action_items.first?.evidence_segment_ids == [stored.segments[1].id],
+              result.structured.context?.first?.sources == ["notes/projet.md"], result.model == "scripted 1" else {
+            throw CaptureFailure(message: "Agent summary was not handed off through hwyd-mcp")
+        }
+        print("ACP agent summary through bundled hwyd-mcp: restricted tools, readable rejection, accepted handoff: PASS")
+    }
     static func run(directory: URL) async throws {
         try await PlaybackChecks.run(directory: directory.appendingPathComponent("playback"))
         try checkAppearancePreferences(directory: directory.appendingPathComponent("appearance-test"))
         try await checkSummaryLifecycle(directory: directory.appendingPathComponent("summary-lifecycle-test"))
+        try await checkAgentSummary(directory: directory.appendingPathComponent("agent-summary-test"))
         let model = AppModel(directory: directory)
         let previousDiarization = model.diarizationEnabled
         model.diarizationEnabled = false

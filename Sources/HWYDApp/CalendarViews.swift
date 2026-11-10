@@ -36,7 +36,7 @@ struct CalendarSettingsView: View {
                         if value { Task { await calendar.enableReminders() } }
                         else { calendar.reminders = false; calendar.saveSettings() }
                     })).disabled(calendar.busy)
-                    HelpButton(text: "Le clic « Rejoindre et enregistrer » ouvre la visio et lance la capture. Sans clic, aucun enregistrement. Les rappels des 7 prochains jours sont préparés tant que HWYD tourne ; un rappel peut s’afficher après sa fermeture.")
+                    HelpButton(text: "« Rejoindre et enregistrer » ouvre la visio et lance la capture ; « Enregistrer sans rejoindre » lance seulement la capture. Sans clic, aucun enregistrement. Les rappels des 7 prochains jours sont préparés tant que HWYD tourne ; un rappel peut s’afficher après sa fermeture.")
                 }
                 Picker("Prévenir", selection: Binding(get: { calendar.leadMinutes }, set: { calendar.leadMinutes = $0; calendar.saveSettings() })) {
                     Text("Au début").tag(0)
@@ -72,8 +72,16 @@ struct UpcomingMeetingsView: View {
                             Text("\(event.start.formatted(date: .abbreviated, time: .shortened)) · \(event.calendarTitle)").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
                         }
                         Spacer()
-                        Button(event.meetingURL == nil ? "Enregistrer" : "Rejoindre et enregistrer") { calendar.activate(event.id) }
-                            .buttonStyle(StudioButtonStyle()).disabled(model.activeCaptureID != nil || model.isStarting)
+                        Group {
+                            if event.meetingURL != nil {
+                                Button("Enregistrer") { calendar.activate(event.id, join: false) }
+                                    .buttonStyle(StudioButtonStyle()).help("Lance la capture sans ouvrir la visio")
+                                Button("Rejoindre et enregistrer") { calendar.activate(event.id, join: true) }
+                                    .buttonStyle(StudioButtonStyle(primary: true)).help("Ouvre la visio et lance la capture")
+                            } else {
+                                Button("Enregistrer") { calendar.activate(event.id, join: false) }.buttonStyle(StudioButtonStyle())
+                            }
+                        }.disabled(model.activeCaptureID != nil || model.isStarting)
                     }.padding(14).background(Studio.surface, in: RoundedRectangle(cornerRadius: 8))
                 }
             }

@@ -64,12 +64,12 @@ import HWYDCore
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { _ in
             Task { @MainActor in if AppEnvironment.model.activeCaptureID != nil { AppEnvironment.model.stopCapture() } }
         }
-        model.calendar.onAction = { [weak model] event in
+        model.calendar.onAction = { [weak model] event, join in
             Task { @MainActor in
                 guard let model else { return }
                 while model.isLoading { try? await Task.sleep(for: .milliseconds(100)) }
                 model.showWindow?()
-                if let event { model.joinMeeting(event) }
+                if let event { model.joinMeeting(event, openLink: join) }
             }
         }
         if !model.isDemoMode { model.calendar.start() }

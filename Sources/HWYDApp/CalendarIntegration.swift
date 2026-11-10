@@ -16,7 +16,8 @@ import HWYDCore
     @Published var status = "Non connecté"
     @Published var notificationStatus = "Notifications non activées"
     @Published var busy = false
-    var onAction: ((CalendarContext?) -> Void)?
+    /// Called with the event and whether to open its video link, or nil to only show the app.
+    var onAction: ((CalendarContext?, Bool) -> Void)?
     private let preferences: UserDefaults
     private let allowed: Bool
     private var active = false
@@ -47,8 +48,9 @@ import HWYDCore
         center.delegate = self
         let join = UNNotificationAction(identifier: "join-record", title: "Rejoindre et enregistrer", options: [.foreground])
         let record = UNNotificationAction(identifier: "record", title: "Enregistrer la réunion", options: [.foreground])
+        let recordOnly = UNNotificationAction(identifier: "record", title: "Enregistrer sans rejoindre", options: [.foreground])
         center.setNotificationCategories([
-            UNNotificationCategory(identifier: "meeting-online", actions: [join], intentIdentifiers: []),
+            UNNotificationCategory(identifier: "meeting-online", actions: [join, recordOnly], intentIdentifiers: []),
             UNNotificationCategory(identifier: "meeting-room", actions: [record], intentIdentifiers: [])
         ])
         timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
@@ -176,22 +178,23 @@ import HWYDCore
             notificationStatus = "Rappel de test envoyé pour dans 3 secondes."
         } catch { notificationStatus = "Test impossible : \(error.localizedDescription)" }
     }
-    func activate(_ id: String) {
+    /// `join` opens the event's video link before recording; otherwise HWYD only records.
+    func activate(_ id: String, join: Bool = true) {
         guard allowed, active, enabled else { return }
         // Never trust the notification payload for a URL, nor a stale/cancelled occurrence.
         guard let event = events(now: Date()).first(where: { $0.id == id }) else {
-            status = "Cette réunion n’est plus disponible ou a été déplacée."; onAction?(nil); return
+            status = "Cette réunion n’est plus disponible ou a été déplacée."; onAction?(nil, false); return
         }
         center.removeDeliveredNotifications(withIdentifiers: [Self.prefix + id])
         // Opening or recording an event does not dismiss its future calendar reminder.
-        onAction?(event)
+        onAction?(event, join)
     }
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         let id = response.notification.request.content.userInfo["meetingID"] as? String
         let action = response.actionIdentifier
         await MainActor.run {
-            if ["join-record", "record"].contains(action), let id { self.activate(id) }
-            else if action == UNNotificationDefaultActionIdentifier { self.onAction?(nil) }
+            if ["join-record", "record"].contains(action), let id { self.activate(id, join: action == "join-record") }
+            else if action == UNNotificationDefaultActionIdentifier { self.onAction?(nil, false) }
         }
     }
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions { [.banner, .sound] }

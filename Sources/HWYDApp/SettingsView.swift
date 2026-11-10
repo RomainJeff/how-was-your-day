@@ -53,8 +53,14 @@ struct SettingsView: View {
             .onChange(of: model.summaryContextTokens) { _, _ in model.saveSummarySettings() }
             .onChange(of: model.summaryReasoningDisabled) { _, _ in model.saveSummarySettings() }
             .onChange(of: model.summaryRemoteModel) { _, _ in model.saveSummarySettings() }
-            .onChange(of: model.summaryRemoteConsent) { _, _ in model.saveSummarySettings() }
+            .onChange(of: model.summaryAgentCommand) { _, _ in model.saveSummarySettings() }
+            .onChange(of: model.summaryAgentDirectory) { _, _ in model.saveSummarySettings() }
             .onDisappear { model.saveSummarySettings() }
+            .task(id: model.settingsCategory == .summary ? model.summaryService.rawValue + String(model.summaryKeyStored) : "") {
+                guard model.settingsCategory == .summary else { return }
+                if model.summaryService == .agent { model.detectSummaryAgents() }
+                else if model.summaryAvailableModels.isEmpty { model.refreshSummaryModels() }
+            }
     }
     @ViewBuilder private var content: some View {
         switch model.settingsCategory {
@@ -106,12 +112,16 @@ struct SettingsView: View {
         case .summary:
             section("Synthèse", symbol: "sparkles", help: "Chaque synthèse est lancée manuellement depuis la session. Les étapes validées sont conservées pour reprendre après une interruption.") {
                 toggleRow("Activer la synthèse", isOn: $model.summaryEnabled)
-                row("Fournisseur", help: "Le serveur local garde le transcript sur ce Mac. Mistral, OpenAI, Anthropic et Google Gemini le reçoivent à chaque synthèse, une fois l’envoi autorisé.") {
+                row("Fournisseur", help: "Le serveur local garde le transcript sur ce Mac. Un agent ACP (Claude Code, Codex…) rédige avec votre propre contexte. Avec Mistral, OpenAI, Anthropic ou Google Gemini, le transcript est envoyé au fournisseur à chaque synthèse, une fois sa clé API enregistrée.") {
                     Picker("Fournisseur", selection: Binding(get: { model.summaryService }, set: { model.selectSummaryService($0) })) {
                         ForEach(SummaryService.allCases) { service in Text(service.displayName).tag(service) }
                     }.labelsHidden().frame(width: 200)
                 }
-                if model.summaryService.isRemote { remoteSummaryRows } else { localSummaryRows }
+                switch model.summaryService {
+                case .local: localSummaryRows
+                case .agent: agentSummaryRows
+                default: remoteSummaryRows
+                }
             }.disabled(model.isDemoMode)
         case .data:
             section("Données locales", symbol: "internaldrive") {
@@ -147,6 +157,34 @@ struct SettingsView: View {
         }
         toggleRow("Désactiver le raisonnement étendu", help: "Peut réduire le temps de génération. À activer si le modèle ne renvoie pas de synthèse avec les sorties structurées. Le serveur doit accepter cette option.", isOn: $model.summaryReasoningDisabled)
     }
+    @ViewBuilder private var agentSummaryRows: some View {
+        row("Agent", help: "Agent compatible ACP (Agent Client Protocol) installé et connecté sur ce Mac. La commande s’exécute dans un shell de connexion ; vous pouvez en saisir une autre.") {
+            Menu {
+                ForEach(ACPAgentPreset.all) { preset in
+                    let installed = model.summaryDetectedAgents.contains(preset.command)
+                    Button {
+                        model.summaryAgentCommand = preset.command
+                    } label: {
+                        if model.summaryAgentCommand == preset.command { Label(preset.name, systemImage: "checkmark") }
+                        else { Text(installed ? preset.name : preset.name + " (non installé)") }
+                    }
+                }
+            } label: {
+                Text(ACPAgentPreset.all.first { $0.command == model.summaryAgentCommand }?.name ?? "Autre")
+            }.fixedSize()
+            TextField("claude-agent-acp", text: $model.summaryAgentCommand).textFieldStyle(.roundedBorder).frame(width: 200)
+                .font(.system(size: Studio.Size.caption, design: .monospaced))
+                .accessibilityLabel("Commande de l’agent")
+        }
+        row("Dossier de travail", help: "L’agent démarre dans ce dossier. Choisissez celui où il trouve son contexte : instructions, mémoire, notes.") {
+            Text(model.summaryAgentDirectory).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).lineLimit(1).truncationMode(.middle)
+            Button("Choisir…") { model.chooseSummaryAgentDirectory() }.buttonStyle(StudioButtonStyle(compact: true))
+        }
+        Text("L’agent reçoit le titre, le transcript et les noms des voix, et peut consulter son propre contexte pour situer les personnes et les projets. Ce qu’il en tire apparaît dans une section Contexte, à part. Il remet la synthèse à HWYD par l’outil submit_summary ; HWYD refuse ses demandes d’écriture, de suppression ou d’exécution. Les autorisations déjà accordées dans la configuration de l’agent restent les siennes.")
+            .font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .top) { Rectangle().fill(Studio.line.opacity(0.55)).frame(height: 0.5) }
+    }
     @ViewBuilder private var remoteSummaryRows: some View {
         let name = model.summaryService.displayName
         row("Clé API", help: "Stockée dans le trousseau de ce Mac, jamais dans les réglages, les exports ou la base. Les requêtes sont facturées sur votre compte \(name).") {
@@ -160,10 +198,34 @@ struct SettingsView: View {
                     .buttonStyle(StudioButtonStyle(compact: true)).disabled(apiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        row("Modèle", help: "Identifiant exact du modèle chez \(name). Le contexte des modèles hébergés est bien plus grand que celui d’un serveur local : une session d’une heure tient en quelques requêtes.") {
-            TextField(model.summaryService.defaultModel, text: $model.summaryRemoteModel).textFieldStyle(.roundedBorder).frame(width: 220)
+        row("Modèle", help: "Liste des modèles proposés par \(name) pour votre clé. Vous pouvez aussi saisir un identifiant. Le contexte des modèles hébergés est bien plus grand que celui d’un serveur local : une session d’une heure tient en quelques requêtes.") {
+            if model.summaryModelsLoading { ProgressView().controlSize(.small) }
+            TextField(model.summaryKeyStored ? "Choisissez un modèle" : model.summaryService.defaultModel, text: $model.summaryRemoteModel)
+                .textFieldStyle(.roundedBorder).frame(width: 220)
+                .textInputSuggestions {
+                    ForEach(modelSuggestions, id: \.self) { id in Text(id).textInputCompletion(id) }
+                }
+            Menu {
+                ForEach(model.summaryAvailableModels, id: \.self) { id in
+                    Button(id) { model.summaryRemoteModel = id }
+                }
+                if !model.summaryAvailableModels.isEmpty { Divider() }
+                Button("Actualiser la liste") { model.refreshSummaryModels() }.disabled(!model.summaryKeyStored || model.summaryModelsLoading)
+            } label: { Image(systemName: "list.bullet") }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                .help(model.summaryKeyStored ? "Modèles disponibles chez \(name)" : "Enregistrez une clé pour afficher les modèles")
+                .accessibilityLabel("Modèles disponibles")
         }
-        toggleRow("Envoyer les transcripts à \(name)", help: "À chaque synthèse, le titre, le transcript et les noms des voix de la session partent vers les serveurs de \(name), dont les conditions de traitement et de conservation s’appliquent. Les notes, l’audio et les empreintes vocales ne sont jamais envoyés. Désactivé, aucune requête n’est faite.", isOn: $model.summaryRemoteConsent)
+        Text("À chaque synthèse, le titre, le transcript et les noms des voix sont envoyés à \(name), dont les conditions de traitement et de conservation s’appliquent. Les notes, l’audio et les empreintes vocales restent sur ce Mac.")
+            .font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .top) { Rectangle().fill(Studio.line.opacity(0.55)).frame(height: 0.5) }
+    }
+    /// Models matching what is typed, at most ten, for the field's completion list.
+    private var modelSuggestions: [String] {
+        let typed = model.summaryRemoteModel.trimmingCharacters(in: .whitespaces).lowercased()
+        let matches = typed.isEmpty ? model.summaryAvailableModels : model.summaryAvailableModels.filter { $0.lowercased().contains(typed) && $0.lowercased() != typed }
+        return Array(matches.prefix(10))
     }
     private func channels(_ person: VoicePerson) -> String {
         (person.enrolledChannels ?? []).map { (channel: VoiceChannel) -> String in
