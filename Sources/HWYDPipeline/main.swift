@@ -20,17 +20,18 @@ import HWYDCore
                 FileHandle.standardOutput.write(try JSONEncoder().encode(await AppleSpeechRecognizer.locales()))
             case "install-model":
                 try await AppleSpeechRecognizer().install(locale: args.count > 1 ? args[1] : "fr-FR")
-                print("Modèle installé.")
+                print("Modèle installé.") // l10n:ignore (log line)
             case "install-diarizer" where args.count == 2:
                 try await DiarizationStage.install(directory: URL(fileURLWithPath: args[1]).appendingPathComponent("models/diarization"))
-                print("Modèles de séparation des voix installés.")
+                print("Modèles de séparation des voix installés.") // l10n:ignore (log line)
             case let command where (command == "transcribe" || command == "transcribe-calibration") && args.count == 4:
                 let store = try SessionStore(directory: URL(fileURLWithPath: args[1]))
                 let lock = open(store.directory.appendingPathComponent("pipeline.lock").path, O_CREAT | O_RDWR | O_CLOEXEC, 0o600)
                 guard lock >= 0 else { throw CLIError(message: String(localized: "Impossible de verrouiller le pipeline.", bundle: .hwyd)) }
                 defer { close(lock) }
                 guard flock(lock, LOCK_EX | LOCK_NB) == 0 else { throw CLIError(message: String(localized: "Un autre pipeline traite déjà ce store.", bundle: .hwyd)) }
-                let request = try JSONDecoder().decode(TranscriptionRequest.self, from: Data(contentsOf: URL(fileURLWithPath: args[2])))
+                var request = try JSONDecoder().decode(TranscriptionRequest.self, from: Data(contentsOf: URL(fileURLWithPath: args[2])))
+                if request.locale == SpeechLanguage.automatic { request = request.resolvingLanguages(await AppleSpeechRecognizer.locales()) }
                 if command == "transcribe-calibration", request.diarize != true {
                     throw CLIError(message: String(localized: "La calibration nécessite diarize: true dans la requête.", bundle: .hwyd))
                 }

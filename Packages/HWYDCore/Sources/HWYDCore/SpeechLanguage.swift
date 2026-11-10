@@ -1,4 +1,5 @@
 import Foundation
+import NaturalLanguage
 
 /// Transcription language choices. A session stores either a locale identifier (`fr-FR`) or
 /// `automatic`, which lets the pipeline pick among the installed languages.
@@ -43,8 +44,21 @@ public enum SpeechLanguage {
         }
         return candidates.first(where: { languageCode(of: $0) == "fr" }) ?? candidates.first ?? defaultLocale
     }
+    /// NaturalLanguage names some languages differently from Apple Speech: Chinese has a
+    /// simplified and a traditional script, and Cantonese is written in traditional script.
+    public static func naturalLanguages(for identifier: String) -> [NLLanguage] {
+        switch languageCode(of: identifier) {
+        case "zh": identifier.uppercased().hasSuffix("TW") || identifier.uppercased().hasSuffix("HK") ? [.traditionalChinese, .simplifiedChinese] : [.simplifiedChinese, .traditionalChinese]
+        case "yue": [.traditionalChinese]
+        case let code: [NLLanguage(rawValue: code)]
+        }
+    }
+    /// Whether a speech locale can be the language NaturalLanguage recognized.
+    public static func matches(_ identifier: String, _ language: NLLanguage) -> Bool {
+        naturalLanguages(for: identifier).contains(language)
+    }
     /// Name of the language in the interface language, capitalized (`Français`, `English`).
-    public static func displayName(_ identifier: String, in locale: Locale = .current) -> String {
+    public static func displayName(_ identifier: String, in locale: Locale = Locale(identifier: HWYDLocalization.current)) -> String {
         let name = locale.localizedString(forLanguageCode: languageCode(of: identifier)) ?? identifier
         return name.prefix(1).uppercased() + name.dropFirst()
     }
