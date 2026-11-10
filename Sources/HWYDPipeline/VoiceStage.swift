@@ -36,67 +36,90 @@ enum VoiceStage {
         guard let embeddings = result.speakerDatabase, embeddings.count == 1, let vector = embeddings.values.first else { throw VoiceError.insufficientSpeech }
         return try VoiceKeychain.normalized(vector)
     }
-    static func run(command: String, store: SessionStore, job: VoiceJob) async throws -> [String: VoiceMatch] {
-        if command == "probe-voice" {
+    /// Runs one voice command. The result is JSON: matches for enrollment and identification,
+    /// contributions for `voice-sources`, nothing otherwise. It never carries a vector.
+    static func run(command: String, store: SessionStore, job: VoiceJob) async throws -> Data {
+        let empty = try JSONEncoder().encode([String: VoiceMatch]())
+        switch command {
+        case "probe-voice":
             guard job.recording.isDemo, let speaker = job.recording.speakers.first(where: { $0.id == job.speakerID }) else { throw VoiceError.insufficientSpeech }
             _ = try await embedding(recording: job.recording, speaker: speaker, store: store)
-            return [:]
-        }
-        if command == "forget-voice", let id = job.personID {
-            try VoiceKeychain.remove(person: id); return [:]
+            return empty
+        case "forget-voice":
+            guard let id = job.personID else { throw StoreError.notFound }
+            try VoiceKeychain.remove(person: id)
+            try await updateChannels(person: id, store: store, channels: [])
+            return empty
+        case "forget-voice-source":
+            guard let id = job.personID else { throw StoreError.notFound }
+            let remaining = try VoiceKeychain.remove(person: id, recordingID: job.sourceRecordingID)
+            try await updateChannels(person: id, store: store, channels: remaining)
+            return empty
+        case "voice-sources":
+            guard let id = job.personID else { throw StoreError.notFound }
+            return try JSONEncoder().encode(VoiceKeychain.contributions(person: id))
+        default: break
         }
         let people = try await store.people().filter { $0.recognitionEnabled }
+        let speaker = job.recording.speakers.first { $0.id == job.speakerID }
         let working = store.directory.appendingPathComponent("jobs/voice-audio-\(UUID())")
         try FileManager.default.createDirectory(at: working, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         defer { try? FileManager.default.removeItem(at: working) }
-        let prepared = job.channel == .remote ? EchoPreparation() : try EchoCancellation.prepare(
-            TranscriptionRequest(recordingID: job.recording.id, chunks: job.recording.audioChunks), store: store, directory: working)
+        // Microphone audio needs the echo of the call removed, for enrollment and for the identification that follows.
+        let prepared = job.recording.audioChunks.contains(where: { $0.source == .mic }) ? try EchoCancellation.prepare(
+            TranscriptionRequest(recordingID: job.recording.id, chunks: job.recording.audioChunks), store: store, directory: working) : EchoPreparation()
         if command == "enroll-voice" {
-            guard let person = people.first(where: { $0.id == job.personID }), let speaker = job.recording.speakers.first(where: { $0.id == job.speakerID }) else { throw VoiceError.consentRequired }
-            guard job.channel == .remote ? speaker.source == .system : speaker.source == .mic else { throw VoiceError.invalidVector }
+            guard let person = people.first(where: { $0.id == job.personID }), let speaker else { throw VoiceError.consentRequired }
+            let channel = VoiceChannel(source: speaker.source)
             let vector = try await embedding(recording: job.recording, speaker: speaker, store: store, audioOverrides: prepared.chunks)
             // Recheck enrollment eligibility after the expensive model run.
             guard try await store.people().contains(where: { $0.id == person.id && $0.recognitionEnabled }) else { throw VoiceError.consentRequired }
-            try VoiceKeychain.add(vector, person: person.id, channel: job.channel)
+            try VoiceKeychain.add(vector, person: person.id, channel: channel, recordingID: job.recording.id, speakerID: speaker.id)
             guard var current = try await store.people().first(where: { $0.id == person.id }), current.recognitionEnabled else {
                 try VoiceKeychain.remove(person: person.id); throw VoiceError.consentRequired
             }
-            current.enrolledChannels = Array(Set((current.enrolledChannels ?? []) + [job.channel])).sorted { $0.rawValue < $1.rawValue }
+            current.enrolledChannels = VoiceChannel.allCases.filter { current.channels.contains($0) || $0 == channel }
             current.lastEnrolledAt = Date()
             try await store.savePerson(current)
-            return [:]
+            // The new sample may name other voices of this session: look again. The sample is stored
+            // already, so a failure here only costs the suggestions.
+            do { return try JSONEncoder().encode(await identify(recording: job.recording, store: store, audioOverrides: prepared.chunks)) }
+            catch { return empty }
         }
-        return try await identify(recording: job.recording, store: store, channels: [job.channel], audioOverrides: prepared.chunks)
+        return try JSONEncoder().encode(await identify(recording: job.recording, store: store, audioOverrides: prepared.chunks))
     }
-    static func identify(recording: Recording, store: SessionStore, channels: [VoiceChannel] = VoiceChannel.allCases, audioOverrides: [UUID: URL] = [:]) async throws -> [String: VoiceMatch] {
+    private static func updateChannels(person id: UUID, store: SessionStore, channels: [VoiceChannel]) async throws {
+        guard var person = try await store.people().first(where: { $0.id == id }) else { return }
+        person.enrolledChannels = channels.isEmpty ? nil : channels
+        if channels.isEmpty { person.lastEnrolledAt = nil }
+        try await store.savePerson(person)
+    }
+    /// Proposes a known person for each voice. A voice is compared with the exemplars of its own channel;
+    /// a person known only on the other channel can still be proposed, above a stricter threshold.
+    static func identify(recording: Recording, store: SessionStore, audioOverrides: [UUID: URL] = [:]) async throws -> [String: VoiceMatch] {
         let people = try await store.people().filter(\.recognitionEnabled)
         guard !people.isEmpty else { return [:] }
-        var exemplars: [VoiceChannel: [[[Float]]]] = [:]
-        for channel in channels { exemplars[channel] = try people.map { try VoiceKeychain.vectors(person: $0.id, channel: channel) } }
+        let exemplars: [[VoiceChannel: [[Float]]]] = try people.map { person in
+            try Dictionary(uniqueKeysWithValues: VoiceChannel.allCases.map { ($0, try VoiceKeychain.vectors(person: person.id, channel: $0)) })
+        }
+        guard exemplars.contains(where: { $0.values.contains { !$0.isEmpty } }) else { return [:] }
         var speakers: [HWYDCore.Speaker] = []
-        var scores: [[Double]] = []
-        var winningChannels: [[VoiceChannel]] = []
-        for speaker in recording.speakers {
-            let eligible = channels.filter { speaker.source == .system ? $0 == .remote : $0 != .remote }
-            guard eligible.contains(where: { exemplars[$0]?.contains(where: { !$0.isEmpty }) == true }) else { continue }
+        var candidates: [[VoiceResolver.Candidate?]] = []
+        for speaker in recording.speakers where !speaker.ignored {
             do {
                 let vector = try await embedding(recording: recording, speaker: speaker, store: store, audioOverrides: audioOverrides)
-                var row: [Double] = [], bestChannels: [VoiceChannel] = []
-                for personIndex in people.indices {
-                    let ranked = eligible.map { channel in
-                        (channel, VoiceResolver.score(vector, exemplars: exemplars[channel]![personIndex]))
-                    }.sorted { $0.1 > $1.1 }
-                    row.append(ranked[0].1); bestChannels.append(ranked[0].0)
-                }
-                speakers.append(speaker); scores.append(row); winningChannels.append(bestChannels)
+                speakers.append(speaker)
+                candidates.append(exemplars.map { VoiceResolver.candidate(vector, channel: VoiceChannel(source: speaker.source), exemplars: $0) })
             } catch VoiceError.insufficientSpeech { continue }
         }
+        let scores = candidates.map { row in row.map { $0?.adjusted ?? -1 } }
         let assignment = VoiceResolver.assign(scores: scores)
         var result: [String: VoiceMatch] = [:]
         for i in speakers.indices {
-            guard let candidate = assignment[i] else { continue }
+            guard let index = assignment[i], let candidate = candidates[i][index] else { continue }
             let ranked = scores[i].sorted(by: >)
-            result[speakers[i].id.uuidString] = VoiceMatch(personID: people[candidate].id, score: scores[i][candidate], margin: ranked.count > 1 ? ranked[0] - ranked[1] : nil, channel: winningChannels[i][candidate])
+            result[speakers[i].id.uuidString] = VoiceMatch(personID: people[index].id, score: candidate.score, margin: ranked.count > 1 ? ranked[0] - ranked[1] : nil,
+                                                           channel: candidate.channel, crossChannel: candidate.crossChannel)
         }
         let stillEnabled = Set(try await store.people().filter(\.recognitionEnabled).map(\.id))
         return result.filter { stillEnabled.contains($0.value.personID) }

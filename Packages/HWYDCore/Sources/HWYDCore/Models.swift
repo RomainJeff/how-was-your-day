@@ -44,6 +44,8 @@ public struct TranscriptSegment: Codable, Identifiable, Equatable, Sendable {
     public var words: [TranscriptWord]?
     /// nil means not evaluated; true is a cross-track repetition hint, not proven echo.
     public var echoSuspect: Bool?
+    /// Voice detected for this segment before the user merged it into another one. Allows separating them again.
+    public var originalSpeakerID: UUID?
     public init(id: UUID = UUID(), start: Double, end: Double, speakerID: UUID?, source: AudioSource, text: String) {
         self.id = id; self.start = start; self.end = end; self.speakerID = speakerID; self.source = source; self.text = text
     }
@@ -78,6 +80,8 @@ public struct Recording: Codable, Identifiable, Equatable, Sendable {
     public var notes: String
     public var noteEntries: [NoteEntry]
     public var speakers: [Speaker]
+    /// Voices merged into another one on the same track, kept so the merge can be undone.
+    public var absorbedSpeakers: [Speaker]?
     public var segments: [TranscriptSegment]
     public var summaryProvenance: SummaryProvenance?
     public var summary: String?

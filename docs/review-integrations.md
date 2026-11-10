@@ -13,9 +13,9 @@ Les identifiants sont fixes : `dev.lepee.hwyd`, `dev.lepee.hwyd.pipeline`, `dev.
 | Chantier | Parcours | Résultat |
 |---|---|---|
 | Synthèse | Réglages → Synthèse locale. Activer, saisir endpoint `/v1` et identifiant exact du modèle. Ouvrir une session → Synthèse → Générer | Brouillon, modèle et version du prompt. Une correction pendant le calcul invalide le résultat |
-| Voix | Session → Identité des voix. Choisir canal et cluster, confirmer consentement et propreté des passages | Empreinte 256 dimensions dans le trousseau. Minimum 20 secondes. Aucun vecteur en SQLite ou dans les exports |
-| Reconnaissance | Autre session → Identité des voix → Chercher les voix consenties | Propositions à confirmer. Aucun renommage automatique |
-| Opposition | Identité des voix → Effacer et opposer | Suppression des empreintes des trois canaux et blocage des nouveaux enrôlements du même nom. Les noms historiques restent dans les transcripts |
+| Voix | Session → tuile de la voix → « Mémoriser cette voix… » (voix nommée, avec confirmation) ou « Nommer et mémoriser… » | Empreinte 256 dimensions dans le trousseau, canal déduit de la piste. Minimum 20 secondes. Aucun vecteur en SQLite ou dans les exports. La reconnaissance est relancée sur la session |
+| Reconnaissance | Automatique après la transcription | Propositions à confirmer. Aucun renommage confirmé automatiquement |
+| Retrait | Réglages → Audio et voix → personne → Retirer (par session), Effacer l’empreinte, Effacer et opposer, Lever l’exclusion | Retrait de l’apport d’une session, effacement sans opposition, ou suppression de toutes les empreintes avec blocage des nouveaux enrôlements du même nom jusqu’à levée. Les noms historiques restent dans les transcripts |
 | Exports | Réglages → Agents et exports → Choisir le dossier de publication | Les révisions en attente sont publiées. Les sauvegardes suivantes republient automatiquement |
 | Export ponctuel | Bouton Exporter d’une session | Copie indépendante dans le dossier choisi |
 | MCP | Configurer le client ci-dessous | L’app peut être fermée. Lecture directe du store |
@@ -51,8 +51,8 @@ Les ressources suivent `hwyd://recording/<UUID>/transcript.md`, `summary.md` et 
 | Résumé long | Fenêtres de 12 000 caractères. Résultats concaténés, sans consolidation supplémentaire. Pas de responsable déduit. Dates conservées seulement si explicites dans les segments cités |
 | Validation sémantique | Les références existent, mais cela ne prouve pas la fidélité de chaque affirmation. Aucun benchmark qualitatif déclaré réussi |
 | Embedding | FluidAudio 0.17.7, traitement des passages sélectionnés concaténés, une seule voix exigée dans le résultat. Jusqu’à 60 secondes par extraction |
-| Identité | Seuil expérimental 0,75, marge 0,10, moyenne des trois meilleurs exemplaires, affectation hongroise avec abstention. Même canal uniquement. Pas encore de bonus calendrier |
-| Exemplaires | Maximum 20 par personne et canal. Élimination de l’exemplaire le plus redondant. Ce n’est pas encore un k-médoïdes complet |
+| Identité | Seuil expérimental 0,75, marge 0,10, moyenne des trois meilleurs exemplaires, affectation hongroise avec abstention (une personne au plus par voix et par session). Même canal en priorité ; l’autre canal seulement si la personne n’y a aucun exemplaire, avec un seuil de 0,85. Pas encore de bonus calendrier |
+| Exemplaires | Maximum 20 par personne et canal (micro, visio), avec leur session d’origine. Élimination de l’exemplaire le plus redondant. Ce n’est pas encore un k-médoïdes complet |
 | Inconnus persistants | Non implémentés. Les voix non enrôlées restent locales à la session |
 | Opposition | Efface les vecteurs et bloque les correspondances. Ne supprime pas les noms, textes ou fichiers audio historiques |
 | Store | Migrations `ui_v002_people` et `ui_v003_integrations`. FTS5, séquence, reçus idempotents et outbox. Les tables `ui_*` ne sont pas encore le schéma normalisé cible |

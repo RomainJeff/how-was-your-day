@@ -73,7 +73,6 @@ struct CaptureView: View {
 struct SpeakerEditor: View {
     @EnvironmentObject var model: AppModel
     @State private var name = ""
-    @State private var channel: VoiceChannel = .near
     private var speaker: Speaker? { model.selected?.speakers.first { $0.id == model.editingSpeakerID } }
     private func confirm() { model.speakerName = name; model.confirmSpeaker() }
     var body: some View {
@@ -81,22 +80,16 @@ struct SpeakerEditor: View {
             Label("Nommer cette voix", systemImage: "person.crop.circle.badge.checkmark").font(.system(size: Studio.Size.heading, weight: .medium))
             Text("Le nom s’applique à cette voix dans toute la session. Mémorisez-la pour la reconnaître dans les prochaines.").font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted)
             TextField("Nom de la personne", text: $name).textFieldStyle(.roundedBorder).onSubmit { confirm() }
-            if speaker?.source == .mic {
-                Picker("Microphone", selection: $channel) {
-                    Text("Proche · mon micro").tag(VoiceChannel.near)
-                    Text("Salle · voix éloignée").tag(VoiceChannel.room)
-                }
-            }
-            Text("L’empreinte utilise au moins 20 secondes de cette voix et reste dans le trousseau du Mac.").font(.caption).foregroundStyle(Studio.muted)
+            Text("Mémoriser ajoute une empreinte de cette voix (20 secondes minimum) au trousseau de ce Mac. Faites-le seulement avec l’accord de la personne ; l’apport se retire dans Réglages › Audio et voix.").font(.caption).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button("Annuler") { model.editingSpeakerID = nil }.buttonStyle(StudioButtonStyle())
                 Spacer()
                 Button("Nommer seulement") { confirm() }.buttonStyle(StudioButtonStyle()).disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 Button("Nommer et mémoriser") {
-                    if let speaker { model.rememberSpeaker(name: name, speakerID: speaker.id, channel: speaker.source == .system ? .remote : channel) }
-                }.buttonStyle(StudioButtonStyle(primary: true)).disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.pipelineBusy || model.isDemoMode)
+                    if let speaker { model.rememberSpeaker(name: name, speakerID: speaker.id) }
+                }.buttonStyle(StudioButtonStyle(primary: true)).disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.pipelineBusy || model.isDemoMode || model.voiceEditingLocked)
             }
         }.padding(28).frame(width: 540).background(Studio.background).foregroundStyle(Studio.text).preferredColorScheme(model.appearancePreference.colorScheme)
-            .onAppear { name = model.speakerName; channel = speaker?.source == .system ? .remote : .near }
+            .onAppear { name = model.speakerName }
     }
 }

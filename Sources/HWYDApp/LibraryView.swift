@@ -12,7 +12,7 @@ struct LibraryView: View {
                         Text("Vos sessions").font(.system(size: Studio.Size.title, weight: .semibold)).tracking(-0.7)
                     }
                     Spacer()
-                    Button { model.startCapture() } label: { Label(model.isStarting ? "Préparation…" : model.isDemoMode ? "Simuler une session" : "Nouvelle session", systemImage: "record.circle") }
+                    Button { model.requestNewSession() } label: { Label(model.isDemoMode ? "Simuler une session" : "Nouvelle session", systemImage: "record.circle") }
                         .buttonStyle(StudioButtonStyle(primary: true)).disabled(model.isStarting)
                 }
                 if !model.isDemoMode { UpcomingMeetingsView(calendar: model.calendar) }

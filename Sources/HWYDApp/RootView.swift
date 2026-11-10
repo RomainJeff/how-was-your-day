@@ -9,14 +9,14 @@ struct RootView: View {
             Rectangle().fill(Studio.line).frame(width: 1)
             VStack(spacing: 0) {
                 if model.isDemoMode { banner("Mode découverte · exemples fictifs", color: Studio.mint, button: "Quitter") { model.leaveDemo() } }
-                if let error = model.errorMessage { banner(error, color: Studio.copper, button: "Fermer") { model.errorMessage = nil } }
-                if let notice = model.notice { banner(notice, color: Studio.mint, button: "OK") { model.notice = nil } }
                 if model.showSettings { SettingsView() }
+                else if model.showNewSession { NewSessionView() }
                 else if let item = model.selected {
                     if item.id == model.activeCaptureID { CaptureView(recording: item) }
                     else { DetailView(recording: item) }
                 } else { LibraryView() }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(alignment: .bottomTrailing) { ToastStack() }
         }
         .foregroundStyle(Studio.text).background(Studio.background).preferredColorScheme(model.appearancePreference.colorScheme)
         .frame(minWidth: 860, minHeight: 660)
@@ -32,12 +32,12 @@ struct RootView: View {
                 Image(systemName: "waveform").font(.system(size: 20)).foregroundStyle(Studio.mint)
                 Text("hwyd").font(.system(size: 24, weight: .semibold)).tracking(-1)
             }.padding(.vertical, 24).padding(.horizontal, 12)
-            nav("Toutes les sessions", symbol: "square.stack", selected: !model.showSettings && model.selectedID == nil) { model.library() }
+            nav("Toutes les sessions", symbol: "square.stack", selected: !model.showSettings && !model.showNewSession && model.selectedID == nil) { model.library() }
             // One entry for the capture: it starts a session, then becomes the running one.
             if let active = model.activeCapture {
                 nav("\(model.isCapturePaused ? "En pause" : "En cours") · \(timeLabel(model.elapsed))", symbol: model.isCapturePaused ? "pause.circle" : "record.circle", selected: !model.showSettings && model.selectedID == active.id) { model.select(active) }
             } else {
-                nav("Nouvelle session", symbol: "record.circle", selected: false) { model.startCapture() }
+                nav("Nouvelle session", symbol: "record.circle", selected: model.showNewSession && !model.showSettings) { model.requestNewSession() }
             }
             if model.showSettings {
                 Eyebrow(text: "Réglages").padding(.top, 26).padding(.horizontal, 12).padding(.bottom, 8)
@@ -84,8 +84,12 @@ struct MenuContentView: View {
                 Button { model.select(active); model.showWindow?() } label: { Label("Ouvrir les notes", systemImage: "macwindow.on.rectangle").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle())
             } else {
                 Text("Une conversation à garder ?").font(.system(size: Studio.Size.heading, weight: .medium))
-                Text("Réunion, appel ou pensée du moment.").font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted)
-                Button { model.startCapture() } label: { Label(model.isStarting ? "Préparation…" : model.isDemoMode ? "Simuler une session" : "Nouvelle session", systemImage: "record.circle").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle(primary: true)).disabled(model.isStarting)
+                Picker("Type", selection: $model.newSessionKind) {
+                    ForEach(SessionKind.allCases, id: \.self) { kind in Label(kind.label, systemImage: kind.symbol).tag(kind) }
+                }.labelsHidden()
+                TextField(NewSessionView.placeholder(model.newSessionKind), text: $model.newSessionTitle).textFieldStyle(.roundedBorder)
+                    .onSubmit { model.startCapture(kind: model.newSessionKind, title: model.newSessionTitle) }
+                Button { model.startCapture(kind: model.newSessionKind, title: model.newSessionTitle) } label: { Label(model.isStarting ? "Préparation…" : model.isDemoMode ? "Simuler l’enregistrement" : "Démarrer l’enregistrement", systemImage: "record.circle").frame(maxWidth: .infinity) }.buttonStyle(StudioButtonStyle(primary: true, destructive: true)).disabled(model.isStarting)
             }
             Divider().overlay(Studio.line)
             Button { model.library(); model.showWindow?() } label: { Label("Ouvrir les sessions", systemImage: "rectangle.on.rectangle").frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4).contentShape(Rectangle()) }.buttonStyle(.plain).font(.system(size: Studio.Size.body))

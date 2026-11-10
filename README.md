@@ -33,7 +33,8 @@ brew upgrade --cask how-was-your-day
 - Versioned Markdown/JSON exports and a standalone stdio MCP server with segment-aware pagination, structured transcripts and time/speaker/track filters.
 - Voice tiles in the session view: one per detected voice with its state (unidentified, proposed, confirmed). A click plays only that voice's passages back to back. Naming, confirming, linking to a known person or regrouping duplicates (menu or drag and drop) applies to the whole session and never creates a voice fingerprint. Two unnamed voices on different tracks must be named before they can be regrouped. A voice can also be ignored (speaker echo, noise): its passages are hidden from the transcript, the Markdown export, search, MCP and summaries, and can be restored from the tile.
 - The transcript follows playback and highlights the passages being heard. Scrolling pauses the follow; « Suivre la lecture » resumes it.
-- Explicit local voice enrollment from the speaker editor, with automatic name suggestions after diarization. Voice vectors stay in the macOS keychain, never in exports.
+- Explicit local voice enrollment from a voice tile, with automatic name suggestions after diarization. The channel (microphone or call) follows the track; a person known on only one channel can be suggested on the other above a stricter threshold. Settings show what each session added to a voice print and can withdraw it, erase the print, or oppose recognition. Voice vectors stay in the macOS keychain, never in exports.
+- Voice corrections can be undone from their notification, and a regrouped voice can be split back later.
 
 ## Current limitations
 
@@ -47,7 +48,7 @@ There is no automatic audio purge, app-level encryption, Sparkle updater or logi
 
 ## Data and consent
 
-Data lives in `~/Library/Application Support/HWYD`. Recording starts only on an explicit action. Inform participants and obtain the consent required for your use case. “Name only” changes the transcript; “Name and remember” also creates a local voice fingerprint. Suggested names require confirmation. Agents consuming your exports or MCP data may send that data elsewhere according to their own configuration. A hosted summary provider receives the transcript only after you enable it.
+Data lives in `~/Library/Application Support/HWYD`. Recording starts only on an explicit action. Inform participants and obtain the consent required for your use case. “Name only” and every other voice correction change the transcript; “Name and remember” and “Remember this voice” also add a local voice fingerprint, after an explicit action. Suggested names require confirmation. Agents consuming your exports or MCP data may send that data elsewhere according to their own configuration. A hosted summary provider receives the transcript only after you enable it.
 
 First-run model downloads are explicit. Audio is processed locally. No real recordings or transcripts are included in this repository.
 

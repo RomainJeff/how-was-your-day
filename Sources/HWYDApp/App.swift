@@ -20,7 +20,7 @@ import HWYDCore
                 Button("Réglages…") { model.showSettings = true; model.showWindow?() }.keyboardShortcut(",")
             }
             CommandGroup(replacing: .newItem) {
-                Button("Nouvelle session") { model.startCapture() }.keyboardShortcut("n")
+                Button("Nouvelle session") { model.requestNewSession() }.keyboardShortcut("n")
                 Button("Ouvrir les sessions") { model.showWindow?() }.keyboardShortcut("o")
             }
         }

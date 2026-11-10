@@ -43,8 +43,17 @@ import HWYDCore
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-notes.png"))
         model.activeTab = .summary
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-summary.png"))
+        model.report("Synthèse : Le modèle a renvoyé une synthèse incohérente : référence inconnue « S99 ».", style: .error,
+                     actions: [ToastAction(title: "Réessayer") {}, ToastAction(title: "Réglages") {}])
+        model.report("Synthèse prête : Point produit", style: .success, actions: [ToastAction(title: "Afficher") {}])
+        model.notice = "Voix nommée Camille dans toute cette session. Aucune empreinte vocale créée."
+        render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-toasts.png"))
+        for toast in model.toasts { model.dismissToast(toast.id) }
+        let previousSelection = model.selectedID
+        model.requestNewSession(); model.newSessionKind = .meeting
+        render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-new-session.png"))
+        model.showNewSession = false; model.selectedID = previousSelection
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 1500), to: directory.appendingPathComponent("studio-summary-full.png"))
-        render(VoiceIdentityView().environmentObject(model), size: .init(width: 610, height: 700), to: directory.appendingPathComponent("studio-voice-identity.png"))
         model.activeCaptureID = model.selectedID; model.elapsed = 1122; model.micLevel = 0.65; model.systemLevel = 0.35
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 850), to: directory.appendingPathComponent("studio-capture.png"))
         model.isCapturePaused = true; model.micLevel = 0; model.systemLevel = 0
@@ -69,6 +78,7 @@ import HWYDCore
             model.settingsCategory = category
             render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-settings-\(category.id == SettingsCategory.general.id ? "general" : String(describing: category)).png"))
         }
+        renderVoicePeople(model: model, to: directory.appendingPathComponent("studio-settings-voice-people.png"))
         model.settingsCategory = .summary
         render(RootView().environmentObject(model), size: .init(width: 860, height: 660), to: directory.appendingPathComponent("studio-settings-compact.png"))
         // Preview models never read the keychain or persist this choice.
@@ -109,6 +119,22 @@ import HWYDCore
         model.people = [lea]; model.recordings.append(example); model.selectedID = example.id; model.playback.voiceID = room.id
         render(VoiceTilesView(recording: example).environmentObject(model).padding(16), size: .init(width: 1040, height: 110), to: url)
         model.playback.voiceID = nil; model.people = previousPeople; model.recordings.removeAll { $0.id == example.id }; model.selectedID = previousSelection
+    }
+    /// Remembered people with their samples per session. Synthetic: the keychain is never read.
+    private static func renderVoicePeople(model: AppModel, to url: URL) {
+        var brice = VoicePerson(name: "Brice"); brice.enrollmentRequestedAt = Date(); brice.enrolledChannels = [.mic, .remote]
+        var lea = VoicePerson(name: "Léa"); lea.enrollmentRequestedAt = Date(); lea.enrolledChannels = [.mic]
+        var opposed = VoicePerson(name: "Jordan"); opposed.opposed = true
+        let session = Recording(title: "Point produit", isDemo: true)
+        let previousPeople = model.people
+        model.people = [brice, lea, opposed]; model.recordings.append(session)
+        model.voiceContributions[brice.id] = [
+            .init(recordingID: session.id, channel: .mic, count: 1, addedAt: Date()),
+            .init(recordingID: session.id, channel: .remote, count: 1, addedAt: Date()),
+            .init(recordingID: nil, channel: .mic, count: 3, addedAt: nil)]
+        render(VStack(spacing: 0) { VoicePersonRow(person: brice, expanded: true); VoicePersonRow(person: lea); VoicePersonRow(person: opposed) }
+            .environmentObject(model).padding(24), size: .init(width: 720, height: 300), to: url)
+        model.people = previousPeople; model.recordings.removeAll { $0.id == session.id }; model.voiceContributions = [:]
     }
     private static func render<V: View>(_ view: V, size: CGSize, to url: URL) {
         let host = NSHostingView(rootView: view.frame(width: size.width, height: size.height).background(Studio.background))

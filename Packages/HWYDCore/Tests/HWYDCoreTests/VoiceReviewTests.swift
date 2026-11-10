@@ -117,4 +117,57 @@ final class VoiceReviewTests: XCTestCase {
         let json = #"{"id":"467F65AC-2420-4C18-9043-CEEA5CE60254","label":"Voix 1","confirmed":false,"source":"mic"}"#
         XCTAssertFalse(try JSONDecoder().decode(Speaker.self, from: Data(json.utf8)).ignored)
     }
+
+    func testMergeCanBeSeparatedLater() throws {
+        let brice = Speaker(label: "Brice", confirmed: true), voice3 = Speaker(label: "Voix 3"), voice4 = Speaker(label: "Voix 4")
+        var item = Recording(title: "Test", speakers: [brice, voice3, voice4], segments: [
+            .init(start: 0, end: 1, speakerID: brice.id, source: .mic, text: "a"),
+            .init(start: 1, end: 2, speakerID: voice3.id, source: .mic, text: "b"),
+            .init(start: 2, end: 3, speakerID: voice3.id, source: .mic, text: "c"),
+            .init(start: 3, end: 4, speakerID: voice4.id, source: .mic, text: "d")], summary: "old")
+        try item.mergeSpeaker(voice3.id, into: brice.id)
+        try item.mergeSpeaker(voice4.id, into: brice.id)
+        XCTAssertEqual(item.speakers.map(\.id), [brice.id])
+        XCTAssertEqual(item.separableVoices(of: brice.id).map(\.id), [voice3.id, voice4.id])
+        // A passage moved by hand afterwards stays where the user put it.
+        try item.assignSpeaker(nil, to: item.segments[2].id)
+        let version = item.transcriptVersion
+        try item.separateSpeaker(voice3.id, from: brice.id)
+        XCTAssertEqual(item.speakers.map(\.id), [brice.id, voice3.id])
+        XCTAssertEqual(item.speakers[1].label, "Voix 3")
+        XCTAssertFalse(item.speakers[1].confirmed)
+        XCTAssertEqual(item.segments.map(\.speakerID), [brice.id, voice3.id, nil, brice.id])
+        XCTAssertEqual(item.segments[1].originalSpeakerID, nil)
+        XCTAssertEqual(item.separableVoices(of: brice.id).map(\.id), [voice4.id])
+        XCTAssertEqual(item.transcriptVersion, version + 1)
+        XCTAssertNil(item.summary)
+        XCTAssertThrowsError(try item.separateSpeaker(voice3.id, from: brice.id))
+        // The merge history survives a save and is reset by a new transcription.
+        let roundtrip = try JSONDecoder().decode(Recording.self, from: JSONEncoder().encode(item))
+        XCTAssertEqual(roundtrip.absorbedSpeakers?.map(\.id), [voice4.id])
+    }
+
+    func testMergingASeparatedVoiceAgainKeepsOneRecord() throws {
+        let a = Speaker(label: "A", confirmed: true), b = Speaker(label: "B")
+        var item = Recording(title: "Test", speakers: [a, b], segments: [
+            .init(start: 0, end: 1, speakerID: a.id, source: .mic, text: "a"),
+            .init(start: 1, end: 2, speakerID: b.id, source: .mic, text: "b")])
+        try item.mergeSpeaker(b.id, into: a.id)
+        try item.separateSpeaker(b.id, from: a.id)
+        XCTAssertNil(item.absorbedSpeakers)
+        try item.mergeSpeaker(b.id, into: a.id)
+        XCTAssertEqual(item.absorbedSpeakers?.map(\.id), [b.id])
+    }
+
+    func testSeparatingGivesBackALentIdentity() throws {
+        let brice = Speaker(label: "Brice", confirmed: true), voice2 = Speaker(label: "Voix 2")
+        var item = Recording(title: "Test", speakers: [brice, voice2], segments: [
+            .init(start: 0, end: 1, speakerID: brice.id, source: .mic, text: "a"),
+            .init(start: 1, end: 2, speakerID: voice2.id, source: .mic, text: "b")])
+        try item.mergeSpeaker(brice.id, into: voice2.id)
+        XCTAssertEqual(item.speakers.first?.label, "Brice")
+        try item.separateSpeaker(brice.id, from: voice2.id)
+        XCTAssertEqual(item.speakers.filter(\.confirmed).map(\.id), [brice.id])
+        XCTAssertFalse(item.speakers.first { $0.id == voice2.id }!.confirmed)
+    }
 }
