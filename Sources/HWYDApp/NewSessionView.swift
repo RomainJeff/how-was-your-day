@@ -34,7 +34,7 @@ struct NewSessionView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 6) {
                         Eyebrow(text: "Langue")
-                        HelpButton(text: "Langue de la transcription. En détection automatique, HWYD choisit parmi les langues installées d’après le début de l’enregistrement. Vous pourrez retranscrire dans une autre langue.")
+                        HelpButton(text: "En détection automatique, HWYD choisit la langue de chaque piste parmi les langues installées, d’après le début de l’enregistrement. Choisissez une langue pour l’imposer aux deux pistes. Vous pourrez retranscrire dans une autre langue.")
                     }
                     Picker("Langue", selection: $model.newSessionLanguage) {
                         ForEach(model.sessionLanguageChoices, id: \.self) { choice in Text(SessionLanguageLabel.title(choice)).tag(choice) }
@@ -79,9 +79,14 @@ enum SessionLanguageLabel {
     static func title(_ choice: String) -> String {
         choice == SpeechLanguage.automatic ? "Détection automatique" : SpeechLanguage.displayName(choice)
     }
-    /// The language a transcript was produced in, marked when it was detected.
+    /// The language a transcript was produced in, per track when they differ, marked when detected.
     static func transcript(_ provenance: TranscriptionProvenance) -> String {
-        let name = SpeechLanguage.displayName(provenance.locale)
-        return provenance.languageDetection?.method == .detected ? "\(name) (détectée)" : name
+        guard let detections = provenance.languageDetection, !detections.isEmpty else { return SpeechLanguage.displayName(provenance.locale) }
+        func name(_ detection: LanguageDetection) -> String {
+            SpeechLanguage.displayName(detection.locale) + (detection.method == .detected ? " (détectée)" : "")
+        }
+        let languages = Set(detections.map { SpeechLanguage.languageCode(of: $0.locale) })
+        if languages.count == 1, let first = detections.first(where: { $0.method == .detected }) ?? detections.first { return name(first) }
+        return detections.map { ($0.source == .mic ? "Micro : " : "Système : ") + name($0) }.joined(separator: " · ")
     }
 }

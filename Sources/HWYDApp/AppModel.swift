@@ -91,10 +91,8 @@ final class AppModel: ObservableObject {
     /// Language installing right now, shown next to its row.
     @Published var installingSpeechLocale: String?
     private let pipelineRunner = PipelineRunner()
-    /// Default transcription language for new sessions: a locale or `SpeechLanguage.automatic`.
-    @Published var speechLanguage = UserDefaults.standard.string(forKey: "speech.language") ?? SpeechLanguage.automatic {
-        didSet { if persistPreferences && !isDemoMode { preferences.set(speechLanguage, forKey: "speech.language") } }
-    }
+    /// Session whose language should be chosen again, from a detection notice.
+    @Published var languageChoiceID: UUID?
     /// System-wide shortcut that starts or ends a recording. Nil when the user cleared it.
     @Published var recordingShortcut: RecordingShortcut? = .standard {
         didSet {
@@ -142,11 +140,26 @@ final class AppModel: ObservableObject {
     }
     /// The language a request uses: the session's choice, French for sessions recorded before the
     /// choice existed, and the fallback for a language uninstalled since.
-    func transcriptionLocale(for item: Recording, override: String? = nil) -> (locale: String, candidates: [String]?, fallback: String?) {
+    func transcriptionLocale(for item: Recording, override: String? = nil) -> (locale: String, candidates: [String]?, fallback: String?, installable: [String]?) {
         let requested = override ?? item.speechLanguage ?? SpeechLanguage.defaultLocale
-        let fallback = SpeechLanguage.fallback(installed: installedSpeechLocales)
-        if requested == SpeechLanguage.automatic { return (requested, installedSpeechLocales, fallback) }
-        return (requested, nil, nil)
+        guard requested == SpeechLanguage.automatic else { return (requested, nil, nil, nil) }
+        let installed = Set(installedSpeechLocales.map(SpeechLanguage.languageCode))
+        return (requested, installedSpeechLocales, SpeechLanguage.fallback(installed: installedSpeechLocales),
+                supportedSpeechLocales.filter { !installed.contains(SpeechLanguage.languageCode(of: $0)) })
+    }
+    /// Offers to install a language detection recognized, or to choose one when nothing fits.
+    private func reportLanguageFindings(_ detections: [LanguageDetection], id: UUID) {
+        let label = { (source: AudioSource) in source == .mic ? "la piste Micro" : "la piste Système" }
+        if let suggestion = detections.first(where: { $0.suggestedLocale != nil }), let locale = suggestion.suggestedLocale {
+            let other = SpeechLanguage.confusable[SpeechLanguage.languageCode(of: locale)]
+            let name = SpeechLanguage.displayName(locale) + (other.map { " (ou \(SpeechLanguage.displayName($0)))" } ?? "")
+            report("La langue de \(label(suggestion.source)) semble être : \(name). Ce modèle n’est pas installé.", actions: [
+                ToastAction(title: "Installer et retranscrire") { [weak self] in self?.installSpeechModel(locale) { self?.transcribe(id, language: SpeechLanguage.automatic) } },
+                ToastAction(title: "Choisir la langue") { [weak self] in self?.languageChoiceID = id }], sticky: true)
+        } else if let unknown = detections.first(where: { $0.unrecognized == true }) {
+            report("La langue de \(label(unknown.source)) n’a pas été reconnue parmi les langues installées.", actions: [
+                ToastAction(title: "Choisir la langue") { [weak self] in self?.languageChoiceID = id }], sticky: true)
+        }
     }
     var diarizerReady: Bool {
         preferences.bool(forKey: "models.diarizerInstalled") || recordings.contains { !$0.isDemo && $0.transcription?.diarizationEngine != nil }
@@ -189,7 +202,6 @@ final class AppModel: ObservableObject {
         summaryReasoningDisabled = preferences.bool(forKey: "summary.reasoningDisabled")
         summaryService = SummaryService(rawValue: preferences.string(forKey: "summary.service") ?? "") ?? .local
         newSessionKind = SessionKind(rawValue: preferences.string(forKey: "newSession.kind") ?? "") ?? .adHoc
-        speechLanguage = preferences.string(forKey: "speech.language") ?? SpeechLanguage.automatic
         if let data = preferences.data(forKey: RecordingShortcut.preferenceKey) {
             recordingShortcut = data.isEmpty ? nil : (try? JSONDecoder().decode(RecordingShortcut.self, from: data)) ?? .standard
         }
@@ -428,7 +440,7 @@ final class AppModel: ObservableObject {
     func requestNewSession() {
         if let active = activeCapture { select(active); showWindow?(); return }
         showSettings = false; stopPlayback(); selectedID = nil
-        newSessionTitle = ""; newSessionLanguage = sessionLanguageChoices.contains(speechLanguage) ? speechLanguage : SpeechLanguage.automatic
+        newSessionTitle = ""; newSessionLanguage = SpeechLanguage.automatic
         showNewSession = true
         refreshSpeechLanguages(); showWindow?()
     }
@@ -440,7 +452,7 @@ final class AppModel: ObservableObject {
         let typed = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let time = Date().formatted(date: .omitted, time: .shortened)
         let sessionTitle = !typed.isEmpty ? typed : meeting?.title ?? (kind == .adHoc ? "Session du \(time)" : "\(kind.label) du \(time)")
-        let language = language ?? speechLanguage
+        let language = language ?? SpeechLanguage.automatic
         showSettings = false; showNewSession = false
         startTicker(); stopPlayback(); isStarting = true
         Task {
@@ -481,7 +493,7 @@ final class AppModel: ObservableObject {
         }
     }
     func cancelProcessing() { pipelineRunner.cancel(); voiceRunner.cancel() }
-    func installSpeechModel(_ locale: String) {
+    func installSpeechModel(_ locale: String, then completion: (() -> Void)? = nil) {
         guard !modelWorkBusy, !isDemoMode else { return }
         pipelineRunner.prepare()
         isInstallingModel = true; installingSpeechLocale = locale
@@ -493,6 +505,7 @@ final class AppModel: ObservableObject {
                 try await pipelineRunner.run(arguments: ["install-model", locale], log: directory.appendingPathComponent("install-model.log"))
                 if persistPreferences { preferences.set(true, forKey: "models.speechInstalled") }
                 notice = "Langue installée : \(SpeechLanguage.displayName(locale)). La transcription reste locale."
+                if let completion { isInstallingModel = false; installingSpeechLocale = nil; completion() }
             } catch { errorMessage = error.localizedDescription }
         }
     }
@@ -526,13 +539,14 @@ final class AppModel: ObservableObject {
                 let job = dataDirectory.appendingPathComponent("jobs/\(UUID().uuidString)")
                 try FileManager.default.createDirectory(at: job, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
                 let input = job.appendingPathComponent("request.json"), output = job.appendingPathComponent("result.json")
-                if installedSpeechLocales.isEmpty, let data = try? await PipelineRunner.query(["languages"]),
+                if let data = try? await PipelineRunner.query(["languages"]),
                    let locales = try? JSONDecoder().decode(SpeechLocales.self, from: data) {
                     installedSpeechLocales = SpeechLanguage.oneLocalePerLanguage(locales.installed)
+                    supportedSpeechLocales = SpeechLanguage.oneLocalePerLanguage(locales.supported)
                 }
                 let choice = transcriptionLocale(for: item, override: language)
                 let request = TranscriptionRequest(recordingID: id, locale: choice.locale, chunks: item.audioChunks, diarize: diarizationEnabled,
-                                                   candidateLocales: choice.candidates, fallbackLocale: choice.fallback)
+                                                   candidateLocales: choice.candidates, fallbackLocale: choice.fallback, installableLocales: choice.installable)
                 try JSONEncoder().encode(request).write(to: input, options: .atomic)
                 try await pipelineRunner.run(arguments: ["transcribe", dataDirectory.path, input.path, output.path], log: job.appendingPathComponent("pipeline.log"))
                 let result = try JSONDecoder().decode(TranscriptionResult.self, from: Data(contentsOf: output))
@@ -544,6 +558,7 @@ final class AppModel: ObservableObject {
                 if !hasUnsavedChanges { try? FileManager.default.removeItem(at: job) }
                 notice = result.segments.isEmpty ? "Traitement terminé : aucune parole reconnue." : (result.diarizationEngine == nil ? "Transcript disponible. Les voix ne sont pas séparées." : "Transcript disponible. Les voix détectées peuvent être nommées dans cette session.")
                 if let warning = result.identityWarning { notice = "Transcript disponible. " + warning }
+                if let detections = result.languageDetection { reportLanguageFindings(detections, id: id) }
             } catch {
                 update(id) { $0.transcriptState = .failed }
                 report("Transcription : \(error.localizedDescription)", style: .error,

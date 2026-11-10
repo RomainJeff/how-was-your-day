@@ -8,6 +8,8 @@ public enum SpeechLanguage {
     /// Preferred region when a language is installed in several regional variants.
     static let canonicalRegions = ["en": "US", "fr": "FR", "de": "DE", "es": "ES", "it": "IT", "pt": "BR", "zh": "CN", "ja": "JP", "ko": "KR", "yue": "CN"]
 
+    /// Languages detection is known to confuse with the key, through the models HWYD has installed.
+    public static let confusable = ["es": "pt", "pt": "es"]
     /// `fr_FR`, `fr-FR` and `fr` all give `fr`.
     public static func languageCode(of identifier: String) -> String {
         String(identifier.split(whereSeparator: { $0 == "-" || $0 == "_" }).first ?? Substring(identifier)).lowercased()

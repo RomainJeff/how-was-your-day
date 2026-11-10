@@ -93,12 +93,7 @@ struct SettingsView: View {
             CalendarSettingsView(calendar: model.calendar).disabled(model.isDemoMode)
         case .audio:
             section("Transcription", symbol: "text.bubble") {
-                row("Langue par défaut", help: "Proposée pour chaque nouvelle session, modifiable avant de démarrer. En détection automatique, HWYD écoute le début de chaque piste et choisit parmi les langues installées. Une session qui alterne plusieurs langues reste transcrite dans une seule.") {
-                    Picker("Langue par défaut", selection: $model.speechLanguage) {
-                        ForEach(model.sessionLanguageChoices, id: \.self) { choice in Text(SessionLanguageLabel.title(choice)).tag(choice) }
-                    }.labelsHidden().frame(width: 220)
-                }
-                row("Langues installées", help: "Modèles Apple Speech, téléchargés une fois. Aucun audio n’est envoyé pour la transcription.") {
+                row("Langues installées", help: "HWYD détecte la langue de chaque piste parmi ces langues, d’après le début de l’enregistrement. Si une autre langue est reconnue, il propose de l’installer. Modèles Apple Speech, environ 350 Mo par langue, téléchargés une fois. Aucun audio n’est envoyé pour la transcription.") {
                     Text(model.installedSpeechLocales.isEmpty ? "Aucune" : model.installedSpeechLocales.map { SpeechLanguage.displayName($0) }.joined(separator: ", "))
                         .font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).lineLimit(2).multilineTextAlignment(.trailing)
                     if let locale = model.installingSpeechLocale {

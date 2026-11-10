@@ -57,6 +57,10 @@ struct DetailView: View {
         .sheet(item: $splittingSegment) { segment in
             SegmentSplitView(recordingID: recording.id, segment: segment).environmentObject(model)
         }
+        .onChange(of: model.languageChoiceID) { _, id in
+            guard id == recording.id else { return }
+            model.languageChoiceID = nil; model.refreshSpeechLanguages(); confirmReprocessing = true
+        }
         .confirmationDialog("Remplacer le transcript ?", isPresented: $confirmReprocessing) {
             Button("Retranscrire") { model.transcribe(recording.id) }
             ForEach(model.sessionLanguageChoices.filter { $0 != (recording.speechLanguage ?? SpeechLanguage.defaultLocale) }, id: \.self) { choice in
