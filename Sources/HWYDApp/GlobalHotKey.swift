@@ -27,9 +27,18 @@ struct RecordingShortcut: Codable, Equatable, Sendable {
     init(keyCode: UInt32, modifiers: UInt32, display: String) { self.keyCode = keyCode; self.modifiers = modifiers; self.display = display }
     private static func keyName(_ event: NSEvent) -> String {
         switch Int(event.keyCode) {
-        case kVK_Space: "Space"
+        case kVK_Space: String(localized: "Espace")
         case kVK_Return: "↩"
         case kVK_Tab: "⇥"
+        case kVK_LeftArrow: "←"
+        case kVK_RightArrow: "→"
+        case kVK_UpArrow: "↑"
+        case kVK_DownArrow: "↓"
+        case kVK_Home: "↖"
+        case kVK_End: "↘"
+        case kVK_PageUp: "⇞"
+        case kVK_PageDown: "⇟"
+        case kVK_Escape: "⎋"
         default:
             if let special = [kVK_F1: "F1", kVK_F2: "F2", kVK_F3: "F3", kVK_F4: "F4", kVK_F5: "F5", kVK_F6: "F6", kVK_F7: "F7", kVK_F8: "F8",
                               kVK_F9: "F9", kVK_F10: "F10", kVK_F11: "F11", kVK_F12: "F12"][Int(event.keyCode)] { special }

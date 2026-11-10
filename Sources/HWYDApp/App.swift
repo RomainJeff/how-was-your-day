@@ -63,7 +63,8 @@ import HWYDCore
         if args.contains("--demo") { model.enterDemo() }
         model.showWindow = { [weak self] in self?.openWindow() }
         model.openNotepad = { [weak self] in self?.openNotepad() }
-        model.enableRecordingShortcut()
+        // A demo instance must not take the shortcut from a real one running alongside.
+        if !args.contains("--demo") { model.enableRecordingShortcut() }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { _ in
             Task { @MainActor in if AppEnvironment.model.activeCaptureID != nil { AppEnvironment.model.stopCapture() } }
         }

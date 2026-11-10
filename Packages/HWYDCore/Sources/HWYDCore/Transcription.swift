@@ -123,14 +123,10 @@ public actor AppleSpeechRecognizer: SpeechRecognizing {
         let frames = AVAudioFrameCount(min(Double(source.length), seconds * source.processingFormat.sampleRate))
         guard frames > 0, let buffer = AVAudioPCMBuffer(pcmFormat: source.processingFormat, frameCapacity: frames) else { return SpeechSample(text: "", confidence: nil) }
         try source.read(into: buffer, frameCount: frames)
-        // The excerpt stays in the pipeline's temporary directory and is removed right after analysis.
-        let excerpt = FileManager.default.temporaryDirectory.appendingPathComponent("hwyd-language-\(UUID().uuidString).caf")
-        defer { try? FileManager.default.removeItem(at: excerpt) }
-        do {
-            let output = try AVAudioFile(forWriting: excerpt, settings: source.fileFormat.settings, commonFormat: source.processingFormat.commonFormat, interleaved: source.processingFormat.isInterleaved)
-            try output.write(from: buffer)
-        }
+        // The excerpt stays in memory: no copy of the audio is written outside the store.
         let analyzer = SpeechAnalyzer(modules: [transcriber])
+        guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else { throw TranscriptionError.invalidAudio }
+        let input = try Self.convert(buffer, to: format)
         let collector = Task { () throws -> SpeechSample in
             var text: [String] = [], confidences: [Double] = []
             for try await result in transcriber.results where result.isFinal {
@@ -141,13 +137,30 @@ public actor AppleSpeechRecognizer: SpeechRecognizing {
                                 confidence: confidences.isEmpty ? nil : confidences.reduce(0, +) / Double(confidences.count))
         }
         do {
-            _ = try await analyzer.analyzeSequence(from: try AVAudioFile(forReading: excerpt))
+            let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
+            continuation.yield(AnalyzerInput(buffer: input)); continuation.finish()
+            try await analyzer.start(inputSequence: stream)
             try await analyzer.finalizeAndFinishThroughEndOfInput()
             return try await collector.value
         } catch {
             await analyzer.cancelAndFinishNow(); collector.cancel(); _ = try? await collector.value
             throw error
         }
+    }
+    private static func convert(_ buffer: AVAudioPCMBuffer, to format: AVAudioFormat) throws -> AVAudioPCMBuffer {
+        guard buffer.format != format else { return buffer }
+        guard let converter = AVAudioConverter(from: buffer.format, to: format),
+              let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(Double(buffer.frameLength) * format.sampleRate / buffer.format.sampleRate) + 1024) else {
+            throw TranscriptionError.invalidAudio
+        }
+        nonisolated(unsafe) var supplied = false
+        var failure: NSError?
+        let status = converter.convert(to: output, error: &failure) { _, state in
+            if supplied { state.pointee = .endOfStream; return nil }
+            supplied = true; state.pointee = .haveData; return buffer
+        }
+        guard status != .error, failure == nil else { throw failure ?? TranscriptionError.invalidAudio }
+        return output
     }
     public func install(locale: String) async throws {
         let transcriber = try await module(locale: locale)
@@ -216,6 +229,22 @@ public struct SpeechLocales: Codable, Equatable, Sendable {
     public init(installed: [String], supported: [String]) { self.installed = installed; self.supported = supported }
 }
 
+extension TranscriptionRequest {
+    /// For automatic detection, replaces the languages known by the caller with what this process
+    /// can actually use and install. Apple Speech reserves assets per process, so only the helper
+    /// that transcribes knows which models are ready.
+    public func resolvingLanguages(_ locales: SpeechLocales, preferredLanguages: [String] = Locale.preferredLanguages) -> TranscriptionRequest {
+        guard locale == SpeechLanguage.automatic else { return self }
+        var request = self
+        let installed = SpeechLanguage.oneLocalePerLanguage(locales.installed)
+        request.candidateLocales = installed
+        request.fallbackLocale = SpeechLanguage.fallback(installed: locales.installed, preferredLanguages: preferredLanguages)
+        let codes = Set(installed.map(SpeechLanguage.languageCode))
+        request.installableLocales = locales.supported.filter { !codes.contains(SpeechLanguage.languageCode(of: $0)) }
+        return request
+    }
+}
+
 public enum TranscriptionPipeline {
     public static func run(_ request: TranscriptionRequest, store: SessionStore, recognizer: any SpeechRecognizing, audioOverrides: [UUID: URL] = [:]) async throws -> TranscriptionResult {
         guard !request.chunks.isEmpty, request.chunks.allSatisfy({ $0.start.isFinite && $0.start >= 0 && $0.duration.isFinite && $0.duration > 0 }) else { throw TranscriptionError.invalidAudio }
@@ -259,13 +288,25 @@ public enum TranscriptionPipeline {
                                audioOverrides: [UUID: URL]) async throws -> LanguageDetection {
         let candidates = SpeechLanguage.oneLocalePerLanguage(request.candidateLocales ?? [])
         let fallback = request.fallbackLocale ?? candidates.first ?? SpeechLanguage.defaultLocale
-        guard let chunk = request.chunks.filter({ $0.source == source }).min(by: { $0.start < $1.start }) else {
-            return .init(source: source, locale: fallback, method: .fallback)
+        let chunks = request.chunks.filter { $0.source == source }.sorted { $0.start < $1.start }
+        guard !chunks.isEmpty else { return .init(source: source, locale: fallback, method: .fallback) }
+        // A pause, a device change or a Bluetooth reconnection can leave a first chunk of a few
+        // seconds: the sample spans successive chunks until it holds `detectionSeconds` of audio.
+        var excerpt: [(chunk: AudioChunk, url: URL, seconds: Double)] = [], remaining = detectionSeconds
+        for chunk in chunks where remaining > 0 {
+            let seconds = min(chunk.duration, remaining)
+            excerpt.append((chunk, try audioOverrides[chunk.id] ?? store.audioURL(for: chunk), seconds)); remaining -= seconds
         }
-        let url = try audioOverrides[chunk.id] ?? store.audioURL(for: chunk)
         func listen(_ locale: String) async throws -> SpeechSample {
-            try Task.checkCancellation()
-            return try await recognizer.sample(file: url, chunk: chunk, locale: locale, seconds: detectionSeconds)
+            var texts: [String] = [], weighted = 0.0, weight = 0.0
+            for part in excerpt {
+                try Task.checkCancellation()
+                let sample = try await recognizer.sample(file: part.url, chunk: part.chunk, locale: locale, seconds: part.seconds)
+                texts.append(sample.text)
+                if let confidence = sample.confidence, !sample.text.isEmpty { let letters = Double(sample.text.count); weighted += confidence * letters; weight += letters }
+            }
+            let text = texts.filter { !$0.isEmpty }.joined(separator: " ")
+            return SpeechSample(text: text, confidence: weight > 0 ? weighted / weight : nil)
         }
         func audible(_ sample: SpeechSample) -> Bool { sample.text.filter(\.isLetter).count >= detectionMinimumLetters }
         var heard: [(locale: String, sample: SpeechSample)] = []
@@ -273,8 +314,8 @@ public enum TranscriptionPipeline {
         heard.append((fallback, first))
         var chosen = LanguageDetection(source: source, locale: fallback, method: .fallback, confidence: first.confidence)
         if audible(first), candidates.count > 1,
-           let language = hypothesis(first.text, among: candidates.map(SpeechLanguage.languageCode)),
-           let guess = candidates.first(where: { SpeechLanguage.languageCode(of: $0) == language.code }) {
+           let language = hypothesis(first.text, among: candidates),
+           let guess = candidates.first(where: { SpeechLanguage.matches($0, language.language) }) {
             if SpeechLanguage.languageCode(of: guess) == SpeechLanguage.languageCode(of: fallback) {
                 chosen.method = .detected
             } else if let second = try? await listen(guess) {
@@ -293,7 +334,7 @@ public enum TranscriptionPipeline {
                 guard let sample = try? await listen(other) else { continue }
                 heard.append((other, sample))
                 if audible(sample), let confidence = sample.confidence, confidence > (chosen.confidence ?? 0) {
-                    let fits = confidence >= confidentMatch && hypothesis(sample.text, among: [SpeechLanguage.languageCode(of: other)]) != nil
+                    let fits = confidence >= confidentMatch && hypothesis(sample.text, among: [other]) != nil
                     if fits { chosen = .init(source: source, locale: other, method: .detected, confidence: confidence) }
                 }
             }
@@ -306,22 +347,22 @@ public enum TranscriptionPipeline {
         guard best < confidentMatch, (chosen.confidence ?? 0) < confidentMatch else { return chosen }
         // No installed model fits well: look for another language in what the models wrote.
         let installable = SpeechLanguage.oneLocalePerLanguage(request.installableLocales ?? [])
-        let installed = Set(candidates.map(SpeechLanguage.languageCode))
         for (_, sample) in heard {
-            if let other = hypothesis(sample.text, among: nil), other.probability >= 0.9, !installed.contains(other.code),
-               let locale = installable.first(where: { SpeechLanguage.languageCode(of: $0) == other.code }) {
+            if let other = hypothesis(sample.text, among: nil), other.probability >= 0.9,
+               !candidates.contains(where: { SpeechLanguage.matches($0, other.language) }),
+               let locale = installable.first(where: { SpeechLanguage.matches($0, other.language) }) {
                 chosen.suggestedLocale = locale; chosen.method = .fallback; return chosen
             }
         }
         if best < noMatch { chosen.unrecognized = true; chosen.method = .fallback }
         return chosen
     }
-    /// Most likely language of a text, optionally among a set of language codes.
-    static func hypothesis(_ text: String, among languages: [String]?) -> (code: String, probability: Double)? {
+    /// Most likely language of a text, optionally among the languages of some speech locales.
+    static func hypothesis(_ text: String, among locales: [String]?) -> (language: NLLanguage, probability: Double)? {
         let recognizer = NLLanguageRecognizer()
-        if let languages { recognizer.languageConstraints = languages.map { NLLanguage(rawValue: $0) } }
+        if let locales { recognizer.languageConstraints = Array(Set(locales.flatMap(SpeechLanguage.naturalLanguages))) }
         recognizer.processString(text)
-        return recognizer.languageHypotheses(withMaximum: 1).first.map { (SpeechLanguage.languageCode(of: $0.key.rawValue), $0.value) }
+        return recognizer.languageHypotheses(withMaximum: 1).first.map { ($0.key, $0.value) }
     }
 }
 extension Recording {

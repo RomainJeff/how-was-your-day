@@ -2593,6 +2593,22 @@
         }
       }
     },
+    "Durées incompatibles : %lld, %lld.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incompatible durations: %1$lld, %2$lld."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durées incompatibles : %lld, %lld."
+          }
+        }
+      }
+    },
     "Décisions": {
       "localizations": {
         "en": {
@@ -3281,6 +3297,22 @@
         }
       }
     },
+    "Espace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Space"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espace"
+          }
+        }
+      }
+    },
     "Essayez un autre mot ou retirez le filtre de type.": {
       "localizations": {
         "en": {
@@ -3942,7 +3974,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Install and reprocess"
+            "value": "Install and Transcribe Again"
           }
         },
         "fr": {
@@ -4813,6 +4845,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lecture impossible : %@"
+          }
+        }
+      }
+    },
+    "Lecture interrompue à %lld.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading stopped at %lld."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture interrompue à %lld."
           }
         }
       }
@@ -6694,7 +6742,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reprocess with automatic detection"
+            "value": "Transcribe Again with Automatic Detection"
           }
         },
         "fr": {
@@ -6710,7 +6758,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reprocess in %@"
+            "value": "Transcribe Again in %@"
           }
         },
         "fr": {

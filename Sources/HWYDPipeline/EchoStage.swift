@@ -23,7 +23,7 @@ enum EchoStage {
             try DiarizationStage.assemble(chunks, store: store, destination: url)
             files.append(try AVAudioFile(forReading: url))
         }
-        guard abs(files[0].length - files[1].length) <= 2 else { throw EchoError(message: "Durées incompatibles : \(files[0].length), \(files[1].length).") }
+        guard abs(files[0].length - files[1].length) <= 2 else { throw EchoError(message: String(localized: "Durées incompatibles : \(files[0].length), \(files[1].length).", bundle: .hwyd)) }
         var report = EchoReport(recordingID: request.recordingID, windows: [])
         var frame: Int64 = 0
         while frame < files[0].length {
@@ -46,7 +46,7 @@ enum EchoStage {
             var copied = 0
             while copied < available {
                 try file.read(into: buffer, frameCount: AVAudioFrameCount(available - copied))
-                guard buffer.frameLength > 0 else { throw EchoError(message: "Lecture interrompue à \(start).") }
+                guard buffer.frameLength > 0 else { throw EchoError(message: String(localized: "Lecture interrompue à \(start).", bundle: .hwyd)) }
                 for index in 0..<Int(buffer.frameLength) { samples[padding + copied + index] = buffer.floatChannelData![0][index] }
                 copied += Int(buffer.frameLength)
             }
