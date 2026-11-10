@@ -122,7 +122,7 @@ extension SummaryPipeline {
                     }
                     guard contentFailure, provider.retriesRejectedOutput else { throw failure }
                     try Task.checkCancellation()
-                    await progress(.init(stage: stage + ", nouvel essai", completed: completed, total: total, cached: false))
+                    await progress(.init(stage: String(localized: "\(stage), nouvel essai", bundle: .hwyd), completed: completed, total: total, cached: false))
                     result = try await attempt()
                 }
                 try Task.checkCancellation()
@@ -144,7 +144,7 @@ extension SummaryPipeline {
         }
         var cards: [Card] = [], extracts: [SummaryContent] = []
         for (index, window) in windows.enumerated() {
-            let extract = try await generate(extractPrefix(language) + source(window), segments: window, planning: true, stage: "Extraction des faits \(index + 1)/\(windows.count)")
+            let extract = try await generate(extractPrefix(language) + source(window), segments: window, planning: true, stage: String(localized: "Extraction des faits \(index + 1)/\(windows.count)", bundle: .hwyd))
             extracts.append(extract)
             var topics = extract.details ?? []
             if topics.isEmpty { topics = [.init(title: "Conversation", text: extract.overview, evidence_segment_ids: window.map(\.id))] }
@@ -173,7 +173,7 @@ extension SummaryPipeline {
         }
         for batch in routeBatches {
             let fakeSources = batch.map { TranscriptSegment(id: $0.id, start: 0, end: 0, speakerID: nil, source: .mic, text: $0.text) }
-            let route = try await generate(routePrefix + routePayload(batch), segments: fakeSources, planning: true, stage: "Organisation des thèmes")
+            let route = try await generate(routePrefix + routePayload(batch), segments: fakeSources, planning: true, stage: String(localized: "Organisation des thèmes", bundle: .hwyd))
             if overview.isEmpty { overview = route.overview }
             for topic in route.details ?? [] {
                 for id in topic.evidence_segment_ids where namesByCard[id] == nil { namesByCard[id] = topic.title }
@@ -322,7 +322,7 @@ extension SummaryPipeline {
                 }
                 let prompt = try verificationPrompt(sources, candidate: previous)
                 do {
-                    candidate = try await generate(prompt, segments: sources, planning: false, stage: "Vérification des engagements", validateStage: validateVerification)
+                    candidate = try await generate(prompt, segments: sources, planning: false, stage: String(localized: "Vérification des engagements", bundle: .hwyd), validateStage: validateVerification)
                 } catch let failure as VerificationValidationFailure {
                     // Exactly one targeted retry. Keep the original candidate and all original
                     // sources. A shorter first line adds feedback without increasing the budget.
@@ -332,7 +332,7 @@ extension SummaryPipeline {
                     let tail = english ? " Apply all the system rules.\n" : " Applique toutes les règles du système.\n"
                     let retry = stage + lead + failure.feedback + tail + prompt[prompt.index(after: newline)...]
                     do {
-                        candidate = try await generate(retry, segments: sources, planning: false, stage: "Vérification des engagements, nouvel essai",
+                        candidate = try await generate(retry, segments: sources, planning: false, stage: String(localized: "Vérification des engagements, nouvel essai", bundle: .hwyd),
                                                        cachePrompt: prompt, validateStage: validateVerification)
                     } catch is VerificationValidationFailure { throw SummaryFailure.unreliableContent }
                 }
@@ -376,7 +376,7 @@ extension SummaryPipeline {
                     batches.insert(contentsOf: [Array(rows[..<midpoint]), Array(rows[midpoint...])], at: 0)
                     continue
                 }
-                let draft = try await generate(prompt, segments: sources, planning: false, stage: "Rédaction du thème \(topicIndex + 1)/\(topicOrder.count)")
+                let draft = try await generate(prompt, segments: sources, planning: false, stage: String(localized: "Rédaction du thème \(topicIndex + 1)/\(topicOrder.count)", bundle: .hwyd))
                 drafts.append(draft)
             }
         }
@@ -403,7 +403,7 @@ extension SummaryPipeline {
         for detail in (drafts.count == 1 ? [] : finalDetails) {
             let abstract = Abstract(topic: detail)
             if try executivePrompt(executiveBatch + [abstract], previous: executive).count > limit, !executiveBatch.isEmpty {
-                executive = try await generate(executivePrompt(executiveBatch, previous: executive), segments: recording.segments.filter { executiveIDs.contains($0.id) }, planning: false, stage: "Résumé et points essentiels")
+                executive = try await generate(executivePrompt(executiveBatch, previous: executive), segments: recording.segments.filter { executiveIDs.contains($0.id) }, planning: false, stage: String(localized: "Résumé et points essentiels", bundle: .hwyd))
                 executive = SummaryContent(overview: executive.overview, decisions: [], action_items: [], key_points: executive.key_points, details: [])
                 executiveBatch = []
                 executiveIDs = Set((executive.key_points ?? []).flatMap(\.evidence_segment_ids))
@@ -412,7 +412,7 @@ extension SummaryPipeline {
             executiveIDs.formUnion(detail.evidence_segment_ids)
         }
         if !executiveBatch.isEmpty {
-            executive = try await generate(executivePrompt(executiveBatch, previous: executive), segments: recording.segments.filter { executiveIDs.contains($0.id) }, planning: false, stage: "Résumé et points essentiels")
+            executive = try await generate(executivePrompt(executiveBatch, previous: executive), segments: recording.segments.filter { executiveIDs.contains($0.id) }, planning: false, stage: String(localized: "Résumé et points essentiels", bundle: .hwyd))
         }
         seenDecisions = []; seenActions = []
         let result = SummaryContent(overview: executive.overview, decisions: drafts.flatMap(\.decisions).filter { seenDecisions.insert(normalized($0.text)).inserted },
@@ -420,7 +420,7 @@ extension SummaryPipeline {
             key_points: executive.key_points, details: finalDetails)
         try validate(result, segments: recording.segments, speakers: recording.speakers, maximumDetails: 256)
         total = completed
-        await progress(.init(stage: "Compte rendu prêt", completed: completed, total: total, cached: false))
+        await progress(.init(stage: String(localized: "Compte rendu prêt", bundle: .hwyd), completed: completed, total: total, cached: false))
         return SummaryProvenance(provider: providerIdentity, model: model, promptVersion: promptVersion, promptHash: promptHash,
                                  generatedAt: Date(), transcriptVersion: recording.transcriptVersion, inputHash: fingerprint, structured: result)
     }

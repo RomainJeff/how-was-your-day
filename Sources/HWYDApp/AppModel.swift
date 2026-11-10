@@ -143,7 +143,7 @@ final class AppModel: ObservableObject {
             recordings = DemoContent.recordings(); isDemoMode = true; isLoading = false
         } else {
             do { store = try SessionStore(directory: dataDirectory) }
-            catch { errorMessage = "Impossible d’ouvrir les données locales : \(error.localizedDescription)"; isLoading = false }
+            catch { errorMessage = String(localized: "Impossible d’ouvrir les données locales : \(error.localizedDescription)"); isLoading = false }
         }
         loadRemoteSummarySettings()
     }
@@ -159,7 +159,7 @@ final class AppModel: ObservableObject {
             for item in recordings where item.transcriptState == .pending {
                 update(item.id) { $0.transcriptState = .failed }
             }
-            if count > 0 { notice = "\(count) session(s) interrompue(s) retrouvée(s). Vos notes sont conservées." }
+            if count > 0 { notice = String(localized: "\(count) session(s) interrompue(s) retrouvée(s). Vos notes sont conservées.") }
         } catch { errorMessage = error.localizedDescription }
         isLoading = false
         startTicker()
@@ -216,13 +216,13 @@ final class AppModel: ObservableObject {
                 savedAt = Date()
             } catch {
                 dirtyIDs.insert(id)
-                report("Les dernières modifications ne sont pas enregistrées : \(error.localizedDescription)", style: .error,
-                       actions: [ToastAction(title: "Réessayer") { [weak self] in self?.retrySave() }])
+                report(String(localized: "Les dernières modifications ne sont pas enregistrées : \(error.localizedDescription)"), style: .error,
+                       actions: [ToastAction(title: String(localized: "Réessayer")) { [weak self] in self?.retrySave() }])
                 hasUnsavedChanges = true; return
             }
         }
         hasUnsavedChanges = false
-        do { try await store.publishPending() } catch { notice = "Export différé : \(error.localizedDescription)" }
+        do { try await store.publishPending() } catch { notice = String(localized: "Export différé : \(error.localizedDescription)") }
     }
     func retrySave() { errorMessage = nil; scheduleSave() }
     func addTimestamp() {
@@ -236,10 +236,10 @@ final class AppModel: ObservableObject {
         guard let id = selectedID, !voiceEditingLocked, !pipelineBusy, var item = selected,
               let speaker = item.speakers.first(where: { $0.id == speakerID }) else { return }
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, name.count <= 120 else { errorMessage = "Le nom doit contenir entre 1 et 120 caractères."; return }
+        guard !name.isEmpty, name.count <= 120 else { errorMessage = String(localized: "Le nom doit contenir entre 1 et 120 caractères."); return }
         var person = people.first { $0.id == speaker.personID && $0.name == name }
             ?? people.first { $0.name.compare(name, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame } ?? VoicePerson(name: name)
-        guard !person.opposed else { errorMessage = "\(person.name) est exclue de la reconnaissance. Levez l’exclusion dans Réglages › Audio et voix."; return }
+        guard !person.opposed else { errorMessage = String(localized: "\(person.name) est exclue de la reconnaissance. Levez l’exclusion dans Réglages › Audio et voix."); return }
         person.enrollmentRequestedAt = Date()
         if !(speaker.confirmed && speaker.label == name) {
             do { try item.renameSpeaker(speakerID, to: name); update(id) { $0 = item } } catch { errorMessage = error.localizedDescription; return }
@@ -257,7 +257,7 @@ final class AppModel: ObservableObject {
     func confirmSpeaker() {
         guard selectedID != processingID, let speakerID = editingSpeakerID else { return }
         let name = speakerName.trimmingCharacters(in: .whitespacesAndNewlines), people = self.people
-        let applied = editVoices({ _ in "Voix nommée \(name) dans toute cette session." }) { item in
+        let applied = editVoices({ _ in String(localized: "Voix nommée \(name) dans toute cette session.") }) { item in
             let proposal = item.speakers.first { $0.id == speakerID }?.proposedIdentity
             try item.renameSpeaker(speakerID, to: name)
             if let proposal, let person = people.first(where: { $0.id == proposal.personID && $0.recognitionEnabled }), person.name == name,
@@ -273,7 +273,7 @@ final class AppModel: ObservableObject {
             try item.assignSpeaker(speakerID, to: segmentID)
             guard item.transcriptVersion != previousVersion else { return }
             update(recordingID) { $0 = item }
-            notice = "Attribution corrigée pour ce passage uniquement."
+            notice = String(localized: "Attribution corrigée pour ce passage uniquement.")
         } catch { errorMessage = error.localizedDescription }
     }
     @discardableResult
@@ -284,7 +284,7 @@ final class AppModel: ObservableObject {
             guard item.segments.first(where: { $0.id == segment.id }) == segment else { throw StoreError.conflict }
             try item.splitSegment(segment.id, beforeWord: index)
             update(recordingID) { $0 = item }
-            notice = "Passage découpé. Vous pouvez corriger la voix de chaque partie."
+            notice = String(localized: "Passage découpé. Vous pouvez corriger la voix de chaque partie.")
             return true
         } catch { errorMessage = error.localizedDescription; return false }
     }
@@ -292,10 +292,10 @@ final class AppModel: ObservableObject {
     func joinMeeting(_ event: CalendarContext, openLink: Bool = true) {
         showWindow?()
         guard !isDemoMode, activeCaptureID == nil, !isStarting else {
-            notice = "Une capture est déjà en cours."; return
+            notice = String(localized: "Une capture est déjà en cours."); return
         }
         if let existing = recordings.first(where: { $0.calendarContext?.id == event.id }) {
-            select(existing); notice = "Cette réunion possède déjà une session."; return
+            select(existing); notice = String(localized: "Cette réunion possède déjà une session."); return
         }
         if openLink, let url = event.meetingURL { NSWorkspace.shared.open(url) }
         startCapture(meeting: event)
@@ -377,7 +377,7 @@ final class AppModel: ObservableObject {
         let kind = meeting == nil ? (kind ?? .adHoc) : .meeting
         let typed = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let time = Date().formatted(date: .omitted, time: .shortened)
-        let sessionTitle = !typed.isEmpty ? typed : meeting?.title ?? (kind == .adHoc ? "Session du \(time)" : "\(kind.label) du \(time)")
+        let sessionTitle = !typed.isEmpty ? typed : meeting?.title ?? (kind == .adHoc ? String(localized: "Session du \(time)") : String(localized: "\(kind.label) du \(time)"))
         showSettings = false; showNewSession = false
         startTicker(); stopPlayback(); isStarting = true
         Task {
@@ -388,7 +388,7 @@ final class AppModel: ObservableObject {
                 recordings.insert(item, at: 0); activeCaptureID = id; selectedID = id
                 elapsed = 0; captureStart = .now; showWindow?(); return
             }
-            guard store != nil else { errorMessage = "Le store local n’est pas disponible."; return }
+            guard store != nil else { errorMessage = String(localized: "Le store local n’est pas disponible."); return }
             do {
                 let controller = CaptureController()
                 try await controller.start(id: id, directory: dataDirectory)
@@ -410,10 +410,10 @@ final class AppModel: ObservableObject {
         update(id) { $0.duration = duration; $0.state = finalizationError == nil ? .sealed : .interrupted; $0.audioChunks = chunks }
         if let finalizationError { errorMessage = finalizationError }
         selectedID = id; activeTab = .notes
-        notice = isDemoMode ? "Simulation terminée. Les notes restent disponibles." : (chunks.isEmpty ? "Aucun audio reçu. Vos notes sont conservées." : "Audio et notes conservés. La transcription locale va démarrer.")
+        notice = isDemoMode ? String(localized: "Simulation terminée. Les notes restent disponibles.") : (chunks.isEmpty ? String(localized: "Aucun audio reçu. Vos notes sont conservées.") : String(localized: "Audio et notes conservés. La transcription locale va démarrer."))
         showWindow?()
         if !isDemoMode, !chunks.isEmpty {
-            if modelWorkBusy { notice = "Audio conservé. Un traitement est déjà en cours ; lancez la transcription depuis cette session ensuite." }
+            if modelWorkBusy { notice = String(localized: "Audio conservé. Un traitement est déjà en cours ; lancez la transcription depuis cette session ensuite.") }
             else { transcribe(id) }
         }
     }
@@ -429,7 +429,7 @@ final class AppModel: ObservableObject {
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
                 try await pipelineRunner.run(arguments: ["install-model", "fr-FR"], log: directory.appendingPathComponent("install-model.log"))
                 if persistPreferences { preferences.set(true, forKey: "models.speechInstalled") }
-                notice = "Modèle français installé. La transcription reste locale."
+                notice = String(localized: "Modèle français installé. La transcription reste locale.")
             } catch { errorMessage = error.localizedDescription }
         }
     }
@@ -444,8 +444,8 @@ final class AppModel: ObservableObject {
                 try await pipelineRunner.run(arguments: ["install-diarizer", dataDirectory.path], log: directory.appendingPathComponent("install-diarizer.log"))
                 if persistPreferences { preferences.set(true, forKey: "models.diarizerInstalled") }
                 diarizationEnabled = true
-                notice = "Séparation des voix activée pour les prochains traitements."
-            } catch { errorMessage = "Installation des voix : \(error.localizedDescription)" }
+                notice = String(localized: "Séparation des voix activée pour les prochains traitements.")
+            } catch { errorMessage = String(localized: "Installation des voix : \(error.localizedDescription)") }
         }
     }
     func transcribe(_ id: UUID) {
@@ -458,7 +458,7 @@ final class AppModel: ObservableObject {
             defer { processingID = nil }
             do {
                 await flush()
-                guard !hasUnsavedChanges else { throw PipelineFailure(message: "Sauvegardez les modifications avant de transcrire.") }
+                guard !hasUnsavedChanges else { throw PipelineFailure(message: String(localized: "Sauvegardez les modifications avant de transcrire.")) }
                 let job = dataDirectory.appendingPathComponent("jobs/\(UUID().uuidString)")
                 try FileManager.default.createDirectory(at: job, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
                 let input = job.appendingPathComponent("request.json"), output = job.appendingPathComponent("result.json")
@@ -471,12 +471,12 @@ final class AppModel: ObservableObject {
                 update(id) { $0 = latest }
                 await flush()
                 if !hasUnsavedChanges { try? FileManager.default.removeItem(at: job) }
-                notice = result.segments.isEmpty ? "Traitement terminé : aucune parole reconnue." : (result.diarizationEngine == nil ? "Transcript disponible. Les voix ne sont pas séparées." : "Transcript disponible. Les voix détectées peuvent être nommées dans cette session.")
-                if let warning = result.identityWarning { notice = "Transcript disponible. " + warning }
+                notice = result.segments.isEmpty ? String(localized: "Traitement terminé : aucune parole reconnue.") : (result.diarizationEngine == nil ? String(localized: "Transcript disponible. Les voix ne sont pas séparées.") : String(localized: "Transcript disponible. Les voix détectées peuvent être nommées dans cette session."))
+                if let warning = result.identityWarning { notice = String(localized: "Transcript disponible.") + " " + warning }
             } catch {
                 update(id) { $0.transcriptState = .failed }
-                report("Transcription : \(error.localizedDescription)", style: .error,
-                       actions: [ToastAction(title: "Réessayer") { [weak self] in self?.transcribe(id) }])
+                report(String(localized: "Transcription : \(error.localizedDescription)"), style: .error,
+                       actions: [ToastAction(title: String(localized: "Réessayer")) { [weak self] in self?.transcribe(id) }])
                 await flush()
             }
         }
@@ -542,14 +542,14 @@ final class AppModel: ObservableObject {
     }
     func play(at time: Double) {
         guard let item = selected, let store, !item.audioChunks.isEmpty else {
-            notice = "Aucun fichier audio disponible pour cette session."; return
+            notice = String(localized: "Aucun fichier audio disponible pour cette session."); return
         }
         stopPlayback()
         do {
             playbackTime = min(max(0, time), item.duration)
             try player.start(chunks: item.audioChunks, store: store, at: playbackTime, duration: item.duration)
             applyTrackMix(); isPlaying = true; playback.generation += 1; updatePlaybackFocus()
-        } catch { errorMessage = "Lecture impossible : \(error.localizedDescription)" }
+        } catch { errorMessage = String(localized: "Lecture impossible : \(error.localizedDescription)") }
     }
     func stopPlayback() { player.stop(); isPlaying = false; playback.voiceID = nil }
     func loadWaveforms(for item: Recording) async {
@@ -562,14 +562,14 @@ final class AppModel: ObservableObject {
             trackEnvelopes = envelopes; waveformLoading = false
         } catch {
             guard !Task.isCancelled, selectedID == item.id else { return }
-            waveformLoading = false; waveformError = "Formes d’onde indisponibles"
+            waveformLoading = false; waveformError = String(localized: "Formes d’onde indisponibles")
         }
     }
     /// Runs a voice command in the helper, the only process that reads the keychain.
     func runVoice(command: String, speakerID: UUID? = nil, person: VoicePerson? = nil, personID: UUID? = nil, sourceRecordingID: UUID? = nil,
                   then: (@MainActor () async throws -> Void)? = nil) {
         guard !isDemoMode, !modelWorkBusy, let store else { return }
-        let item = command == "identify-voices" || command == "enroll-voice" ? selected ?? Recording(title: "Gestion des voix") : Recording(title: "Gestion des voix")
+        let item = command == "identify-voices" || command == "enroll-voice" ? selected ?? Recording(title: "Gestion des voix") : Recording(title: "Gestion des voix") // l10n:ignore
         let personID = person?.id ?? personID
         let name = person?.name ?? people.first { $0.id == personID }?.name ?? ""
         voiceBusy = true; voiceRunner.prepare()
@@ -590,16 +590,16 @@ final class AppModel: ObservableObject {
                     if let personID { voiceContributions[personID] = try JSONDecoder().decode([VoiceContribution].self, from: output) }
                 case "forget-voice":
                     if let personID { voiceContributions[personID] = nil }
-                    notice = person?.opposed == true ? "Empreintes de \(name) supprimées. Opposition enregistrée."
-                        : "Empreinte de \(name) effacée. Sa voix ne sera plus reconnue avant une nouvelle mémorisation."
+                    notice = person?.opposed == true ? String(localized: "Empreintes de \(name) supprimées. Opposition enregistrée.")
+                        : String(localized: "Empreinte de \(name) effacée. Sa voix ne sera plus reconnue avant une nouvelle mémorisation.")
                 case "forget-voice-source":
                     if let personID { voiceContributions[personID]?.removeAll { $0.recordingID == sourceRecordingID } }
-                    notice = "Apport retiré de l’empreinte de \(name)."
+                    notice = String(localized: "Apport retiré de l’empreinte de \(name).")
                 default:
                     let matches = try JSONDecoder().decode([String: VoiceMatch].self, from: output)
                     // A transcript edited meanwhile keeps the user's version.
                     guard recordings.first(where: { $0.id == item.id })?.transcriptVersion == item.transcriptVersion else {
-                        notice = command == "enroll-voice" ? "Voix de \(name) mémorisée." : "La session a changé pendant la reconnaissance. Aucune proposition appliquée."
+                        notice = command == "enroll-voice" ? String(localized: "Voix de \(name) mémorisée.") : String(localized: "La session a changé pendant la reconnaissance. Aucune proposition appliquée.")
                         return
                     }
                     var proposed = 0
@@ -620,11 +620,13 @@ final class AppModel: ObservableObject {
                         if changed { current.transcriptVersion += 1; current.summary = nil }
                     }
                     await flush()
-                    let found = proposed == 0 ? "" : proposed == 1 ? " Une autre voix ressemble à une personne connue, à confirmer." : " \(proposed) autres voix ressemblent à des personnes connues, à confirmer."
-                    notice = command == "enroll-voice" ? "Voix de \(name) mémorisée." + found : "\(proposed) correspondance(s) proposée(s), à confirmer."
+                    let found = proposed == 0 ? nil : proposed == 1 ? String(localized: "Une autre voix ressemble à une personne connue, à confirmer.")
+                        : String(localized: "\(proposed) autres voix ressemblent à des personnes connues, à confirmer.")
+                    notice = command == "enroll-voice" ? [String(localized: "Voix de \(name) mémorisée."), found].compactMap { $0 }.joined(separator: " ")
+                        : String(localized: "\(proposed) correspondance(s) proposée(s), à confirmer.")
                 }
                 try await then?()
-            } catch { errorMessage = "Identité vocale : \(error.localizedDescription)" }
+            } catch { errorMessage = String(localized: "Identité vocale : \(error.localizedDescription)") }
         }
     }
     /// Ends an opposition. Any sample left by an interrupted erasure goes first, so recognition
@@ -634,7 +636,7 @@ final class AppModel: ObservableObject {
         runVoice(command: "forget-voice", personID: person.id) { [weak self] in
             try await store.liftOpposition(person.id)
             self?.people = try await store.people()
-            self?.notice = "\(person.name) n’est plus exclue. Mémorisez sa voix depuis une session pour la reconnaître à nouveau."
+            self?.notice = String(localized: "\(person.name) n’est plus exclue. Mémorisez sa voix depuis une session pour la reconnaître à nouveau.")
         }
     }
     func saveSummarySettings() {
@@ -679,15 +681,15 @@ final class AppModel: ObservableObject {
             var models: [String] = []
             do { models = try await SummaryModelCatalog.models(service: service, apiKey: key) }
             catch SummaryFailure.remoteRejected(let name, let status, let detail) where status == 401 || status == 403 {
-                errorMessage = SummaryFailure.remoteRejected(service: name, status: status, detail: detail).localizedDescription + " La clé n’a pas été enregistrée."
+                errorMessage = SummaryFailure.remoteRejected(service: name, status: status, detail: detail).localizedDescription + " " + String(localized: "La clé n’a pas été enregistrée.")
                 return
             } catch {
                 if Task.isCancelled { return }
-                notice = "Liste des modèles indisponible : \(error.localizedDescription)"
+                notice = String(localized: "Liste des modèles indisponible : \(error.localizedDescription)")
             }
             guard !Task.isCancelled else { return }
             do { try SummaryKeychain.setKey(key, for: service) }
-            catch { errorMessage = "Clé API : \(error.localizedDescription)"; return }
+            catch { errorMessage = String(localized: "Clé API : \(error.localizedDescription)"); return }
             guard summaryService == service else { return }
             summaryKeyStored = true
             applyAvailableModels(models)
@@ -705,7 +707,7 @@ final class AppModel: ObservableObject {
                 let models = try await SummaryModelCatalog.models(service: service, apiKey: key)
                 if !Task.isCancelled, summaryService == service { applyAvailableModels(models) }
             } catch {
-                if !Task.isCancelled, summaryService == service { errorMessage = "Modèles \(service.displayName) : \(error.localizedDescription)" }
+                if !Task.isCancelled, summaryService == service { errorMessage = String(localized: "Modèles \(service.displayName) : \(error.localizedDescription)") }
             }
         }
     }
@@ -734,7 +736,7 @@ final class AppModel: ObservableObject {
     }
     func chooseSummaryAgentDirectory() {
         let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true
-        panel.prompt = "Utiliser ce dossier"; panel.message = "L’agent démarre dans ce dossier et y trouve son contexte (instructions, mémoire, notes)."
+        panel.prompt = String(localized: "Utiliser ce dossier"); panel.message = String(localized: "L’agent démarre dans ce dossier et y trouve son contexte (instructions, mémoire, notes).")
         if panel.runModal() == .OK, let url = panel.url {
             summaryAgentDirectory = (url.path as NSString).abbreviatingWithTildeInPath; saveSummarySettings()
         }
@@ -742,8 +744,8 @@ final class AppModel: ObservableObject {
     func removeSummaryKey() {
         guard summaryService.isRemote, !isDemoMode, persistPreferences else { return }
         summaryModelsTask?.cancel(); summaryAvailableModels = []; summaryModelsLoading = false
-        do { try SummaryKeychain.removeKey(for: summaryService); summaryKeyStored = false; notice = "Clé \(summaryService.displayName) supprimée." }
-        catch { errorMessage = "Clé API : \(error.localizedDescription)" }
+        do { try SummaryKeychain.removeKey(for: summaryService); summaryKeyStored = false; notice = String(localized: "Clé \(summaryService.displayName) supprimée.") }
+        catch { errorMessage = String(localized: "Clé API : \(error.localizedDescription)") }
     }
     func cancelSummary() { summaryTask?.cancel() }
     func generateSummary() {
@@ -796,21 +798,21 @@ final class AppModel: ObservableObject {
                 await flush()
                 // A long run (agents take minutes) may finish while another screen is open.
                 let showsSummary = selectedID == item.id && activeTab == .summary && !showSettings
-                report("Synthèse prête : \(item.title)", style: .success,
-                       actions: showsSummary ? [] : [ToastAction(title: "Afficher") { [weak self] in
+                report(String(localized: "Synthèse prête : \(item.title)"), style: .success,
+                       actions: showsSummary ? [] : [ToastAction(title: String(localized: "Afficher")) { [weak self] in
                            guard let self, let latest = self.recordings.first(where: { $0.id == item.id }) else { return }
                            self.select(latest); self.activeTab = .summary
                        }])
             } catch {
                 if error is CancellationError || Task.isCancelled || (error as? URLError)?.code == .cancelled {
-                    notice = "Synthèse annulée."
+                    notice = String(localized: "Synthèse annulée.")
                 } else {
-                    report("Synthèse : \(error.localizedDescription)", style: .error, actions: [
-                        ToastAction(title: "Réessayer") { [weak self] in
+                    report(String(localized: "Synthèse : \(error.localizedDescription)"), style: .error, actions: [
+                        ToastAction(title: String(localized: "Réessayer")) { [weak self] in
                             guard let self, let item = self.recordings.first(where: { $0.id == recordingID }) else { return }
                             self.select(item); self.activeTab = .summary; self.generateSummary()
                         },
-                        ToastAction(title: "Réglages") { [weak self] in self?.settingsCategory = .summary; self?.showSettings = true }])
+                        ToastAction(title: String(localized: "Réglages")) { [weak self] in self?.settingsCategory = .summary; self?.showSettings = true }])
                 }
             }
         }
@@ -825,30 +827,30 @@ final class AppModel: ObservableObject {
     func chooseExportDirectory() {
         guard !isDemoMode, let store else { return }
         let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true
-        panel.prompt = "Utiliser ce dossier"; panel.message = "Les sessions sauvegardées seront publiées ici en Markdown et JSON."
+        panel.prompt = String(localized: "Utiliser ce dossier"); panel.message = String(localized: "Les sessions sauvegardées seront publiées ici en Markdown et JSON.")
         if panel.runModal() == .OK, let url = panel.url {
             Task {
                 do {
                     try await store.setSetting("export_directory", value: url.path); exportDirectory = url.path
                     await flush()
                     try await store.publishPending()
-                    notice = "Dossier de publication configuré."
-                } catch { errorMessage = "Export différé : \(error.localizedDescription)" }
+                    notice = String(localized: "Dossier de publication configuré.")
+                } catch { errorMessage = String(localized: "Export différé : \(error.localizedDescription)") }
             }
         }
     }
     func exportSelected() {
         guard let item = selected else { return }
         let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true
-        panel.prompt = "Exporter ici"; panel.message = "Choisissez le dossier de sortie pour cette session."
+        panel.prompt = String(localized: "Exporter ici"); panel.message = String(localized: "Choisissez le dossier de sortie pour cette session.")
         if panel.runModal() == .OK, let url = panel.url {
             Task {
                 await flush()
                 guard !hasUnsavedChanges else { return }
                 do {
                     let current = recordings.first { $0.id == item.id } ?? item
-                    try SessionExporter.export(current, to: url); notice = "Session exportée en Markdown et JSON."; NSWorkspace.shared.open(url)
-                } catch { errorMessage = "Export impossible : \(error.localizedDescription)" }
+                    try SessionExporter.export(current, to: url); notice = String(localized: "Session exportée en Markdown et JSON."); NSWorkspace.shared.open(url)
+                } catch { errorMessage = String(localized: "Export impossible : \(error.localizedDescription)") }
             }
         }
     }
@@ -865,4 +867,13 @@ final class AppModel: ObservableObject {
         }
     }
 }
-enum DetailTab: String, CaseIterable { case transcript = "Transcript", notes = "Notes", summary = "Synthèse" }
+enum DetailTab: String, CaseIterable {
+    case transcript = "Transcript", notes = "Notes", summary = "Synthèse" // l10n:ignore (rawValue, use title for display)
+    var title: String {
+        switch self {
+        case .transcript: String(localized: "Transcript")
+        case .notes: String(localized: "Notes")
+        case .summary: String(localized: "Synthèse")
+        }
+    }
+}

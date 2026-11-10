@@ -14,9 +14,9 @@ struct VoiceTilesView: View {
         let known = model.people.filter { !$0.opposed }
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Eyebrow(text: voices.isEmpty ? "Voix" : pending == 0 ? "Voix · \(voices.count)" : "Voix · \(pending) à nommer")
+                Eyebrow(text: voices.isEmpty ? String(localized: "Voix") : pending == 0 ? String(localized: "Voix · \(voices.count)") : String(localized: "Voix · \(pending) à nommer"))
                 if !voices.isEmpty {
-                    HelpButton(text: "Cliquez une voix pour écouter ses passages. Glissez-la sur une autre pour regrouper une même personne. Mémorisez une voix pour la reconnaître dans les prochaines sessions.")
+                    HelpButton(text: String(localized: "Cliquez une voix pour écouter ses passages. Glissez-la sur une autre pour regrouper une même personne. Mémorisez une voix pour la reconnaître dans les prochaines sessions."))
                 }
                 if model.voiceBusy {
                     ProgressView().controlSize(.small).padding(.leading, 4)
@@ -52,8 +52,8 @@ struct VoiceTilesView: View {
         }
     }
     private var enrollmentTitle: String {
-        let name = recording.speakers.first { $0.id == model.enrollmentCandidateID }?.label ?? "cette voix"
-        return "Mémoriser la voix de \(name) ?"
+        guard let name = recording.speakers.first(where: { $0.id == model.enrollmentCandidateID })?.label else { return String(localized: "Mémoriser cette voix ?") }
+        return String(localized: "Mémoriser la voix de \(name) ?")
     }
 }
 
@@ -82,7 +82,7 @@ private struct VoiceTile: View {
                         .frame(width: 24, height: 24).background(playing ? Studio.mint : accent.opacity(0.12), in: Circle())
                     VStack(alignment: .leading, spacing: 3) {
                         Text(voice.speaker.label).font(.system(size: Studio.Size.body, weight: .medium)).lineLimit(1)
-                        Text("\(sourceLabel(voice.speaker.source)) · \(speechLabel(voice.speechDuration))" + (voice.state == .ignored ? " · ignorée" : "")).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).lineLimit(1)
+                        Text(verbatim: "\(sourceLabel(voice.speaker.source)) · \(speechLabel(voice.speechDuration))" + (voice.state == .ignored ? " · " + String(localized: "ignorée") : "")).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).lineLimit(1)
                     }
                 }.padding(.leading, 10).padding(.trailing, 6).frame(maxHeight: .infinity).contentShape(Rectangle())
             }.buttonStyle(.plain).disabled(!canPlay)
@@ -121,14 +121,19 @@ private struct VoiceTile: View {
             .accessibilityLabel(stateHelp)
     }
     private var actionTitle: String {
-        switch voice.state { case .unidentified: "Nommer"; case .proposed: proposed == nil ? "Nommer" : "Confirmer"; case .confirmed: "Modifier"; case .ignored: "Rétablir" }
+        switch voice.state {
+        case .unidentified: String(localized: "Nommer")
+        case .proposed: proposed == nil ? String(localized: "Nommer") : String(localized: "Confirmer")
+        case .confirmed: String(localized: "Modifier")
+        case .ignored: String(localized: "Rétablir")
+        }
     }
     private var stateHelp: String {
         switch voice.state {
-        case .unidentified: "Voix non identifiée"
-        case .proposed: "Proposition à confirmer" + (voice.speaker.proposedIdentity.map { String(format: " (score %.2f)", $0.score) } ?? "")
-        case .confirmed: "Voix confirmée"
-        case .ignored: "Voix ignorée : passages masqués du transcript, de l’export et de la synthèse"
+        case .unidentified: String(localized: "Voix non identifiée")
+        case .proposed: voice.speaker.proposedIdentity.map { String(localized: "Proposition à confirmer (score \($0.score.formatted(.number.precision(.fractionLength(2)))))") } ?? String(localized: "Proposition à confirmer")
+        case .confirmed: String(localized: "Voix confirmée")
+        case .ignored: String(localized: "Voix ignorée : passages masqués du transcript, de l’export et de la synthèse")
         }
     }
     private func primaryAction() {
@@ -186,8 +191,8 @@ private struct VoiceTile: View {
     }
 }
 
-func sourceLabel(_ source: AudioSource) -> String { source == .mic ? "micro" : "système" }
+func sourceLabel(_ source: AudioSource) -> String { source == .mic ? String(localized: "micro") : String(localized: "système") }
 func speechLabel(_ seconds: Double) -> String {
     let value = Int(seconds.rounded())
-    return value < 60 ? "\(value) s" : "\(value / 60) min \(String(format: "%02d", value % 60))"
+    return value < 60 ? String(localized: "\(value) s") : String(localized: "\(value / 60) min \(String(format: "%02d", value % 60))")
 }

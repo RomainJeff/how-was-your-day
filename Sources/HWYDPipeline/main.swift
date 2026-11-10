@@ -10,9 +10,9 @@ import HWYDCore
             case let command where ["enroll-voice", "identify-voices", "forget-voice", "forget-voice-source", "voice-sources", "probe-voice"].contains(command ?? "") && args.count == 4:
                 let store = try SessionStore(directory: URL(fileURLWithPath: args[1]))
                 let lock = open(store.directory.appendingPathComponent("pipeline.lock").path, O_CREAT | O_RDWR | O_CLOEXEC, 0o600)
-                guard lock >= 0 else { throw CLIError(message: "Verrou indisponible.") }
+                guard lock >= 0 else { throw CLIError(message: String(localized: "Verrou indisponible.", bundle: .hwyd)) }
                 defer { close(lock) }
-                guard flock(lock, LOCK_EX | LOCK_NB) == 0 else { throw CLIError(message: "Un traitement est déjà en cours.") }
+                guard flock(lock, LOCK_EX | LOCK_NB) == 0 else { throw CLIError(message: String(localized: "Un traitement est déjà en cours.", bundle: .hwyd)) }
                 let job = try JSONDecoder().decode(VoiceJob.self, from: Data(contentsOf: URL(fileURLWithPath: args[2])))
                 try await VoiceStage.run(command: command!, store: store, job: job).write(to: URL(fileURLWithPath: args[3]), options: .atomic)
             case "diagnose": print(await AppleSpeechRecognizer.diagnostics())
@@ -25,12 +25,12 @@ import HWYDCore
             case let command where (command == "transcribe" || command == "transcribe-calibration") && args.count == 4:
                 let store = try SessionStore(directory: URL(fileURLWithPath: args[1]))
                 let lock = open(store.directory.appendingPathComponent("pipeline.lock").path, O_CREAT | O_RDWR | O_CLOEXEC, 0o600)
-                guard lock >= 0 else { throw CLIError(message: "Impossible de verrouiller le pipeline.") }
+                guard lock >= 0 else { throw CLIError(message: String(localized: "Impossible de verrouiller le pipeline.", bundle: .hwyd)) }
                 defer { close(lock) }
-                guard flock(lock, LOCK_EX | LOCK_NB) == 0 else { throw CLIError(message: "Un autre pipeline traite déjà ce store.") }
+                guard flock(lock, LOCK_EX | LOCK_NB) == 0 else { throw CLIError(message: String(localized: "Un autre pipeline traite déjà ce store.", bundle: .hwyd)) }
                 let request = try JSONDecoder().decode(TranscriptionRequest.self, from: Data(contentsOf: URL(fileURLWithPath: args[2])))
                 if command == "transcribe-calibration", request.diarize != true {
-                    throw CLIError(message: "La calibration nécessite diarize: true dans la requête.")
+                    throw CLIError(message: String(localized: "La calibration nécessite diarize: true dans la requête.", bundle: .hwyd))
                 }
                 let working = URL(fileURLWithPath: args[3]).deletingLastPathComponent().appendingPathComponent("echo-processing-\(UUID())")
                 try FileManager.default.createDirectory(at: working, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
@@ -55,7 +55,7 @@ import HWYDCore
                             }
                         } catch {
                             // A locked keychain must not discard a successfully transcribed session.
-                            result.identityWarning = "Reconnaissance vocale indisponible : \(error.localizedDescription)"
+                            result.identityWarning = String(localized: "Reconnaissance vocale indisponible : \(error.localizedDescription)", bundle: .hwyd)
                         }
                     }
                 }

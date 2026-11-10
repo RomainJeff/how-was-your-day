@@ -13,8 +13,8 @@ import HWYDCore
     @Published var selectedCalendars: Set<String>
     @Published var calendars: [CalendarChoice] = []
     @Published var upcoming: [CalendarContext] = []
-    @Published var status = "Non connecté"
-    @Published var notificationStatus = "Notifications non activées"
+    @Published var status = String(localized: "Non connecté")
+    @Published var notificationStatus = String(localized: "Notifications non activées")
     @Published var busy = false
     /// Called with the event and whether to open its video link, or nil to only show the app.
     var onAction: ((CalendarContext?, Bool) -> Void)?
@@ -35,7 +35,7 @@ import HWYDCore
         enabled = allowed && preferences.bool(forKey: "calendar.enabled")
         reminders = allowed && preferences.bool(forKey: "calendar.reminders")
         leadMinutes = [0, 1, 5, 10, 15].contains(preferences.integer(forKey: "calendar.lead")) && preferences.object(forKey: "calendar.lead") != nil ? preferences.integer(forKey: "calendar.lead") : 5
-        excludedKeywords = preferences.string(forKey: "calendar.exclusions") ?? "RH, entretien, médical"
+        excludedKeywords = preferences.string(forKey: "calendar.exclusions") ?? String(localized: "RH, entretien, médical")
         selectedCalendars = Set(preferences.stringArray(forKey: "calendar.selected") ?? [])
         super.init()
     }
@@ -46,9 +46,9 @@ import HWYDCore
         // Calendar reminders are independent of capture history.
         preferences.removeObject(forKey: "calendar.handled")
         center.delegate = self
-        let join = UNNotificationAction(identifier: "join-record", title: "Rejoindre et enregistrer", options: [.foreground])
-        let record = UNNotificationAction(identifier: "record", title: "Enregistrer la réunion", options: [.foreground])
-        let recordOnly = UNNotificationAction(identifier: "record", title: "Enregistrer sans rejoindre", options: [.foreground])
+        let join = UNNotificationAction(identifier: "join-record", title: String(localized: "Rejoindre et enregistrer"), options: [.foreground])
+        let record = UNNotificationAction(identifier: "record", title: String(localized: "Enregistrer la réunion"), options: [.foreground])
+        let recordOnly = UNNotificationAction(identifier: "record", title: String(localized: "Enregistrer sans rejoindre"), options: [.foreground])
         center.setNotificationCategories([
             UNNotificationCategory(identifier: "meeting-online", actions: [join, recordOnly], intentIdentifiers: []),
             UNNotificationCategory(identifier: "meeting-room", actions: [record], intentIdentifiers: [])
@@ -73,11 +73,11 @@ import HWYDCore
         busy = true; defer { busy = false }
         do {
             let store = eventStore ?? EKEventStore(); eventStore = store
-            guard try await store.requestFullAccessToEvents() else { status = "Accès refusé. Autorisez HWYD dans Confidentialité et sécurité → Calendriers."; return }
+            guard try await store.requestFullAccessToEvents() else { status = String(localized: "Accès refusé. Autorisez HWYD dans Confidentialité et sécurité → Calendriers."); return }
             guard active else { return }
             enabled = true; preferences.set(true, forKey: "calendar.enabled")
             await refresh()
-        } catch { status = "Calendrier : \(error.localizedDescription)" }
+        } catch { status = String(localized: "Calendrier : \(error.localizedDescription)") }
     }
     func saveSettings() {
         guard allowed, active else { return }
@@ -123,7 +123,7 @@ import HWYDCore
                 let email = person.url.scheme?.lowercased() == "mailto" ? String(person.url.absoluteString.dropFirst(7)).components(separatedBy: "?")[0].removingPercentEncoding : nil
                 return CalendarParticipant(name: person.name, email: email)
             }
-            return CalendarContext(id: id, title: event.title ?? "Réunion", start: event.startDate, end: event.endDate,
+            return CalendarContext(id: id, title: event.title ?? String(localized: "Réunion"), start: event.startDate, end: event.endDate,
                 calendarTitle: event.calendar.title, details: event.notes, location: event.location,
                 meetingURL: MeetingRules.meetingURL(in: text), participants: participants)
         }.sorted { $0.start < $1.start }
@@ -132,15 +132,15 @@ import HWYDCore
         guard allowed, active, !refreshing else { return }
         refreshing = true; defer { refreshing = false }
         let version = revision
-        guard enabled else { upcoming = []; status = "Non connecté"; clearReminders(); return }
+        guard enabled else { upcoming = []; status = String(localized: "Non connecté"); clearReminders(); return }
         guard EKEventStore.authorizationStatus(for: .event) == .fullAccess else {
-            upcoming = []; calendars = []; status = "Accès calendrier requis dans les réglages macOS."; clearReminders(); return
+            upcoming = []; calendars = []; status = String(localized: "Accès calendrier requis dans les réglages macOS."); clearReminders(); return
         }
         upcoming = events(now: Date())
-        status = calendars.isEmpty ? "Aucun calendrier. Ajoutez votre compte Google dans Calendrier → Ajouter un compte." : selectedCalendars.isEmpty ? "Choisissez les calendriers à suivre." : "\(upcoming.count) réunion(s) dans les 7 prochains jours"
+        status = calendars.isEmpty ? String(localized: "Aucun calendrier. Ajoutez votre compte Google dans Calendrier → Ajouter un compte.") : selectedCalendars.isEmpty ? String(localized: "Choisissez les calendriers à suivre.") : String(localized: "\(upcoming.count) réunion(s) dans les 7 prochains jours")
         let settings = await center.notificationSettings()
         guard active, version == revision else { return }
-        notificationStatus = settings.authorizationStatus == .authorized ? "Notifications autorisées" : "Notifications non autorisées dans macOS"
+        notificationStatus = settings.authorizationStatus == .authorized ? String(localized: "Notifications autorisées") : String(localized: "Notifications non autorisées dans macOS")
         guard reminders, settings.authorizationStatus == .authorized else { clearReminders(); return }
         let now = Date()
         let scheduled = Array(upcoming.compactMap { event -> (CalendarContext, Date)? in
@@ -155,35 +155,35 @@ import HWYDCore
         for (event, date) in scheduled {
             let id = Self.prefix + event.id
             let content = UNMutableNotificationContent()
-            content.title = "Une réunion va commencer"
-            content.body = "À \(event.start.formatted(date: .omitted, time: .shortened)). Ouvrez HWYD pour voir les détails."
+            content.title = String(localized: "Une réunion va commencer")
+            content.body = String(localized: "À \(event.start.formatted(date: .omitted, time: .shortened)). Ouvrez HWYD pour voir les détails.")
             content.sound = .default
             content.categoryIdentifier = event.meetingURL == nil ? "meeting-room" : "meeting-online"
             content.userInfo = ["meetingID": event.id]
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, date.timeIntervalSinceNow), repeats: false)
             do { try await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger)) }
-            catch { notificationStatus = "Rappel impossible : \(error.localizedDescription)" }
+            catch { notificationStatus = String(localized: "Rappel impossible : \(error.localizedDescription)") }
             guard active, version == revision else { clearReminders(); return }
         }
     }
     func sendTestReminder() async {
         guard allowed, active, reminders else { return }
         let content = UNMutableNotificationContent()
-        content.title = "HWYD · Rappel de test"
-        content.body = "Les rappels sont prêts. Ce test ne démarre aucun enregistrement."
+        content.title = String(localized: "HWYD · Rappel de test")
+        content.body = String(localized: "Les rappels sont prêts. Ce test ne démarre aucun enregistrement.")
         content.sound = .default
         do {
             try await center.add(UNNotificationRequest(identifier: "hwyd.test", content: content,
                 trigger: UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)))
-            notificationStatus = "Rappel de test envoyé pour dans 3 secondes."
-        } catch { notificationStatus = "Test impossible : \(error.localizedDescription)" }
+            notificationStatus = String(localized: "Rappel de test envoyé pour dans 3 secondes.")
+        } catch { notificationStatus = String(localized: "Test impossible : \(error.localizedDescription)") }
     }
     /// `join` opens the event's video link before recording; otherwise HWYD only records.
     func activate(_ id: String, join: Bool = true) {
         guard allowed, active, enabled else { return }
         // Never trust the notification payload for a URL, nor a stale/cancelled occurrence.
         guard let event = events(now: Date()).first(where: { $0.id == id }) else {
-            status = "Cette réunion n’est plus disponible ou a été déplacée."; onAction?(nil, false); return
+            status = String(localized: "Cette réunion n’est plus disponible ou a été déplacée."); onAction?(nil, false); return
         }
         center.removeDeliveredNotifications(withIdentifiers: [Self.prefix + id])
         // Opening or recording an event does not dismiss its future calendar reminder.

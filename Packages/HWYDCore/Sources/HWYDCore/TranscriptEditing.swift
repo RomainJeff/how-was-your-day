@@ -37,5 +37,5 @@ extension Recording {
 
 public enum TranscriptEditingError: LocalizedError {
     case invalidBoundary
-    public var errorDescription: String? { "Les horodatages ne permettent pas de découper ce passage à cet endroit." }
+    public var errorDescription: String? { String(localized: "Les horodatages ne permettent pas de découper ce passage à cet endroit.", bundle: .hwyd) }
 }

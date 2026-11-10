@@ -28,10 +28,10 @@ extension AppModel {
     func toggleVoicePlayback(_ speakerID: UUID) {
         if playback.voiceID == speakerID { stopPlayback(); return }
         guard let item = selected, let store, !item.audioChunks.isEmpty else {
-            notice = "Aucun fichier audio disponible pour cette session."; return
+            notice = String(localized: "Aucun fichier audio disponible pour cette session."); return
         }
         guard let voice = item.voiceOverview.first(where: { $0.id == speakerID }), !voice.spans.isEmpty else {
-            notice = "Aucun passage attribué à cette voix."; return
+            notice = String(localized: "Aucun passage attribué à cette voix."); return
         }
         stopPlayback()
         do {
@@ -39,7 +39,7 @@ extension AppModel {
             playbackTime = player.position; isPlaying = true
             playback.voiceID = speakerID; playback.generation += 1
             updatePlaybackFocus()
-        } catch { errorMessage = "Lecture impossible : \(error.localizedDescription)" }
+        } catch { errorMessage = String(localized: "Lecture impossible : \(error.localizedDescription)") }
     }
     /// Applies a correction to the voices of the selected session and offers to undo it.
     /// Corrections never read or write a voice print.
@@ -53,7 +53,7 @@ extension AppModel {
             update(id) { $0 = item }
             if let voice = playback.voiceID, !item.speakers.contains(where: { $0.id == voice && !$0.ignored }) { stopPlayback() }
             let after = item.transcriptVersion
-            report(message(item), style: .success, actions: [ToastAction(title: "Annuler") { [weak self] in self?.undoVoiceEdit(id, restoring: before, ifStillAt: after) }], optional: true)
+            report(message(item), style: .success, actions: [ToastAction(title: String(localized: "Annuler")) { [weak self] in self?.undoVoiceEdit(id, restoring: before, ifStillAt: after) }], optional: true)
             return true
         } catch { errorMessage = error.localizedDescription; return false }
     }
@@ -61,7 +61,7 @@ extension AppModel {
     func undoVoiceEdit(_ id: UUID, restoring before: Recording, ifStillAt version: Int) {
         guard let current = recordings.first(where: { $0.id == id }), current.transcriptVersion == version,
               id != processingID, current.state != .recording else {
-            report("Annulation impossible : la session a changé depuis.", style: .error); return
+            report(String(localized: "Annulation impossible : la session a changé depuis."), style: .error); return
         }
         update(id) { item in
             item.speakers = before.speakers; item.absorbedSpeakers = before.absorbedSpeakers
@@ -69,26 +69,26 @@ extension AppModel {
             item.transcriptVersion = version + 1
         }
         if let voice = playback.voiceID, !before.speakers.contains(where: { $0.id == voice }) { stopPlayback() }
-        notice = "Modification annulée."
+        notice = String(localized: "Modification annulée.")
     }
-    private func label(_ id: UUID, in item: Recording) -> String { item.speakers.first { $0.id == id }?.label ?? "Voix" }
+    private func label(_ id: UUID, in item: Recording) -> String { item.speakers.first { $0.id == id }?.label ?? String(localized: "Voix") }
     /// "This voice is the same person as that one." Transcript correction only, no enrollment.
     func mergeSpeaker(_ sourceID: UUID, into targetID: UUID) {
-        let source = selected.map { label(sourceID, in: $0) } ?? "Voix"
-        editVoices({ "\(source) regroupée avec \(self.label(targetID, in: $0))." }) { try $0.mergeSpeaker(sourceID, into: targetID) }
+        let source = selected.map { label(sourceID, in: $0) } ?? String(localized: "Voix")
+        editVoices({ String(localized: "\(source) regroupée avec \(self.label(targetID, in: $0)).") }) { try $0.mergeSpeaker(sourceID, into: targetID) }
     }
     /// Undoes a former merge: the passages first detected as `absorbedID` return to their own voice.
     func separateSpeaker(_ absorbedID: UUID, from speakerID: UUID) {
-        editVoices({ "\(self.label(absorbedID, in: $0)) séparée de \(self.label(speakerID, in: $0))." }) { try $0.separateSpeaker(absorbedID, from: speakerID) }
+        editVoices({ String(localized: "\(self.label(absorbedID, in: $0)) séparée de \(self.label(speakerID, in: $0)).") }) { try $0.separateSpeaker(absorbedID, from: speakerID) }
     }
     /// Hides an echo or noise voice from this session, or restores it. Segments are kept.
     func setSpeakerIgnored(_ speakerID: UUID, _ ignored: Bool) {
-        editVoices({ ignored ? "\(self.label(speakerID, in: $0)) ignorée : ses passages sont masqués du transcript, de l’export et de la synthèse." : "\(self.label(speakerID, in: $0)) rétablie dans le transcript." }) {
+        editVoices({ ignored ? String(localized: "\(self.label(speakerID, in: $0)) ignorée : ses passages sont masqués du transcript, de l’export et de la synthèse.") : String(localized: "\(self.label(speakerID, in: $0)) rétablie dans le transcript.") }) {
             try $0.setSpeakerIgnored(speakerID, ignored)
         }
     }
     /// Names a voice after a known person. Does not enroll and does not read any voice print.
     func linkSpeaker(_ speakerID: UUID, to person: VoicePerson) {
-        editVoices({ _ in "Voix nommée \(person.name) dans toute cette session." }) { try $0.linkSpeaker(speakerID, to: person) }
+        editVoices({ _ in String(localized: "Voix nommée \(person.name) dans toute cette session.") }) { try $0.linkSpeaker(speakerID, to: person) }
     }
 }

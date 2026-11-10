@@ -61,9 +61,9 @@ public enum VoiceReviewError: LocalizedError, Equatable {
     case unnamedMerge, opposedPerson, sameVoice
     public var errorDescription: String? {
         switch self {
-        case .unnamedMerge: "Ces voix sont sur deux pistes différentes. Nommez d’abord l’une des deux."
-        case .opposedPerson: "Cette personne est exclue de la reconnaissance."
-        case .sameVoice: "Choisissez une autre voix."
+        case .unnamedMerge: String(localized: "Ces voix sont sur deux pistes différentes. Nommez d’abord l’une des deux.", bundle: .hwyd)
+        case .opposedPerson: String(localized: "Cette personne est exclue de la reconnaissance.", bundle: .hwyd)
+        case .sameVoice: String(localized: "Choisissez une autre voix.", bundle: .hwyd)
         }
     }
 }

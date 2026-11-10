@@ -4,7 +4,7 @@
 
 A native macOS app for recording, transcribing and reviewing conversations locally. Built with SwiftUI and Swift Package Manager.
 
-**Experimental, Apple Silicon, macOS 26 or later.** The interface is currently in French.
+**Experimental, Apple Silicon, macOS 26 or later.** The interface follows the macOS language: English, or French otherwise. Demo content, stored default voice labels ("Voix 1", "Voix à nommer") and summaries stay in French.
 
 ## Install
 
@@ -84,7 +84,11 @@ python3 scripts/test-summary.py
 'build/How Was Your Day.app/Contents/MacOS/HWYD' --ui-test build/ui-test
 python3 scripts/test-mcp.py 'build/How Was Your Day.app/Contents/Helpers/hwyd-mcp' build/ui-test
 'build/How Was Your Day.app/Contents/MacOS/HWYD' --snapshot build/screenshots
+'build/How Was Your Day.app/Contents/MacOS/HWYD' --snapshot build/screenshots-en -AppleLanguages '(en)'
+python3 scripts/l10n.py check
 ```
+
+`scripts/l10n.py check` fails when a String Catalog entry lacks French or English, or when a French literal in `Sources/HWYDApp` is not localizable. See [localization](docs/localization.md).
 
 Use fresh test directories. Demo, snapshot, self-test and UI-test modes never capture the microphone. Tests using installed speech or diarization models are separate, opt-in checks.
 

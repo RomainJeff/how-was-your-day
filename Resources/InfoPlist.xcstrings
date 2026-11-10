@@ -1,0 +1,57 @@
+{
+  "sourceLanguage": "fr",
+  "strings": {
+    "NSAudioCaptureUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HWYD records audio from apps during the sessions you start."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HWYD enregistre l’audio des applications pendant les sessions que vous démarrez."
+          }
+        }
+      }
+    },
+    "NSCalendarsFullAccessUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HWYD reads your calendars, including Google Calendar synced with macOS, to show upcoming meetings and offer to record them. No event is changed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HWYD lit vos calendriers, dont Google Calendar synchronisé avec macOS, pour afficher les réunions à venir et vous proposer de les enregistrer. Aucun événement n’est modifié."
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HWYD records your voice and the room during the sessions you start."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HWYD enregistre votre voix et la salle pendant les sessions que vous démarrez."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
