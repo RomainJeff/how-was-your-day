@@ -31,6 +31,15 @@ struct NewSessionView: View {
                         .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Studio.line))
                         .focused($nameFocused).onSubmit(start).frame(maxWidth: 520)
                 }
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Eyebrow(text: String(localized: "Langue"))
+                        HelpButton(text: String(localized: "En détection automatique, HWYD choisit la langue de chaque piste parmi les langues installées, d’après le début de l’enregistrement. Choisissez une langue pour l’imposer aux deux pistes. Vous pourrez retranscrire dans une autre langue."))
+                    }
+                    Picker("Langue", selection: $model.newSessionLanguage) {
+                        ForEach(model.sessionLanguageChoices, id: \.self) { choice in Text(SessionLanguageLabel.title(choice)).tag(choice) }
+                    }.labelsHidden().fixedSize()
+                }
                 HStack(spacing: 10) {
                     Button(action: start) {
                         Label(model.isStarting ? "Préparation…" : model.isDemoMode ? "Simuler l’enregistrement" : "Démarrer l’enregistrement", systemImage: "record.circle")
@@ -42,7 +51,7 @@ struct NewSessionView: View {
         }
         .onAppear { nameFocused = true }
     }
-    private func start() { model.startCapture(kind: model.newSessionKind, title: model.newSessionTitle) }
+    private func start() { model.startCapture(kind: model.newSessionKind, title: model.newSessionTitle, language: model.newSessionLanguage) }
     private func kindTile(_ kind: SessionKind) -> some View {
         let selected = model.newSessionKind == kind
         return Button { model.newSessionKind = kind } label: {
@@ -62,5 +71,22 @@ struct NewSessionView: View {
     static func placeholder(_ kind: SessionKind) -> String {
         let time = Date().formatted(date: .omitted, time: .shortened)
         return kind == .adHoc ? String(localized: "Session du \(time)") : String(localized: "\(kind.label) du \(time)")
+    }
+}
+
+/// How a transcription language choice reads in pickers and transcript headers.
+enum SessionLanguageLabel {
+    static func title(_ choice: String) -> String {
+        choice == SpeechLanguage.automatic ? String(localized: "Détection automatique") : SpeechLanguage.displayName(choice)
+    }
+    /// The language a transcript was produced in, per track when they differ, marked when detected.
+    static func transcript(_ provenance: TranscriptionProvenance) -> String {
+        guard let detections = provenance.languageDetection, !detections.isEmpty else { return SpeechLanguage.displayName(provenance.locale) }
+        func name(_ detection: LanguageDetection) -> String {
+            SpeechLanguage.displayName(detection.locale) + (detection.method == .detected ? String(localized: " (détectée)") : "")
+        }
+        let languages = Set(detections.map { SpeechLanguage.languageCode(of: $0.locale) })
+        if languages.count == 1, let first = detections.first(where: { $0.method == .detected }) ?? detections.first { return name(first) }
+        return detections.map { ($0.source == .mic ? String(localized: "Micro : ") : String(localized: "Système : ")) + name($0) }.joined(separator: " · ")
     }
 }

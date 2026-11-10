@@ -1,6 +1,54 @@
 {
   "sourceLanguage": "fr",
   "strings": {
+    " (détectée)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " (detected)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " (détectée)"
+          }
+        }
+      }
+    },
+    " (ou %@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " (or %@)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " (ou %@)"
+          }
+        }
+      }
+    },
+    " · Apple Speech · sur ce Mac": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · Apple Speech · on this Mac"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · Apple Speech · sur ce Mac"
+          }
+        }
+      }
+    },
     "%@ %@": {
       "localizations": {
         "en": {
@@ -1137,6 +1185,22 @@
         }
       }
     },
+    "Ajouter une langue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a language"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter une langue"
+          }
+        }
+      }
+    },
     "Annulation impossible : la session a changé depuis.": {
       "localizations": {
         "en": {
@@ -1217,6 +1281,22 @@
         }
       }
     },
+    "Appuyez sur un raccourci…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press a shortcut…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appuyez sur un raccourci…"
+          }
+        }
+      }
+    },
     "Arrêter l’écoute": {
       "localizations": {
         "en": {
@@ -1293,6 +1373,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Au début"
+          }
+        }
+      }
+    },
+    "Aucun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun"
           }
         }
       }
@@ -1901,6 +1997,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chaque synthèse est lancée manuellement depuis la session. Les étapes validées sont conservées pour reprendre après une interruption."
+          }
+        }
+      }
+    },
+    "Choisir la langue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the language"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisir la langue"
           }
         }
       }
@@ -2561,6 +2673,22 @@
         }
       }
     },
+    "Déjà utilisé ailleurs": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already in use"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déjà utilisé ailleurs"
+          }
+        }
+      }
+    },
     "Démarrage de la capture": {
       "localizations": {
         "en": {
@@ -2625,6 +2753,22 @@
         }
       }
     },
+    "Démarrer ou terminer un enregistrement": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start or end a recording"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démarrer ou terminer un enregistrement"
+          }
+        }
+      }
+    },
     "Désactiver le raisonnement étendu": {
       "localizations": {
         "en": {
@@ -2685,6 +2829,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Détails"
+          }
+        }
+      }
+    },
+    "Détection automatique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic detection"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Détection automatique"
           }
         }
       }
@@ -2881,6 +3041,22 @@
         }
       }
     },
+    "En détection automatique, HWYD choisit la langue de chaque piste parmi les langues installées, d’après le début de l’enregistrement. Choisissez une langue pour l’imposer aux deux pistes. Vous pourrez retranscrire dans une autre langue.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With automatic detection, HWYD picks the language of each track among the installed languages, from the start of the recording. Choose a language to force it on both tracks. You can reprocess in another language later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En détection automatique, HWYD choisit la langue de chaque piste parmi les langues installées, d’après le début de l’enregistrement. Choisissez une langue pour l’imposer aux deux pistes. Vous pourrez retranscrire dans une autre langue."
+          }
+        }
+      }
+    },
     "En pause": {
       "localizations": {
         "en": {
@@ -2925,6 +3101,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Enregistrement"
+          }
+        }
+      }
+    },
+    "Enregistrement du raccourci": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording the shortcut"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrement du raccourci"
           }
         }
       }
@@ -3297,6 +3489,22 @@
         }
       }
     },
+    "Fonctionne aussi quand une autre application est au premier plan. La session prend le dernier type choisi et détecte la langue ; la fenêtre reste en arrière-plan. Sans raccourci, utilisez le menu de la barre des menus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Works even when another app is in front. The session uses the last chosen kind and detects the language; the window stays in the background. Without a shortcut, use the menu bar menu."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fonctionne aussi quand une autre application est au premier plan. La session prend le dernier type choisi et détecte la langue ; la fenêtre reste en arrière-plan. Sans raccourci, utilisez le menu de la barre des menus."
+          }
+        }
+      }
+    },
     "Forme d’onde %@": {
       "localizations": {
         "en": {
@@ -3357,54 +3565,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fournisseur"
-          }
-        }
-      }
-    },
-    "Français": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "French"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Français"
-          }
-        }
-      }
-    },
-    "Français · Apple Speech + Community-1": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "French · Apple Speech + Community-1"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Français · Apple Speech + Community-1"
-          }
-        }
-      }
-    },
-    "Français · Apple Speech · sur ce Mac": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "French · Apple Speech · on this Mac"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Français · Apple Speech · sur ce Mac"
           }
         }
       }
@@ -3485,6 +3645,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Générer une synthèse"
+          }
+        }
+      }
+    },
+    "HWYD détecte la langue de chaque piste parmi ces langues, d’après le début de l’enregistrement. Si une autre langue est reconnue, il propose de l’installer. Modèles Apple Speech, environ 350 Mo par langue, téléchargés une fois. Aucun audio n’est envoyé pour la transcription.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HWYD detects the language of each track among these languages, from the start of the recording. If another language is recognized, it offers to install it. Apple Speech models, about 350 MB per language, downloaded once. No audio is sent for transcription."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HWYD détecte la langue de chaque piste parmi ces langues, d’après le début de l’enregistrement. Si une autre langue est reconnue, il propose de l’installer. Modèles Apple Speech, environ 350 Mo par langue, téléchargés une fois. Aucun audio n’est envoyé pour la transcription."
           }
         }
       }
@@ -3697,6 +3873,22 @@
         }
       }
     },
+    "Installation : %@…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installing %@…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installation : %@…"
+          }
+        }
+      }
+    },
     "Installation des voix : %@": {
       "localizations": {
         "en": {
@@ -3741,6 +3933,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Installer"
+          }
+        }
+      }
+    },
+    "Installer et retranscrire": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install and reprocess"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installer et retranscrire"
           }
         }
       }
@@ -3869,6 +4077,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "La langue %@ n’est pas prise en charge par SpeechTranscriber sur ce Mac."
+          }
+        }
+      }
+    },
+    "La langue de %@ n’a pas été reconnue parmi les langues installées.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The language of %@ was not recognized among the installed languages."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La langue de %@ n’a pas été reconnue parmi les langues installées."
+          }
+        }
+      }
+    },
+    "La langue de %@ semble être : %@. Ce modèle n’est pas installé.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The language of %1$@ appears to be %2$@. This model is not installed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La langue de %@ semble être : %@. Ce modèle n’est pas installé."
           }
         }
       }
@@ -4081,6 +4321,38 @@
         }
       }
     },
+    "Langue installée : %@. La transcription reste locale.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language installed: %@. Transcription stays local."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue installée : %@. La transcription reste locale."
+          }
+        }
+      }
+    },
+    "Langues installées": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installed languages"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langues installées"
+          }
+        }
+      }
+    },
     "Le chemin du fichier audio n’est pas valide.": {
       "localizations": {
         "en": {
@@ -4129,6 +4401,38 @@
         }
       }
     },
+    "Le helper a échoué.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The helper failed."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le helper a échoué."
+          }
+        }
+      }
+    },
+    "Le helper de transcription est absent.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The transcription helper is missing."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le helper de transcription est absent."
+          }
+        }
+      }
+    },
     "Le helper de transcription est absent. Relancez l’app construite par scripts/build-app.sh.": {
       "localizations": {
         "en": {
@@ -4145,18 +4449,34 @@
         }
       }
     },
-    "Le modèle %@ doit être installé. Utilisez « Installer le modèle français » dans les réglages.": {
+    "Le helper ne répond pas.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The %@ model must be installed. Use “Install French Model” in Settings."
+            "value": "The helper is not responding."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le modèle %@ doit être installé. Utilisez « Installer le modèle français » dans les réglages."
+            "value": "Le helper ne répond pas."
+          }
+        }
+      }
+    },
+    "Le modèle %@ doit être installé. Installez cette langue dans Réglages, Audio et voix.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The %@ model must be installed. Install this language in Settings, Audio and voices."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le modèle %@ doit être installé. Installez cette langue dans Réglages, Audio et voix."
           }
         }
       }
@@ -4913,22 +5233,6 @@
         }
       }
     },
-    "L’installation peut télécharger le modèle Apple. Aucun audio n’est envoyé pour la transcription.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Installing may download the Apple model. No audio is sent for transcription."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "L’installation peut télécharger le modèle Apple. Aucun audio n’est envoyé pour la transcription."
-          }
-        }
-      }
-    },
     "MCP reste en lecture seule par défaut. Les écritures exigent aussi --allow-write au lancement du serveur.": {
       "localizations": {
         "en": {
@@ -4989,6 +5293,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Micro"
+          }
+        }
+      }
+    },
+    "Micro : ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone: "
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Micro : "
           }
         }
       }
@@ -5073,22 +5393,6 @@
         }
       }
     },
-    "Modèle Apple Speech": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apple Speech model"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Modèle Apple Speech"
-          }
-        }
-      }
-    },
     "Modèle chargé": {
       "localizations": {
         "en": {
@@ -5101,22 +5405,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Modèle chargé"
-          }
-        }
-      }
-    },
-    "Modèle français installé. La transcription reste locale.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "French model installed. Transcription stays local."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Modèle français installé. La transcription reste locale."
           }
         }
       }
@@ -5745,6 +6033,22 @@
         }
       }
     },
+    "Par défaut": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Par défaut"
+          }
+        }
+      }
+    },
     "Pas encore de synthèse": {
       "localizations": {
         "en": {
@@ -6081,6 +6385,38 @@
         }
       }
     },
+    "Raccourci": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcut"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raccourci"
+          }
+        }
+      }
+    },
+    "Raccourci : %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcut: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raccourci : %@"
+          }
+        }
+      }
+    },
     "Rappel de test envoyé pour dans 3 secondes.": {
       "localizations": {
         "en": {
@@ -6349,6 +6685,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retranscrire"
+          }
+        }
+      }
+    },
+    "Retranscrire avec détection automatique": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprocess with automatic detection"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retranscrire avec détection automatique"
+          }
+        }
+      }
+    },
+    "Retranscrire en %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprocess in %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retranscrire en %@"
           }
         }
       }
@@ -7025,6 +7393,22 @@
         }
       }
     },
+    "Supprimer le raccourci": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the shortcut"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer le raccourci"
+          }
+        }
+      }
+    },
     "Supprimer…": {
       "localizations": {
         "en": {
@@ -7149,6 +7533,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Système"
+          }
+        }
+      }
+    },
+    "Système : ": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System: "
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Système : "
           }
         }
       }
@@ -8193,6 +8593,22 @@
         }
       }
     },
+    "aucun": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "none"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "aucun"
+          }
+        }
+      }
+    },
     "calendar.record": {
       "comment": "Records an upcoming meeting without joining it",
       "localizations": {
@@ -8270,6 +8686,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "ignorée"
+          }
+        }
+      }
+    },
+    "la piste Micro": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the Microphone track"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la piste Micro"
+          }
+        }
+      }
+    },
+    "la piste Système": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the System track"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la piste Système"
           }
         }
       }
