@@ -38,8 +38,7 @@ cask = '''cask "how-was-your-day" do
   uninstall quit: "dev.lepee.hwyd"
 
   caveats <<~EOS
-    This experimental app is not notarized by Apple.
-    On first launch, use System Settings > Privacy & Security > Open Anyway.
+    This experimental app is signed with Developer ID and notarized by Apple.
     Recordings are kept in ~/Library/Application Support/HWYD.
     Uninstalling does not delete recordings or voice enrollment data.
   EOS
