@@ -550,7 +550,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld min %2$@"
+            "value": "%1$lld min %2$@ s"
           }
         },
         "fr": {
@@ -3782,7 +3782,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "I have told everyone present"
+            "value": "Everyone present has been informed"
           }
         },
         "fr": {
@@ -4246,7 +4246,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The name applies to this voice throughout the session. Remember it to recognize it in future sessions."
+            "value": "The name applies to this voice throughout the session. Remember it so HWYD recognizes it in future sessions."
           }
         },
         "fr": {
@@ -4838,7 +4838,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The agent receives the title, the transcript and the voice names, and can consult its own context to place people and projects. What it draws from it appears in a separate Context section. It hands the summary to HWYD through the submit_summary tool; HWYD refuses its requests to write, delete or execute. Permissions already granted in the agent’s own configuration remain its own."
+            "value": "The agent receives the title, the transcript and the voice names, and can consult its own context to place people and projects. Anything it draws from there appears in a separate Context section. It hands the summary to HWYD through the submit_summary tool; HWYD denies any request to write, delete or run commands. Permissions already granted in the agent’s own configuration still apply."
           }
         },
         "fr": {
@@ -5718,7 +5718,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Sessions"
+            "value": "Show All Sessions"
           }
         },
         "fr": {
@@ -6054,7 +6054,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Leave Examples"
+            "value": "Exit Demo"
           }
         },
         "fr": {
@@ -8189,6 +8189,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "arrêt : %@"
+          }
+        }
+      }
+    },
+    "calendar.record": {
+      "comment": "Records an upcoming meeting without joining it",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrer"
           }
         }
       }

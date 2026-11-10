@@ -74,12 +74,12 @@ struct UpcomingMeetingsView: View {
                         Spacer()
                         Group {
                             if event.meetingURL != nil {
-                                Button("Enregistrer") { calendar.activate(event.id, join: false) }
+                                Button(String(localized: "calendar.record", defaultValue: "Enregistrer", comment: "Records an upcoming meeting without joining it")) { calendar.activate(event.id, join: false) }
                                     .buttonStyle(StudioButtonStyle()).help("Lance la capture sans ouvrir la visio")
                                 Button("Rejoindre et enregistrer") { calendar.activate(event.id, join: true) }
                                     .buttonStyle(StudioButtonStyle(primary: true)).help("Ouvre la visio et lance la capture")
                             } else {
-                                Button("Enregistrer") { calendar.activate(event.id, join: false) }.buttonStyle(StudioButtonStyle())
+                                Button(String(localized: "calendar.record", defaultValue: "Enregistrer", comment: "Records an upcoming meeting without joining it")) { calendar.activate(event.id, join: false) }.buttonStyle(StudioButtonStyle())
                             }
                         }.disabled(model.activeCaptureID != nil || model.isStarting)
                     }.padding(14).background(Studio.surface, in: RoundedRectangle(cornerRadius: 8))

@@ -49,6 +49,10 @@ def in_repo_sources(path):
     return any(root in p.parents for root in SOURCE_ROOTS)
 
 
+# Keys declared with String(localized: "key", defaultValue: "…", comment: "…"): French value and comment.
+DEFAULTS = {}
+
+
 def extract(verbose=True):
     """Returns {key: [(file, line), ...]} for every localizable string in HWYD sources."""
     env = developer_env()
@@ -86,6 +90,8 @@ def extract(verbose=True):
             for entry in entries:
                 line = entry.get("location", {}).get("startingLine", 0)
                 keys.setdefault(entry["key"], []).append((str(Path(source).relative_to(ROOT)), line))
+                if "value" in entry or entry.get("comment"):
+                    DEFAULTS[entry["key"]] = (entry.get("value", entry["key"]), entry.get("comment", ""))
     if verbose:
         print(f"l10n: {len(keys)} keys extracted", file=sys.stderr)
     return keys
@@ -112,7 +118,10 @@ def sync():
     added = [k for k in keys if k not in strings]
     removed = [k for k, v in strings.items() if k not in keys and v.get("extractionState") != "manual"]
     for key in added:
-        strings[key] = {"localizations": {"fr": {"stringUnit": {"state": "translated", "value": key}}}}
+        value, comment = DEFAULTS.get(key, (key, ""))
+        strings[key] = {"localizations": {"fr": {"stringUnit": {"state": "translated", "value": value}}}}
+        if comment:
+            strings[key]["comment"] = comment
     for key in removed:
         del strings[key]
     save(catalog)
