@@ -14,7 +14,7 @@ brew install --cask alepee/tap/how-was-your-day
 
 Or download the DMG from [GitHub Releases](https://github.com/alepee/how-was-your-day/releases).
 
-The app uses a persistent local signing certificate, but is **not notarized by Apple**. On first launch, macOS may require **System Settings > Privacy & Security > Open Anyway**. Allow microphone and system audio access when you start recording. Calendar access is optional.
+From 0.11.0, the app is signed with a Developer ID certificate and notarized by Apple. Allow microphone and system audio access when you start recording. Calendar access is optional.
 
 ```sh
 brew upgrade --cask how-was-your-day

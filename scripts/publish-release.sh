@@ -19,7 +19,7 @@ fi
 # Public releases are signed with Developer ID and notarized. NOTARY_PROFILE names a notarytool
 # keychain profile created once with `xcrun notarytool store-credentials`.
 identity="${SIGN_IDENTITY:-Developer ID Application}"
-profile="${NOTARY_PROFILE:-hwyd-notary}"
+profile="${NOTARY_PROFILE:-apple-notary}"
 # SIGN_IDENTITY may be a name prefix or a certificate SHA-1. After a renewal, two Developer ID
 # certificates match the prefix and codesign refuses an ambiguous name: pass the SHA-1 then.
 matches="$(security find-identity -v -p codesigning | grep -F -- "$identity" || true)"
