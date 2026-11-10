@@ -46,7 +46,8 @@ extension SummaryPipeline {
         // Ignored voices (echo, noise) never reach the model.
         let recording = recording.withoutIgnoredVoices
         guard !recording.segments.isEmpty else { throw SummaryFailure.noTranscript }
-        let limit = max(12_000, min(inputCharacterLimit, maximumInputCharacters))
+        let limit = max(12_000, min(inputCharacterLimit, provider.requestCharacterCeiling))
+        let windowCeiling = provider.extractionWindowCharacters
         let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
         func json<T: Encodable>(_ value: T) throws -> String { String(decoding: try encoder.encode(value), as: UTF8.self) }
         let fingerprint = try inputHash(recording)
@@ -69,9 +70,9 @@ extension SummaryPipeline {
             if !current.isEmpty { windows.append(current) }
             return windows
         }
-        // Short windows keep extraction concrete. Neither a large configured context nor a long
-        // recording increases this ceiling. Complete turns are preserved; oversized turns fail.
-        let windows = try split(recording.segments, budget: min(12_000, limit - 4_000))
+        // Short windows keep extraction concrete for small local models. Only the provider's own
+        // ceiling (large for hosted models) raises it; a long recording never does. Complete turns are preserved; oversized turns fail.
+        let windows = try split(recording.segments, budget: min(windowCeiling, limit - 4_000))
         var total = windows.count + 1, completed = 0
         // Intermediate stages follow the provider's language. The default keeps the historical identity,
         // so existing checkpoints stay valid; English never shares a checkpoint with French.
@@ -348,7 +349,7 @@ extension SummaryPipeline {
                 let prompt = writePrefix + String(decoding: try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]), as: UTF8.self)
                 return (prompt, sources)
             }
-            var batches = try split(selected, budget: min(12_000, limit - 4_000))
+            var batches = try split(selected, budget: min(windowCeiling, limit - 4_000))
             while !batches.isEmpty {
                 let rows = batches.removeFirst()
                 let (prompt, sources) = try writingInput(rows)

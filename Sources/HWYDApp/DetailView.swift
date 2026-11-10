@@ -134,12 +134,12 @@ struct DetailView: View {
             }
             if recording.isDemo { Badge(text: "SYNTHÈSE FICTIVE · EXEMPLE D’INTERFACE").padding(.top, 15) }
         } else {
-            EmptyPanel(symbol: "sparkles", title: model.summaryEnabled ? "Pas encore de synthèse" : "La synthèse est facultative", detail: model.summaryEnabled ? "Lancez la génération avec votre modèle local. Vos notes et votre transcript restent indépendants." : "Activez un modèle dans les réglages pour générer une synthèse.")
+            EmptyPanel(symbol: "sparkles", title: model.summaryEnabled ? "Pas encore de synthèse" : "La synthèse est facultative", detail: model.summaryEnabled ? model.summaryService.isRemote ? "Le transcript sera envoyé à \(model.summaryService.displayName). Vos notes restent sur ce Mac." : "Lancez la génération avec votre modèle local. Vos notes et votre transcript restent indépendants." : "Activez un modèle dans les réglages pour générer une synthèse.")
             Button("Voir les réglages") { model.settingsCategory = .summary; model.showSettings = true }.buttonStyle(StudioButtonStyle())
         }
     }
     private var summaryHint: String {
-        var text = "Brouillon généré localement. Les décisions et actions gardent leurs références au transcript."
+        var text = "Brouillon généré par un modèle. Les décisions et actions gardent leurs références au transcript."
         if recording.summary != nil, let provenance = recording.summaryProvenance {
             text += "\n\(provenance.model) · \(provenance.promptVersion) · transcript v\(provenance.transcriptVersion)"
         }

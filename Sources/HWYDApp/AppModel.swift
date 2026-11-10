@@ -54,6 +54,11 @@ final class AppModel: ObservableObject {
     @Published var summaryModel = UserDefaults.standard.string(forKey: "summary.model") ?? ""
     @Published var summaryContextTokens = 32768
     @Published var summaryReasoningDisabled = false
+    /// Hosted providers are opt-in per service: a key alone never sends anything.
+    @Published private(set) var summaryService: SummaryService = .local
+    @Published var summaryRemoteModel = ""
+    @Published var summaryRemoteConsent = false
+    @Published private(set) var summaryKeyStored = false
     @Published var summaryProgress: SummaryProgress?
     private var summaryTask: Task<Void, Never>?
     @Published var processingID: UUID?
@@ -106,6 +111,7 @@ final class AppModel: ObservableObject {
         summaryModel = preferences.string(forKey: "summary.model") ?? ""
         summaryContextTokens = preferences.integer(forKey: "summary.contextTokens") == 0 ? 32768 : preferences.integer(forKey: "summary.contextTokens")
         summaryReasoningDisabled = preferences.bool(forKey: "summary.reasoningDisabled")
+        summaryService = SummaryService(rawValue: preferences.string(forKey: "summary.service") ?? "") ?? .local
         appearancePreference = AppearancePreference(rawValue: preferences.string(forKey: "appearancePreference") ?? "") ?? .system
         dataDirectory = directory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("HWYD")
         if appliesAppearance { NSApp.appearance = appearancePreference.appearance }
@@ -115,6 +121,7 @@ final class AppModel: ObservableObject {
             do { store = try SessionStore(directory: dataDirectory) }
             catch { errorMessage = "Impossible d’ouvrir les données locales : \(error.localizedDescription)"; isLoading = false }
         }
+        loadRemoteSummarySettings()
     }
     func load() async {
         guard let store else { return }
@@ -525,6 +532,35 @@ final class AppModel: ObservableObject {
         preferences.set(summaryModel, forKey: "summary.model")
         preferences.set(summaryContextTokens, forKey: "summary.contextTokens")
         preferences.set(summaryReasoningDisabled, forKey: "summary.reasoningDisabled")
+        preferences.set(summaryService.rawValue, forKey: "summary.service")
+        if summaryService.isRemote {
+            preferences.set(summaryRemoteModel, forKey: "summary.model." + summaryService.rawValue)
+            preferences.set(summaryRemoteConsent, forKey: "summary.remoteConsent." + summaryService.rawValue)
+        }
+    }
+    private func loadRemoteSummarySettings() {
+        let service = summaryService
+        summaryRemoteModel = service.isRemote ? preferences.string(forKey: "summary.model." + service.rawValue) ?? service.defaultModel : ""
+        summaryRemoteConsent = service.isRemote && preferences.bool(forKey: "summary.remoteConsent." + service.rawValue)
+        // Previews, demos and tests never touch the keychain.
+        summaryKeyStored = service.isRemote && persistPreferences && SummaryKeychain.hasKey(for: service)
+    }
+    func selectSummaryService(_ service: SummaryService) {
+        guard service != summaryService else { return }
+        saveSummarySettings()
+        summaryService = service
+        loadRemoteSummarySettings()
+        saveSummarySettings()
+    }
+    func saveSummaryKey(_ key: String) {
+        guard summaryService.isRemote, !isDemoMode, persistPreferences, !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        do { try SummaryKeychain.setKey(key, for: summaryService); summaryKeyStored = true; notice = "Clé \(summaryService.displayName) enregistrée dans le trousseau." }
+        catch { errorMessage = "Clé API : \(error.localizedDescription)" }
+    }
+    func removeSummaryKey() {
+        guard summaryService.isRemote, !isDemoMode, persistPreferences else { return }
+        do { try SummaryKeychain.removeKey(for: summaryService); summaryKeyStored = false; notice = "Clé \(summaryService.displayName) supprimée." }
+        catch { errorMessage = "Clé API : \(error.localizedDescription)" }
     }
     func cancelSummary() { summaryTask?.cancel() }
     func generateSummary() {
@@ -539,13 +575,25 @@ final class AppModel: ObservableObject {
                 try Task.checkCancellation()
                 guard !hasUnsavedChanges else { return } // flush already exposes the save error.
                 guard !isDemoMode, let item = recordings.first(where: { $0.id == recordingID }) else { throw SummaryFailure.stale }
-                guard let url = URL(string: summaryEndpoint) else { throw SummaryFailure.invalidEndpoint }
-                let provider = try LocalLLMProvider(endpoint: url, model: summaryModel,
-                    reasoningEffort: summaryReasoningDisabled ? "none" : nil)
-                let result = try await SummaryPipeline.run(item, provider: provider, model: summaryModel,
-                    inputCharacterLimit: max(12_000, (summaryContextTokens - 10_000) * 2),
+                let provider: any LLMProvider, modelName: String, identity: String, inputLimit: Int
+                let service = summaryService
+                if service.isRemote {
+                    guard summaryRemoteConsent else { throw SummaryFailure.remoteConsentMissing(service.displayName) }
+                    guard persistPreferences, let key = try SummaryKeychain.key(for: service) else { throw SummaryFailure.apiKeyMissing(service.displayName) }
+                    let remote = try RemoteLLMProvider(service: service, model: summaryRemoteModel, apiKey: key)
+                    provider = remote; modelName = remote.model; identity = remote.identity; inputLimit = remote.requestCharacterCeiling
+                } else {
+                    guard let url = URL(string: summaryEndpoint) else { throw SummaryFailure.invalidEndpoint }
+                    provider = try LocalLLMProvider(endpoint: url, model: summaryModel,
+                        reasoningEffort: summaryReasoningDisabled ? "none" : nil)
+                    modelName = summaryModel
+                    identity = url.absoluteString + "|reasoning=" + (summaryReasoningDisabled ? "none" : "server-default")
+                    inputLimit = max(12_000, (summaryContextTokens - 10_000) * 2)
+                }
+                let result = try await SummaryPipeline.run(item, provider: provider, model: modelName,
+                    inputCharacterLimit: inputLimit,
                     cacheDirectory: dataDirectory.appendingPathComponent("cache/summaries/" + item.id.uuidString), reuseCache: item.summary == nil,
-                    providerIdentity: url.absoluteString + "|reasoning=" + (summaryReasoningDisabled ? "none" : "server-default")) { value in
+                    providerIdentity: identity) { value in
                         await MainActor.run { self.summaryProgress = value }
                     }
                 try Task.checkCancellation()
