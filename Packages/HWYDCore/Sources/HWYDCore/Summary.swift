@@ -50,21 +50,28 @@ public protocol LLMProvider: Sendable {
     /// Language the pipeline asks this provider's intermediate stages (EXTRACT, ROUTE, VERIFY) to use.
     /// The pipeline builds its stage prompts from this value, so prompts and provider cannot disagree.
     var intermediateLanguage: SummaryIntermediateLanguage { get }
+    /// Largest user prompt, in characters, sent in one request.
+    var requestCharacterCeiling: Int { get }
+    /// Largest transcript window, in source characters, read by one extraction request.
+    var extractionWindowCharacters: Int { get }
     func plan(prompt: String, evidenceIDs: [UUID]) async throws -> SummaryContent
     func generate(prompt: String) async throws -> SummaryContent
     func generate(prompt: String, evidenceIDs: [UUID]) async throws -> SummaryContent
 }
 extension LLMProvider {
     public var intermediateLanguage: SummaryIntermediateLanguage { .french }
+    public var requestCharacterCeiling: Int { SummaryPipeline.maximumInputCharacters }
+    public var extractionWindowCharacters: Int { 12_000 }
     public func plan(prompt: String, evidenceIDs: [UUID]) async throws -> SummaryContent { try await generate(prompt: prompt, evidenceIDs: evidenceIDs) }
     public func generate(prompt: String, evidenceIDs: [UUID]) async throws -> SummaryContent { try await generate(prompt: prompt) }
 }
 public enum SummaryFailure: LocalizedError {
     case contextTooSmall, invalidEndpoint, invalidResponse, noTranscript, stale, authenticationRequired, serverError(Int), outputTruncated, incompatibleSchema, unreliableContent
+    case apiKeyMissing(String), remoteConsentMissing(String), remoteRejected(service: String, status: Int, detail: String), refused(String)
     public var errorDescription: String? {
         switch self {
         case .contextTooSmall: "Un passage ou une étape dépasse le budget de traitement borné. La synthèse n’a pas été enregistrée. Un contexte serveur plus grand ne supprime pas cette limite."
-        case .unreliableContent: "La synthèse contient des copies de passages ou des références internes. Elle n’a pas été enregistrée. Essayez un autre modèle local."
+        case .unreliableContent: "La synthèse contient des copies de passages ou des références internes. Elle n’a pas été enregistrée. Essayez un autre modèle."
         case .invalidEndpoint: "Configurez un modèle et une URL HTTP locale (localhost, 127.0.0.1 ou ::1)."
         case .authenticationRequired: "Le serveur local exige un token d’authentification. Cette version ne sait pas encore le transmettre."
         case .serverError(let status): "Le serveur local a refusé la synthèse (HTTP \(status)). Consultez son journal."
@@ -73,6 +80,13 @@ public enum SummaryFailure: LocalizedError {
         case .invalidResponse: "Le modèle a renvoyé une synthèse invalide ou des références inconnues."
         case .noTranscript: "Un transcript est nécessaire pour générer une synthèse."
         case .stale: "La session a changé pendant la génération. Relancez la synthèse."
+        case .apiKeyMissing(let service): "Enregistrez une clé API \(service) dans les réglages de synthèse."
+        case .remoteConsentMissing(let service): "Autorisez l’envoi des transcripts à \(service) dans les réglages de synthèse."
+        case .remoteRejected(let service, let status, let detail):
+            status == 401 || status == 403 ? "\(service) a refusé la clé API (HTTP \(status)). \(detail)"
+                : status == 429 ? "\(service) limite les requêtes ou le quota est épuisé (HTTP 429). \(detail)"
+                : "\(service) a refusé la synthèse (HTTP \(status)). \(detail)"
+        case .refused(let service): "\(service) a refusé de produire cette synthèse. Aucun résultat n’a été enregistré."
         }
     }
 }
@@ -112,7 +126,7 @@ enum OrderedJSON {
         }
     }
 }
-private final class NoRedirects: NSObject, URLSessionTaskDelegate, Sendable {
+final class NoRedirects: NSObject, URLSessionTaskDelegate, Sendable {
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) { completionHandler(nil) }
 }
 /// Language of the intermediate stages (EXTRACT, ROUTE, VERIFY). The final writing stages
@@ -270,53 +284,13 @@ public struct LocalLLMProvider: LLMProvider {
     /// Builds the chat completion request without sending it. Returns the local reference map used
     /// to translate `S<n>` identifiers back to segment UUIDs.
     func makeRequest(prompt: String, evidenceIDs: [UUID], system: String, outputTokens: Int, planning: Bool) throws -> (request: URLRequest, references: [String: String]) {
-        let references = Dictionary(uniqueKeysWithValues: evidenceIDs.enumerated().map { ("S\($0.offset + 1)", $0.element.uuidString) })
-        var input = prompt
-        for (reference, id) in references { input = input.replacingOccurrences(of: id, with: reference) }
-        var evidenceItem: [String: Any] = ["type": "string"]
-        if !references.isEmpty { evidenceItem["enum"] = references.keys.sorted() }
-        let routing = prompt.hasPrefix("ROUTE:")
-        let executive = prompt.hasPrefix("EXECUTIVE:")
-        let verification = prompt.hasPrefix("VERIFY_")
-        let verifyActions = prompt.hasPrefix("VERIFY_ACTIONS:")
-        let verifyDecisions = prompt.hasPrefix("VERIFY_DECISIONS:")
-        let repair = prompt.hasPrefix("REPAIR:")
-        let evidence: [String: Any] = ["type": "array", "minItems": 1, "maxItems": planning ? 64 : 3, "items": evidenceItem]
-        let datePattern = try NSRegularExpression(pattern: #"\b\d{4}-\d{2}-\d{2}\b"#)
-        let dates = Array(Set(datePattern.matches(in: input, range: NSRange(input.startIndex..., in: input)).compactMap { Range($0.range, in: input).map { String(input[$0]) } })).sorted()
-        let dateSchema: [String: Any] = dates.isEmpty ? ["type": "null"] : ["anyOf": [["type": "string", "enum": dates], ["type": "null"]]]
-        var names = Set<String>()
-        func collectNames(_ value: Any) {
-            if let entries = value as? [Any] { entries.forEach(collectNames) }
-            if let object = value as? [String: Any] {
-                for key in ["speaker", "assignee_name"] {
-                    if let name = object[key] as? String, name != "Voix non identifiée" { names.insert(name) }
-                }
-                object.values.forEach(collectNames)
-            }
-        }
-        if let newline = input.firstIndex(of: "\n"), let data = String(input[input.index(after: newline)...]).data(using: .utf8),
-           let object = try? JSONSerialization.jsonObject(with: data) { collectNames(object) }
-        let assigneeSchema: [String: Any] = names.isEmpty ? ["type": "null"] : ["anyOf": [["type": "string", "enum": names.sorted()], ["type": "null"]]]
-        let claimEvidence: [String: Any] = ["type": "array", "minItems": 1, "maxItems": 3, "items": evidenceItem]
-        let topic: [String: Any] = ["type": "object", "additionalProperties": false, "required": ["title", "text", "evidence_segment_ids"], "properties": ["title": ["type": "string"], "text": ["type": "string"], "evidence_segment_ids": evidence]]
-        let schema: [String: Any] = ["type": "object", "additionalProperties": false, "required": schemaOrder == .alphabetical ? ["overview", "key_points", "decisions", "action_items", "details"] : SummarySchemaOrder.narrativeFirstFields, "properties": [
-            "overview": ["type": "string"],
-            "key_points": ["type": "array", "maxItems": routing || verification || repair ? 0 : 4, "items": topic],
-            "details": ["type": "array", "maxItems": executive ? 0 : (repair ? 1 : (verification ? 4 : (planning ? 8 : 16))), "items": topic],
-            "decisions": ["type": "array", "maxItems": routing || executive || repair || verifyActions ? 0 : 32, "items": ["type": "object", "additionalProperties": false, "required": ["text", "evidence_segment_ids"], "properties": ["text": ["type": "string"], "evidence_segment_ids": claimEvidence]]],
-            "action_items": ["type": "array", "maxItems": routing || executive || repair || verifyDecisions ? 0 : 64, "items": ["type": "object", "additionalProperties": false, "required": ["text", "assignee_name", "assignee_person_id", "due_date", "evidence_segment_ids"], "properties": ["text": ["type": "string"], "assignee_name": assigneeSchema, "assignee_person_id": ["type": "null"], "due_date": dateSchema, "evidence_segment_ids": claimEvidence]]]
-        ]]
-        // Only the intermediate stages follow the configured language. Final writing stays French.
-        let intermediateStage = prompt.hasPrefix("EXTRACT:") || routing || verification
-        let contract = Self.outputContract(planning: planning, routing: routing, executive: executive,
-                                           verification: verification, verifyActions: verifyActions, verifyDecisions: verifyDecisions, repair: repair,
-                                           language: intermediateStage ? intermediateLanguage : .french)
+        let stage = try SummaryStageRequest(prompt: prompt, evidenceIDs: evidenceIDs, system: system, planning: planning,
+                                            intermediateLanguage: intermediateLanguage, schemaOrder: schemaOrder)
         var request = URLRequest(url: endpoint.appendingPathComponent("chat/completions"))
         request.httpMethod = "POST"; request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         var body: [String: Any] = ["model": model, "temperature": 0, "max_tokens": outputTokens, "stream": false,
-            "messages": [["role": "system", "content": system + "\n\n" + contract], ["role": "user", "content": input]],
-            "response_format": ["type": "json_schema", "json_schema": ["name": "session_summary", "strict": true, "schema": schema]]]
+            "messages": [["role": "system", "content": stage.system], ["role": "user", "content": stage.input]],
+            "response_format": ["type": "json_schema", "json_schema": ["name": "session_summary", "strict": true, "schema": stage.schema]]]
         if let reasoningEffort { body["reasoning_effort"] = reasoningEffort }
         switch schemaOrder {
         case .alphabetical:
@@ -324,7 +298,7 @@ public struct LocalLLMProvider: LLMProvider {
         case .narrativeFirst:
             request.httpBody = try OrderedJSON.data(body, orderedKeys: [(Self.schemaPropertiesPath, SummarySchemaOrder.narrativeFirstFields)])
         }
-        return (request, references)
+        return (request, stage.references)
     }
     static let schemaPropertiesPath = ["response_format", "json_schema", "schema", "properties"]
     private func generate(prompt: String, evidenceIDs: [UUID], system: String, outputTokens: Int, planning: Bool) async throws -> SummaryContent {
@@ -344,38 +318,8 @@ public struct LocalLLMProvider: LLMProvider {
               let choices = object["choices"] as? [[String: Any]], let choice = choices.first,
               let message = choice["message"] as? [String: Any] else { throw SummaryFailure.invalidResponse }
         guard choice["finish_reason"] as? String != "length" else { throw SummaryFailure.outputTruncated }
-        guard let content = message["content"] as? String, let json = content.data(using: .utf8) else { throw SummaryFailure.invalidResponse }
-        do {
-            guard var output = try JSONSerialization.jsonObject(with: json) as? [String: Any] else { throw SummaryFailure.invalidResponse }
-            if !references.isEmpty {
-                if var overview = output["overview"] as? String {
-                    for reference in references.keys { overview = overview.replacingOccurrences(of: "[" + reference + "]", with: "") }
-                    output["overview"] = overview.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-                for key in ["decisions", "action_items", "key_points", "details"] {
-                    guard var entries = output[key] as? [[String: Any]] else { throw SummaryFailure.invalidResponse }
-                    for index in entries.indices {
-                        guard let ids = entries[index]["evidence_segment_ids"] as? [String] else { throw SummaryFailure.invalidResponse }
-                        entries[index]["evidence_segment_ids"] = try ids.map { id in
-                            guard let uuid = references[id] else { throw SummaryFailure.invalidResponse }
-                            return uuid
-                        }
-                    }
-                    // Some local models repeat bracketed citations in prose despite the schema.
-                    // Remove only known reference markers; the validated evidence array is retained.
-                    for index in entries.indices {
-                        for field in ["text", "title"] {
-                            if var text = entries[index][field] as? String {
-                                for reference in references.keys { text = text.replacingOccurrences(of: "[" + reference + "]", with: "") }
-                                entries[index][field] = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                            }
-                        }
-                    }
-                    output[key] = entries
-                }
-            }
-            return try JSONDecoder().decode(SummaryContent.self, from: JSONSerialization.data(withJSONObject: output))
-        } catch { throw SummaryFailure.invalidResponse }
+        guard let content = message["content"] as? String else { throw SummaryFailure.invalidResponse }
+        return try SummaryStageRequest.decode(content, references: references)
     }
 }
 public enum SummaryPipeline {

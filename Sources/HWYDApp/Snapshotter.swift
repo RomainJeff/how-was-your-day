@@ -71,6 +71,10 @@ import HWYDCore
         }
         model.settingsCategory = .summary
         render(RootView().environmentObject(model), size: .init(width: 860, height: 660), to: directory.appendingPathComponent("studio-settings-compact.png"))
+        // Preview models never read the keychain or persist this choice.
+        model.selectSummaryService(.anthropic)
+        render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-settings-summary-remote.png"))
+        model.selectSummaryService(.local)
         model.showSettings = false
         model.activeCaptureID = nil; model.isDemoMode = false
         var pending = Recording(title: "Préparer le prototype")

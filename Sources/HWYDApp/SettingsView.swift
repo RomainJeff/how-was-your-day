@@ -18,7 +18,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
         case .general: "Personnalisez votre espace de travail."
         case .calendar: "Retrouvez vos réunions et choisissez quand recevoir un rappel."
         case .audio: "Transcription, séparation des voix et personnes mémorisées sur ce Mac."
-        case .summary: "Choisissez le modèle local qui résume vos sessions."
+        case .summary: "Choisissez le modèle qui résume vos sessions, sur ce Mac ou chez un fournisseur."
         case .data: "Retrouvez vos fichiers et contrôlez l’accès de vos outils."
         }
     }
@@ -27,6 +27,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
 /// Settings apply as they change: there is no save button.
 struct SettingsView: View {
     @EnvironmentObject var model: AppModel
+    @State private var apiKeyDraft = ""
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
@@ -51,6 +52,8 @@ struct SettingsView: View {
             .onChange(of: model.summaryModel) { _, _ in model.saveSummarySettings() }
             .onChange(of: model.summaryContextTokens) { _, _ in model.saveSummarySettings() }
             .onChange(of: model.summaryReasoningDisabled) { _, _ in model.saveSummarySettings() }
+            .onChange(of: model.summaryRemoteModel) { _, _ in model.saveSummarySettings() }
+            .onChange(of: model.summaryRemoteConsent) { _, _ in model.saveSummarySettings() }
             .onDisappear { model.saveSummarySettings() }
     }
     @ViewBuilder private var content: some View {
@@ -101,23 +104,14 @@ struct SettingsView: View {
                 }
             }.disabled(model.voiceBusy || model.isDemoMode)
         case .summary:
-            section("Synthèse locale", symbol: "sparkles", help: "LM Studio ou Ollama, API OpenAI-compatible et JSON Schema requis. Seules les adresses de boucle locale sont acceptées. Chaque synthèse est lancée manuellement depuis la session.") {
-                toggleRow("Activer la synthèse locale", isOn: $model.summaryEnabled)
-                row("Adresse du serveur local") {
-                    TextField("http://127.0.0.1:1234/v1", text: $model.summaryEndpoint).textFieldStyle(.roundedBorder).frame(width: 280)
+            section("Synthèse", symbol: "sparkles", help: "Chaque synthèse est lancée manuellement depuis la session. Les étapes validées sont conservées pour reprendre après une interruption.") {
+                toggleRow("Activer la synthèse", isOn: $model.summaryEnabled)
+                row("Fournisseur", help: "Le serveur local garde le transcript sur ce Mac. Mistral, OpenAI, Anthropic et Google Gemini le reçoivent à chaque synthèse, une fois l’envoi autorisé.") {
+                    Picker("Fournisseur", selection: Binding(get: { model.summaryService }, set: { model.selectSummaryService($0) })) {
+                        ForEach(SummaryService.allCases) { service in Text(service.displayName).tag(service) }
+                    }.labelsHidden().frame(width: 200)
                 }
-                row("Modèle chargé") {
-                    TextField("Identifiant du modèle", text: $model.summaryModel).textFieldStyle(.roundedBorder).frame(width: 280)
-                }
-                row("Contexte chargé dans le serveur", help: "Indiquez le contexte chargé dans LM Studio. HWYD traite les longues sessions par portions bornées et rédige chaque sujet à partir de ses sources. Un grand contexte serveur n’augmente pas automatiquement la taille des requêtes. Les étapes validées sont conservées pour reprendre après une interruption. Pour limiter la mémoire, chargez un seul modèle et une seule requête à la fois : ce réglage ne modifie pas la mémoire allouée par le serveur.") {
-                    Picker("Contexte chargé dans le serveur", selection: $model.summaryContextTokens) {
-                        Text("16k tokens").tag(16384)
-                        Text("32k tokens").tag(32768)
-                        Text("64k tokens").tag(65536)
-                        Text("128k tokens").tag(131072)
-                    }.labelsHidden().frame(width: 150)
-                }
-                toggleRow("Désactiver le raisonnement étendu", help: "Peut réduire le temps de génération. À activer si le modèle ne renvoie pas de synthèse avec les sorties structurées. Le serveur doit accepter cette option.", isOn: $model.summaryReasoningDisabled)
+                if model.summaryService.isRemote { remoteSummaryRows } else { localSummaryRows }
             }.disabled(model.isDemoMode)
         case .data:
             section("Données locales", symbol: "internaldrive") {
@@ -135,6 +129,41 @@ struct SettingsView: View {
                 }
             }.disabled(model.isDemoMode)
         }
+    }
+    @ViewBuilder private var localSummaryRows: some View {
+        row("Adresse du serveur local", help: "LM Studio ou Ollama, API OpenAI-compatible et JSON Schema requis. Seules les adresses de boucle locale sont acceptées.") {
+            TextField("http://127.0.0.1:1234/v1", text: $model.summaryEndpoint).textFieldStyle(.roundedBorder).frame(width: 280)
+        }
+        row("Modèle chargé") {
+            TextField("Identifiant du modèle", text: $model.summaryModel).textFieldStyle(.roundedBorder).frame(width: 280)
+        }
+        row("Contexte chargé dans le serveur", help: "Indiquez le contexte chargé dans LM Studio. HWYD traite les longues sessions par portions bornées et rédige chaque sujet à partir de ses sources. Un grand contexte serveur n’augmente pas automatiquement la taille des requêtes. Pour limiter la mémoire, chargez un seul modèle et une seule requête à la fois : ce réglage ne modifie pas la mémoire allouée par le serveur.") {
+            Picker("Contexte chargé dans le serveur", selection: $model.summaryContextTokens) {
+                Text("16k tokens").tag(16384)
+                Text("32k tokens").tag(32768)
+                Text("64k tokens").tag(65536)
+                Text("128k tokens").tag(131072)
+            }.labelsHidden().frame(width: 150)
+        }
+        toggleRow("Désactiver le raisonnement étendu", help: "Peut réduire le temps de génération. À activer si le modèle ne renvoie pas de synthèse avec les sorties structurées. Le serveur doit accepter cette option.", isOn: $model.summaryReasoningDisabled)
+    }
+    @ViewBuilder private var remoteSummaryRows: some View {
+        let name = model.summaryService.displayName
+        row("Clé API", help: "Stockée dans le trousseau de ce Mac, jamais dans les réglages, les exports ou la base. Les requêtes sont facturées sur votre compte \(name).") {
+            if model.summaryKeyStored {
+                Text("Enregistrée").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
+                Button("Supprimer") { model.removeSummaryKey() }.buttonStyle(StudioButtonStyle(compact: true))
+            } else {
+                SecureField("Clé \(name)", text: $apiKeyDraft).textFieldStyle(.roundedBorder).frame(width: 220)
+                    .onSubmit { model.saveSummaryKey(apiKeyDraft); apiKeyDraft = "" }
+                Button("Enregistrer") { model.saveSummaryKey(apiKeyDraft); apiKeyDraft = "" }
+                    .buttonStyle(StudioButtonStyle(compact: true)).disabled(apiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        row("Modèle", help: "Identifiant exact du modèle chez \(name). Le contexte des modèles hébergés est bien plus grand que celui d’un serveur local : une session d’une heure tient en quelques requêtes.") {
+            TextField(model.summaryService.defaultModel, text: $model.summaryRemoteModel).textFieldStyle(.roundedBorder).frame(width: 220)
+        }
+        toggleRow("Envoyer les transcripts à \(name)", help: "À chaque synthèse, le titre, le transcript et les noms des voix de la session partent vers les serveurs de \(name), dont les conditions de traitement et de conservation s’appliquent. Les notes, l’audio et les empreintes vocales ne sont jamais envoyés. Désactivé, aucune requête n’est faite.", isOn: $model.summaryRemoteConsent)
     }
     private func channels(_ person: VoicePerson) -> String {
         (person.enrolledChannels ?? []).map { (channel: VoiceChannel) -> String in

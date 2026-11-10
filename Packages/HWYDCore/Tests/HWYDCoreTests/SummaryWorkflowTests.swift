@@ -3,6 +3,11 @@ import CryptoKit
 @testable import HWYDCore
 
 private actor WorkflowProvider: LLMProvider {
+    nonisolated let requestCharacterCeiling: Int
+    nonisolated let extractionWindowCharacters: Int
+    init(requestCharacterCeiling: Int = SummaryPipeline.maximumInputCharacters, extractionWindowCharacters: Int = 12_000) {
+        self.requestCharacterCeiling = requestCharacterCeiling; self.extractionWindowCharacters = extractionWindowCharacters
+    }
     var prompts: [String] = []
     var failWriting = false
     func failNextWriting() { failWriting = true }
@@ -119,6 +124,20 @@ private actor BenchmarkProvider: LLMProvider {
 }
 
 extension SummaryWorkflowTests {
+    func testHostedContextReadsWholeSessionInOneExtraction() async throws {
+        let provider = WorkflowProvider(requestCharacterCeiling: 200_000, extractionWindowCharacters: 120_000)
+        var recording = fixture()
+        recording.segments = (0..<40).map { index in
+            .init(start: Double(index * 60), end: Double(index * 60 + 50), speakerID: nil, source: .mic,
+                  text: "TURN_\(index) " + String(repeating: "Discussion des accès et de la révocation. ", count: 50))
+        }
+        _ = try await SummaryPipeline.run(recording, provider: provider, model: "fixture", inputCharacterLimit: 200_000)
+        let prompts = await provider.prompts
+        XCTAssertGreaterThan(prompts.map(\.count).max()!, SummaryPipeline.maximumInputCharacters)
+        XCTAssertLessThanOrEqual(prompts.map(\.count).max()!, 200_006)
+        XCTAssertEqual(prompts.filter { $0.hasPrefix("plan:EXTRACT:") }.count, 1)
+        XCTAssertEqual(prompts.count, 2, "A session that fits one window takes the two-request path")
+    }
     func testLargeConfiguredContextStillBoundsRequestsAndWritesEveryBilingualTurn() async throws {
         let provider = WorkflowProvider()
         var recording = fixture()
