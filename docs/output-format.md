@@ -90,7 +90,7 @@ exported_at: "2026-10-23T08:31:00Z"
 | `calendar` | Objet ci-dessus ou null ; `response` accepted/declined/tentative/pending/unknown |
 | `app` | meet/gather/slack-huddle/in-person/unknown ; signal de contexte, pas attribution de chaque son |
 | `consent_announced` | Déclaration utilisateur d'annonce ; ne signifie pas consentement à l'empreinte |
-| `locale` | Locale effective du moteur, ou `multilingual` pour un moteur le déclarant |
+| `locale` | Locale effective du moteur, ou `multilingual` pour un moteur le déclarant. Avec détection automatique (0.11.0), locale de la piste micro (ou de la seule piste présente) ; la piste système peut avoir été transcrite dans une autre langue, visible seulement dans la provenance interne |
 | `summary.status` | disabled/pending/ready/failed/stale ; autres champs null si absent |
 | `audio.state` | available/purging/purged/missing ; aucun chemin audio public |
 | `audio.encryption` | volume_only/application/none ; reflète le mode réel, pas une intention |
