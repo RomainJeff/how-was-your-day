@@ -51,6 +51,8 @@ import HWYDCore
                 guard seconds >= 2, seconds <= 14400 else { throw CaptureFailure(message: "Test duration must be between 2 and 14400 seconds") }
                 try CaptureController.verifySyntheticCapture(directory: URL(fileURLWithPath: args[index + 1]), seconds: seconds)
                 FileHandle.standardOutput.write(Data("Synthetic two-track capture: PASS\n".utf8))
+                try CaptureController.verifySyntheticSplitCapture(directory: URL(fileURLWithPath: args[index + 1]))
+                FileHandle.standardOutput.write(Data("Synthetic split-clock capture: PASS\n".utf8))
                 exit(0)
             } catch { FileHandle.standardError.write(Data("\(error)\n".utf8)); exit(1) }
         }

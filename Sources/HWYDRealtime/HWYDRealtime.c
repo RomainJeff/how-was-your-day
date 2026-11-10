@@ -7,6 +7,7 @@
 struct HWYDRing {
     uint32_t channels;
     _Atomic uint64_t readIndex, writeIndex, dropped;
+    _Atomic uint64_t reasons[4]; // 0 channel overflow, 1 inconsistent buffer, 2 channel count or frame size, 3 ring full
     uint32_t frames[CAPACITY];
     uint64_t timestamps[CAPACITY];
     float *samples;
@@ -22,6 +23,7 @@ HWYDRing *HWYDRingCreate(uint32_t channels) {
 }
 void HWYDRingDestroy(HWYDRing *r) { if (r) { free(r->samples); free(r); } }
 uint64_t HWYDRingDropped(HWYDRing *r) { return atomic_load_explicit(&r->dropped, memory_order_relaxed); }
+uint64_t HWYDRingDropReason(HWYDRing *r, uint32_t reason) { return reason < 4 ? atomic_load_explicit(&r->reasons[reason], memory_order_relaxed) : 0; }
 OSStatus HWYDIOProc(AudioDeviceID device, const AudioTimeStamp *now, const AudioBufferList *input,
     const AudioTimeStamp *inputTime, AudioBufferList *output, const AudioTimeStamp *outputTime, void *context) {
     HWYDRing *r = context;
@@ -30,6 +32,7 @@ OSStatus HWYDIOProc(AudioDeviceID device, const AudioTimeStamp *now, const Audio
     for (uint32_t b = 0; b < input->mNumberBuffers; b++) {
         const AudioBuffer *buffer = &input->mBuffers[b];
         if (buffer->mNumberChannels > r->channels - channels) {
+            atomic_fetch_add_explicit(&r->reasons[0], 1, memory_order_relaxed);
             atomic_fetch_add_explicit(&r->dropped, 1, memory_order_relaxed); return noErr;
         }
         channels += buffer->mNumberChannels;
@@ -38,14 +41,19 @@ OSStatus HWYDIOProc(AudioDeviceID device, const AudioTimeStamp *now, const Audio
             uint32_t f = buffer->mDataByteSize / stride;
             // Never silently shorten one track when HAL delivers inconsistent buffers.
             if (buffer->mDataByteSize % stride || (frames != UINT32_MAX && frames != f)) {
+                atomic_fetch_add_explicit(&r->reasons[1], 1, memory_order_relaxed);
                 atomic_fetch_add_explicit(&r->dropped, 1, memory_order_relaxed); return noErr;
             }
             frames = f;
         }
     }
     uint64_t w = atomic_load_explicit(&r->writeIndex, memory_order_relaxed);
-    if (channels != r->channels || !frames || frames > MAX_FRAMES ||
-        w - atomic_load_explicit(&r->readIndex, memory_order_acquire) >= CAPACITY) {
+    if (channels != r->channels || !frames || frames > MAX_FRAMES) {
+        atomic_fetch_add_explicit(&r->reasons[2], 1, memory_order_relaxed);
+        atomic_fetch_add_explicit(&r->dropped, 1, memory_order_relaxed); return noErr;
+    }
+    if (w - atomic_load_explicit(&r->readIndex, memory_order_acquire) >= CAPACITY) {
+        atomic_fetch_add_explicit(&r->reasons[3], 1, memory_order_relaxed);
         atomic_fetch_add_explicit(&r->dropped, 1, memory_order_relaxed); return noErr;
     }
     uint32_t slot = w % CAPACITY, offset = 0;
