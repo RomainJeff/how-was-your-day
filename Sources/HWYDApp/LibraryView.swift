@@ -25,12 +25,12 @@ struct LibraryView: View {
                     Menu {
                         Button("Tous les types") { model.kindFilter = nil }
                         ForEach(SessionKind.allCases, id: \.self) { kind in Button(kind.label) { model.kindFilter = kind } }
-                    } label: { Label(model.kindFilter?.label ?? "Tous les types", systemImage: "line.3.horizontal.decrease") }.menuStyle(.borderlessButton).fixedSize()
+                    } label: { Label(model.kindFilter?.label ?? String(localized: "Tous les types"), systemImage: "line.3.horizontal.decrease") }.menuStyle(.borderlessButton).fixedSize()
                 }
                 if model.isLoading { ProgressView().frame(maxWidth: .infinity).padding(50) }
                 else if model.recordings.isEmpty {
                     VStack(spacing: 0) {
-                        EmptyPanel(symbol: "waveform.path", title: "La prochaine conversation commence ici.", detail: "Enregistrez une réunion, un appel ou une idée. Prenez vos notes pendant que la conversation suit son cours.")
+                        EmptyPanel(symbol: "waveform.path", title: String(localized: "La prochaine conversation commence ici."), detail: String(localized: "Enregistrez une réunion, un appel ou une idée. Prenez vos notes pendant que la conversation suit son cours."))
                         Button("Explorer avec des exemples") { model.enterDemo() }.buttonStyle(StudioButtonStyle()).padding(.bottom, 35)
                     }
                 } else {
@@ -39,10 +39,10 @@ struct LibraryView: View {
                     let today = items.filter { Calendar.current.isDateInToday($0.startedAt) }
                     let older = items.filter { !Calendar.current.isDateInToday($0.startedAt) }
                     if items.isEmpty {
-                        EmptyPanel(symbol: "magnifyingglass", title: "Aucune session trouvée", detail: "Essayez un autre mot ou retirez le filtre de type.")
+                        EmptyPanel(symbol: "magnifyingglass", title: String(localized: "Aucune session trouvée"), detail: String(localized: "Essayez un autre mot ou retirez le filtre de type."))
                     } else {
-                        if !today.isEmpty { section("Aujourd’hui", items: today) }
-                        if !older.isEmpty { section("Précédemment", items: older) }
+                        if !today.isEmpty { section(String(localized: "Aujourd’hui"), items: today) }
+                        if !older.isEmpty { section(String(localized: "Précédemment"), items: older) }
                     }
                 }
             }.padding(32).frame(maxWidth: 1000, alignment: .leading).frame(maxWidth: .infinity)
@@ -50,7 +50,7 @@ struct LibraryView: View {
     }
     private func section(_ title: String, items: [Recording]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack { Eyebrow(text: title); Spacer(); Text("\(items.count) session\(items.count > 1 ? "s" : "")").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted) }.padding(.bottom, 3)
+            HStack { Eyebrow(text: title); Spacer(); Text("\(items.count) session(s)").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted) }.padding(.bottom, 3)
             ForEach(items) { item in SessionRow(recording: item).onTapGesture { model.select(item) }.contextMenu {
                 Button("Ouvrir") { model.select(item) }
                 if item.id != model.activeCaptureID { Button("Supprimer…", role: .destructive) { model.deleteCandidate = item } }

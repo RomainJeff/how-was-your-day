@@ -12,7 +12,7 @@ struct DetailView: View {
                 HStack {
                     Eyebrow(text: "\(recording.kind.label) · \(recording.startedAt.formatted(.dateTime.day().month(.wide)))")
                     Spacer()
-                    if recording.isDemo { Badge(text: "EXEMPLE") }
+                    if recording.isDemo { Badge(text: String(localized: "EXEMPLE")) }
                     Button { model.exportSelected() } label: { Label("Exporter", systemImage: "square.and.arrow.up") }.buttonStyle(StudioButtonStyle())
                 }
                 TextField("Titre de la session", text: Binding(get: { model.selected?.title ?? recording.title }, set: { value in model.update(recording.id) { $0.title = value } }))
@@ -24,7 +24,8 @@ struct DetailView: View {
                     if recording.transcriptVersion > 0 { Text("Transcript v\(recording.transcriptVersion)") }
                 }.font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
                 if let event = recording.calendarContext {
-                    Label("\(event.calendarTitle) · \(event.start.formatted(date: .abbreviated, time: .shortened)) · \(event.participants.count) invité(s)", systemImage: "calendar")
+                    let guests = String(localized: "\(event.participants.count) invité(s)")
+                    Label { Text(verbatim: "\(event.calendarTitle) · \(event.start.formatted(date: .abbreviated, time: .shortened)) · \(guests)") } icon: { Image(systemName: "calendar") }
                         .font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
                 }
                 audioPlayer
@@ -34,8 +35,8 @@ struct DetailView: View {
                         Button { model.activeTab = tab } label: {
                             VStack(spacing: 12) {
                                 HStack(spacing: 6) {
-                                    Text(tab.rawValue)
-                                    if tab == .transcript && !recording.segments.isEmpty { Text("\(recording.heardSegments.count)").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted) }
+                                    Text(tab.title)
+                                    if tab == .transcript && !recording.segments.isEmpty { Text(recording.heardSegments.count, format: .number).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted) }
                                 }.font(.system(size: Studio.Size.body, weight: model.activeTab == tab ? .medium : .regular))
                                 Rectangle().fill(model.activeTab == tab ? Studio.mint : Color.clear).frame(height: 2)
                             }.foregroundStyle(model.activeTab == tab ? Studio.mint : Studio.muted).padding(.top, 4).contentShape(Rectangle())
@@ -82,7 +83,7 @@ struct DetailView: View {
                     Spacer()
                     Button("Annuler") { model.cancelProcessing() }.buttonStyle(StudioButtonStyle())
                 } else {
-                    Text(recording.transcriptState == .failed ? "Le traitement a été interrompu ou a échoué." : (recording.transcription.map { SessionLanguageLabel.transcript($0) + ($0.diarizationEngine == nil ? " · Apple Speech · sur ce Mac" : " · Apple Speech + Community-1") } ?? SessionLanguageLabel.title(recording.speechLanguage ?? SpeechLanguage.defaultLocale) + " · Apple Speech · sur ce Mac")).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
+                    Text(recording.transcriptState == .failed ? String(localized: "Le traitement a été interrompu ou a échoué.") : (recording.transcription.map { SessionLanguageLabel.transcript($0) + ($0.diarizationEngine == nil ? String(localized: " · Apple Speech · sur ce Mac") : " · Apple Speech + Community-1") } ?? SessionLanguageLabel.title(recording.speechLanguage ?? SpeechLanguage.defaultLocale) + String(localized: " · Apple Speech · sur ce Mac"))).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
                     Spacer()
                     Button(recording.transcriptVersion > 0 ? "Retranscrire" : "Transcrire") { if recording.transcriptVersion > 0 { model.refreshSpeechLanguages(); confirmReprocessing = true } else { model.transcribe(recording.id) } }
                         .buttonStyle(StudioButtonStyle()).disabled(model.modelWorkBusy || recording.audioChunks.isEmpty)
@@ -102,7 +103,7 @@ struct DetailView: View {
             if model.summaryID == recording.id, let progress = model.summaryProgress {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text("\(progress.stage) · \(progress.completed) étapes terminées" + (progress.cached ? " · reprise du cache" : "")).font(.caption).foregroundStyle(Studio.muted)
+                    Text(verbatim: [progress.stage, String(localized: "\(progress.completed) étapes terminées"), progress.cached ? String(localized: "reprise du cache") : nil].compactMap { $0 }.joined(separator: " · ")).font(.caption).foregroundStyle(Studio.muted)
                 }
             }
             Label("Brouillon local, à relire", systemImage: "info.circle").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
@@ -123,7 +124,7 @@ struct DetailView: View {
                 if !structured.action_items.isEmpty {
                     summaryHeading("Étapes suivantes")
                     ForEach(Array(structured.action_items.enumerated()), id: \.offset) { _, action in
-                        summaryParagraph("• " + (action.assignee_name.map { $0 + " : " } ?? "") + action.text + (action.due_date.map { " (" + $0 + ")" } ?? ""))
+                        summaryParagraph("• " + (action.assignee_name.map { String(localized: "\($0) : \(action.text)") } ?? action.text) + (action.due_date.map { " (" + $0 + ")" } ?? ""))
                         summaryReferences(action.evidence_segment_ids)
                     }
                 }
@@ -138,20 +139,20 @@ struct DetailView: View {
                 else { Text(paragraph).font(.system(size: Studio.Size.body)).lineSpacing(7).textSelection(.enabled) }
             }
             }
-            if recording.isDemo { Badge(text: "SYNTHÈSE FICTIVE · EXEMPLE D’INTERFACE").padding(.top, 15) }
+            if recording.isDemo { Badge(text: String(localized: "SYNTHÈSE FICTIVE · EXEMPLE D’INTERFACE")).padding(.top, 15) }
         } else {
-            EmptyPanel(symbol: "sparkles", title: model.summaryEnabled ? "Pas encore de synthèse" : "La synthèse est facultative", detail: model.summaryEnabled ? model.summaryService == .agent ? "Votre agent ACP rédigera la synthèse à partir du transcript et de son propre contexte. Vos notes restent sur ce Mac." : model.summaryService.isRemote ? "Le transcript sera envoyé à \(model.summaryService.displayName). Vos notes restent sur ce Mac." : "Lancez la génération avec votre modèle local. Vos notes et votre transcript restent indépendants." : "Activez un modèle dans les réglages pour générer une synthèse.")
+            EmptyPanel(symbol: "sparkles", title: model.summaryEnabled ? String(localized: "Pas encore de synthèse") : String(localized: "La synthèse est facultative"), detail: model.summaryEnabled ? model.summaryService == .agent ? String(localized: "Votre agent ACP rédigera la synthèse à partir du transcript et de son propre contexte. Vos notes restent sur ce Mac.") : model.summaryService.isRemote ? String(localized: "Le transcript sera envoyé à \(model.summaryService.displayName). Vos notes restent sur ce Mac.") : String(localized: "Lancez la génération avec votre modèle local. Vos notes et votre transcript restent indépendants.") : String(localized: "Activez un modèle dans les réglages pour générer une synthèse."))
             Button("Voir les réglages") { model.settingsCategory = .summary; model.showSettings = true }.buttonStyle(StudioButtonStyle())
         }
     }
     private var summaryHint: String {
-        var text = "Brouillon généré par un modèle. Les décisions et actions gardent leurs références au transcript."
+        var text = String(localized: "Brouillon généré par un modèle. Les décisions et actions gardent leurs références au transcript.")
         if recording.summary != nil, let provenance = recording.summaryProvenance {
             text += "\n\(provenance.model) · \(provenance.promptVersion) · transcript v\(provenance.transcriptVersion)"
         }
         return text
     }
-    private func summaryHeading(_ title: String) -> some View {
+    private func summaryHeading(_ title: LocalizedStringKey) -> some View {
         Text(title).font(.system(size: Studio.Size.heading, weight: .semibold)).foregroundStyle(Studio.mint).padding(.top, 12)
     }
     private func summaryParagraph(_ text: String) -> some View {
@@ -192,7 +193,7 @@ struct NotesEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: headings ? 18 : 10) {
             if !recording.noteEntries.isEmpty {
-                if headings { Eyebrow(text: "Pendant la conversation") }
+                if headings { Eyebrow(text: String(localized: "Pendant la conversation")) }
                 ForEach(recording.noteEntries) { entry in
                     HStack(alignment: .top, spacing: 12) {
                         Text(timeLabel(entry.offset)).font(.system(size: Studio.Size.caption, design: .monospaced)).foregroundStyle(Studio.mint).frame(width: 45).padding(.top, 4)
@@ -202,7 +203,7 @@ struct NotesEditor: View {
                     }.padding(12).background(Studio.surface, in: RoundedRectangle(cornerRadius: 6))
                 }
             }
-            if headings { HStack { Eyebrow(text: "Vos notes"); Spacer(); NotesSaveStatus() } }
+            if headings { HStack { Eyebrow(text: String(localized: "Vos notes")); Spacer(); NotesSaveStatus() } }
             TextEditor(text: Binding(get: { model.recordings.first { $0.id == recording.id }?.notes ?? recording.notes }, set: { value in model.update(recording.id) { $0.notes = value } }))
                 .font(.system(size: Studio.Size.body)).lineSpacing(7).scrollContentBackground(.hidden).padding(12).frame(minHeight: 220)
                 .background(Studio.inset, in: RoundedRectangle(cornerRadius: 7)).overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Studio.line)).accessibilityLabel("Notes manuelles de la session")
@@ -232,7 +233,7 @@ private struct TranscriptPane<Header: View>: View {
                 LazyVStack(alignment: .leading, spacing: 15) {
                     header
                     if recording.segments.isEmpty {
-                        EmptyPanel(symbol: "text.bubble", title: recording.transcriptState == .ready ? "Aucune parole reconnue" : "Votre transcript viendra ici", detail: recording.isDemo ? "Cet exemple ne contient pas de transcript." : "La transcription utilise les fichiers audio conservés. Vous pouvez continuer à écrire vos notes pendant le traitement.")
+                        EmptyPanel(symbol: "text.bubble", title: recording.transcriptState == .ready ? String(localized: "Aucune parole reconnue") : String(localized: "Votre transcript viendra ici"), detail: recording.isDemo ? String(localized: "Cet exemple ne contient pas de transcript.") : String(localized: "La transcription utilise les fichiers audio conservés. Vous pouvez continuer à écrire vos notes pendant le traitement."))
                     } else {
                         ForEach(heard) { segment in
                             TranscriptRow(segment: segment, speaker: segment.speakerID.flatMap { speakers[$0] },
@@ -244,7 +245,7 @@ private struct TranscriptPane<Header: View>: View {
                                 onSplit: { onSplit(segment) }).equatable().id(segment.id)
                         }
                         if hidden > 0 {
-                            Label("\(hidden) passage\(hidden > 1 ? "s" : "") masqué\(hidden > 1 ? "s" : "")", systemImage: "eye.slash")
+                            Label("\(hidden) passage(s) masqué(s)", systemImage: "eye.slash")
                                 .font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).padding(.top, 6)
                                 .help("Passages de voix ignorées. Rétablissez la voix depuis sa tuile pour les revoir.")
                         }
@@ -277,7 +278,7 @@ private struct TranscriptPane<Header: View>: View {
         withAnimation(.easeInOut(duration: 0.35)) { proxy.scrollTo(target, anchor: UnitPoint(x: 0.5, y: 0.3)) }
     }
     private var footnote: String {
-        recording.transcription?.echoCancellationEngine != nil ? "Écho du système atténué sur le micro avant transcription. Audio original conservé. Les empreintes mémorisées restent sur ce Mac." : recording.transcription?.diarizationEngine != nil ? "Voix séparées par piste. Rejet d’écho non appliqué. Les empreintes mémorisées restent sur ce Mac." : recording.speakers.isEmpty ? "Diarisation et rejet d’écho non appliqués à ce transcript." : "Nommer une voix ne crée pas d’empreinte vocale."
+        recording.transcription?.echoCancellationEngine != nil ? String(localized: "Écho du système atténué sur le micro avant transcription. Audio original conservé. Les empreintes mémorisées restent sur ce Mac.") : recording.transcription?.diarizationEngine != nil ? String(localized: "Voix séparées par piste. Rejet d’écho non appliqué. Les empreintes mémorisées restent sur ce Mac.") : recording.speakers.isEmpty ? String(localized: "Diarisation et rejet d’écho non appliqués à ce transcript.") : String(localized: "Nommer une voix ne crée pas d’empreinte vocale.")
     }
 }
 

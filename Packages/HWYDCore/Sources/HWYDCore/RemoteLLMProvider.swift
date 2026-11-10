@@ -380,7 +380,7 @@ public enum SummaryKeychain {
     }
     public struct Failure: LocalizedError {
         public let status: OSStatus
-        public var errorDescription: String? { "Trousseau inaccessible (\(status))." }
+        public var errorDescription: String? { String(localized: "Trousseau inaccessible (\(status)).", bundle: .hwyd) }
     }
     public static func key(for provider: SummaryService) throws -> String? {
         var q = query(provider); q[kSecReturnData as String] = true

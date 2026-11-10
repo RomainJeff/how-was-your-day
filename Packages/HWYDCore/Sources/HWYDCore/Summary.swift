@@ -91,24 +91,24 @@ public enum SummaryFailure: LocalizedError {
     case invalidContent(String), apiKeyMissing(String), modelMissing(String), remoteRejected(service: String, status: Int, detail: String), refused(String)
     public var errorDescription: String? {
         switch self {
-        case .contextTooSmall: "Un passage ou une étape dépasse le budget de traitement borné. La synthèse n’a pas été enregistrée. Un contexte serveur plus grand ne supprime pas cette limite."
-        case .unreliableContent: "La synthèse contient des copies de passages ou des références internes. Elle n’a pas été enregistrée. Essayez un autre modèle."
-        case .invalidEndpoint: "Configurez un modèle et une URL HTTP locale (localhost, 127.0.0.1 ou ::1)."
-        case .authenticationRequired: "Le serveur local exige un token d’authentification. Cette version ne sait pas encore le transmettre."
-        case .serverError(let status): "Le serveur local a refusé la synthèse (HTTP \(status)). Consultez son journal."
-        case .outputTruncated: "Le modèle a atteint la limite de sortie avant de terminer la synthèse. Aucun résultat partiel n’a été enregistré."
-        case .incompatibleSchema: "Le moteur local ne prend pas en charge le schéma JSON demandé. Vérifiez sa compatibilité avec les sorties structurées."
-        case .invalidResponse: "Le modèle a renvoyé une synthèse invalide ou des références inconnues."
-        case .invalidContent(let reason): "Le modèle a renvoyé une synthèse incohérente : \(reason). Aucun résultat n’a été enregistré."
-        case .noTranscript: "Un transcript est nécessaire pour générer une synthèse."
-        case .stale: "La session a changé pendant la génération. Relancez la synthèse."
-        case .apiKeyMissing(let service): "Enregistrez une clé API \(service) dans les réglages de synthèse."
-        case .modelMissing(let service): "Choisissez un modèle \(service) dans les réglages de synthèse."
+        case .contextTooSmall: String(localized: "Un passage ou une étape dépasse le budget de traitement borné. La synthèse n’a pas été enregistrée. Un contexte serveur plus grand ne supprime pas cette limite.", bundle: .hwyd)
+        case .unreliableContent: String(localized: "La synthèse contient des copies de passages ou des références internes. Elle n’a pas été enregistrée. Essayez un autre modèle.", bundle: .hwyd)
+        case .invalidEndpoint: String(localized: "Configurez un modèle et une URL HTTP locale (localhost, 127.0.0.1 ou ::1).", bundle: .hwyd)
+        case .authenticationRequired: String(localized: "Le serveur local exige un token d’authentification. Cette version ne sait pas encore le transmettre.", bundle: .hwyd)
+        case .serverError(let status): String(localized: "Le serveur local a refusé la synthèse (HTTP \(status)). Consultez son journal.", bundle: .hwyd)
+        case .outputTruncated: String(localized: "Le modèle a atteint la limite de sortie avant de terminer la synthèse. Aucun résultat partiel n’a été enregistré.", bundle: .hwyd)
+        case .incompatibleSchema: String(localized: "Le moteur local ne prend pas en charge le schéma JSON demandé. Vérifiez sa compatibilité avec les sorties structurées.", bundle: .hwyd)
+        case .invalidResponse: String(localized: "Le modèle a renvoyé une synthèse invalide ou des références inconnues.", bundle: .hwyd)
+        case .invalidContent(let reason): String(localized: "Le modèle a renvoyé une synthèse incohérente : \(reason). Aucun résultat n’a été enregistré.", bundle: .hwyd)
+        case .noTranscript: String(localized: "Un transcript est nécessaire pour générer une synthèse.", bundle: .hwyd)
+        case .stale: String(localized: "La session a changé pendant la génération. Relancez la synthèse.", bundle: .hwyd)
+        case .apiKeyMissing(let service): String(localized: "Enregistrez une clé API \(service) dans les réglages de synthèse.", bundle: .hwyd)
+        case .modelMissing(let service): String(localized: "Choisissez un modèle \(service) dans les réglages de synthèse.", bundle: .hwyd)
         case .remoteRejected(let service, let status, let detail):
-            status == 401 || status == 403 ? "\(service) a refusé la clé API (HTTP \(status)). \(detail)"
-                : status == 429 ? "\(service) limite les requêtes ou le quota est épuisé (HTTP 429). \(detail)"
-                : "\(service) a refusé la synthèse (HTTP \(status)). \(detail)"
-        case .refused(let service): "\(service) a refusé de produire cette synthèse. Aucun résultat n’a été enregistré."
+            status == 401 || status == 403 ? String(localized: "\(service) a refusé la clé API (HTTP \(status)). \(detail)", bundle: .hwyd)
+                : status == 429 ? String(localized: "\(service) limite les requêtes ou le quota est épuisé (HTTP 429). \(detail)", bundle: .hwyd)
+                : String(localized: "\(service) a refusé la synthèse (HTTP \(status)). \(detail)", bundle: .hwyd)
+        case .refused(let service): String(localized: "\(service) a refusé de produire cette synthèse. Aucun résultat n’a été enregistré.", bundle: .hwyd)
         }
     }
 }

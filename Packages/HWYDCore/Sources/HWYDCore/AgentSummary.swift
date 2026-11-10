@@ -137,14 +137,14 @@ public enum AgentSummaryFailure: LocalizedError, Equatable {
     case noSummary(String), timedOut, stale
     public var errorDescription: String? {
         switch self {
-        case .commandMissing: "Indiquez la commande de l’agent ACP dans les réglages de synthèse."
-        case .launchFailed(let detail): "Impossible de lancer l’agent : \(detail)"
-        case .exited(let detail): "L’agent s’est arrêté avant la fin." + (detail.isEmpty ? "" : " " + detail)
-        case .protocolError(let detail): "L’agent a renvoyé une réponse ACP inattendue : \(detail)"
-        case .authenticationRequired(let detail): "L’agent demande une connexion. Lancez-le une fois dans un terminal pour vous authentifier." + (detail.isEmpty ? "" : " " + detail)
-        case .noSummary(let detail): "L’agent n’a pas envoyé de synthèse." + (detail.isEmpty ? "" : " Dernier message : « \(detail) »")
-        case .timedOut: "L’agent n’a pas terminé dans le temps imparti (20 minutes)."
-        case .stale: "La session a changé pendant la synthèse de l’agent. Relancez-la."
+        case .commandMissing: String(localized: "Indiquez la commande de l’agent ACP dans les réglages de synthèse.", bundle: .hwyd)
+        case .launchFailed(let detail): String(localized: "Impossible de lancer l’agent : \(detail)", bundle: .hwyd)
+        case .exited(let detail): String(localized: "L’agent s’est arrêté avant la fin.", bundle: .hwyd) + (detail.isEmpty ? "" : " " + detail)
+        case .protocolError(let detail): String(localized: "L’agent a renvoyé une réponse ACP inattendue : \(detail)", bundle: .hwyd)
+        case .authenticationRequired(let detail): String(localized: "L’agent demande une connexion. Lancez-le une fois dans un terminal pour vous authentifier.", bundle: .hwyd) + (detail.isEmpty ? "" : " " + detail)
+        case .noSummary(let detail): detail.isEmpty ? String(localized: "L’agent n’a pas envoyé de synthèse.", bundle: .hwyd) : String(localized: "L’agent n’a pas envoyé de synthèse. Dernier message : « \(detail) »", bundle: .hwyd)
+        case .timedOut: String(localized: "L’agent n’a pas terminé dans le temps imparti (20 minutes).", bundle: .hwyd)
+        case .stale: String(localized: "La session a changé pendant la synthèse de l’agent. Relancez-la.", bundle: .hwyd)
         }
     }
 }
@@ -309,7 +309,7 @@ public enum ACPSummaryAgent {
                   let update = object["update"] as? [String: Any] else { return }
             switch update["sessionUpdate"] as? String {
             case "tool_call":
-                if let title = update["title"] as? String { await progress(.init(stage: "Agent : " + title, completed: 0, total: 1, cached: false)) }
+                if let title = update["title"] as? String { await progress(.init(stage: String(localized: "Agent : \(title)", bundle: .hwyd), completed: 0, total: 1, cached: false)) }
             case "agent_message_chunk":
                 if let text = (update["content"] as? [String: Any])?["text"] as? String { await lastMessage.append(text) }
             default: break
@@ -320,7 +320,7 @@ public enum ACPSummaryAgent {
         defer { watchdog.cancel(); Task { await connection.terminate() } }
         let started = ContinuousClock.now
 
-        await progress(.init(stage: "Démarrage de l’agent", completed: 0, total: 1, cached: false))
+        await progress(.init(stage: String(localized: "Démarrage de l’agent", bundle: .hwyd), completed: 0, total: 1, cached: false))
         let initialize = try await connection.request("initialize", params: try json([
             "protocolVersion": 1,
             "clientCapabilities": ["fs": ["readTextFile": false, "writeTextFile": false], "terminal": false],
@@ -333,7 +333,7 @@ public enum ACPSummaryAgent {
         let session = try await connection.request("session/new", params: try json(["cwd": workingDirectory.path, "mcpServers": [server]]))
         guard let sessionID = (try? JSONSerialization.jsonObject(with: session) as? [String: Any])?["sessionId"] as? String else { throw AgentSummaryFailure.protocolError("session/new sans sessionId") }
 
-        await progress(.init(stage: "L’agent rédige la synthèse", completed: 0, total: 1, cached: false))
+        await progress(.init(stage: String(localized: "L’agent rédige la synthèse", bundle: .hwyd), completed: 0, total: 1, cached: false))
         let promptParams = try json(["sessionId": sessionID, "prompt": [["type": "text", "text": try AgentSummaryTask.prompt(recording)]]])
         let response: Data
         do {
@@ -363,7 +363,7 @@ public enum ACPSummaryAgent {
                 handed = .init(inputHash: inputHash, summary: try AgentSummaryTask.accept(json, recording: recording))
             } else {
                 let tail = await lastMessage.text
-                throw AgentSummaryFailure.noSummary(tail.isEmpty ? (stopReason.map { "arrêt : " + $0 } ?? "") : tail)
+                throw AgentSummaryFailure.noSummary(tail.isEmpty ? (stopReason.map { String(localized: "arrêt : \($0)", bundle: .hwyd) } ?? "") : tail)
             }
         }
         guard let result = handed else { throw AgentSummaryFailure.noSummary("") }
@@ -371,7 +371,7 @@ public enum ACPSummaryAgent {
         // Defense in depth: the app re-validates what the helper accepted.
         try SummaryPipeline.validate(result.summary, segments: AgentSummaryTask.segments(recording), speakers: recording.speakers,
                                      maximumEvidenceReferences: AgentSummaryTask.maximumEvidenceReferences, maximumDetails: AgentSummaryTask.maximumDetails)
-        await progress(.init(stage: "Compte rendu prêt", completed: 1, total: 1, cached: false))
+        await progress(.init(stage: String(localized: "Compte rendu prêt", bundle: .hwyd), completed: 1, total: 1, cached: false))
         return SummaryProvenance(provider: "acp|" + command, model: agentName.isEmpty ? command : agentName,
                                  promptVersion: AgentSummaryTask.promptVersion, promptHash: AgentSummaryTask.promptHash,
                                  generatedAt: Date(), transcriptVersion: recording.transcriptVersion, inputHash: inputHash, structured: result.summary)

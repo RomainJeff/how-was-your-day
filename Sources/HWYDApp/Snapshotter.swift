@@ -16,7 +16,7 @@ import HWYDCore
         let model = AppModel(preview: true)
         model.appearancePreference = preference
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 770), to: directory.appendingPathComponent("studio-library.png"))
-        var playerExample = Recording(title: "Aperçu synthétique du lecteur")
+        var playerExample = Recording(title: "Aperçu synthétique du lecteur") // l10n:ignore
         playerExample.duration = 120
         playerExample.audioChunks = [.init(source: .mic, relativePath: "preview-mic.caf", start: 0, duration: 120), .init(source: .system, relativePath: "preview-system.caf", start: 0, duration: 120)]
         model.playbackTime = 43
@@ -36,17 +36,19 @@ import HWYDCore
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-transcript-follow.png"))
         model.playbackTime = 0; model.playback.activeSegmentIDs = []
         renderVoiceTiles(model: model, to: directory.appendingPathComponent("studio-voices.png"))
-        var splitExample = TranscriptSegment(start: 12, end: 16, speakerID: nil, source: .mic, text: "Oui. Bonjour à tous.")
-        splitExample.words = [.init(text: "Oui.", start: 12, end: 12.5), .init(text: " Bonjour", start: 13, end: 14), .init(text: " à", start: 14, end: 14.5), .init(text: " tous.", start: 14.5, end: 16)]
+        var splitExample = TranscriptSegment(start: 12, end: 16, speakerID: nil, source: .mic, text: "Oui. Bonjour à tous.") // l10n:ignore
+        splitExample.words = [.init(text: "Oui.", start: 12, end: 12.5), .init(text: " Bonjour", start: 13, end: 14), .init(text: " à", start: 14, end: 14.5), .init(text: " tous.", start: 14.5, end: 16)] // l10n:ignore
         render(SegmentSplitView(recordingID: model.selectedID!, segment: splitExample).environmentObject(model), size: .init(width: 580, height: 490), to: directory.appendingPathComponent("studio-split.png"))
         model.activeTab = .notes
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-notes.png"))
         model.activeTab = .summary
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-summary.png"))
-        model.report("Synthèse : Le modèle a renvoyé une synthèse incohérente : référence inconnue « S99 ».", style: .error,
-                     actions: [ToastAction(title: "Réessayer") {}, ToastAction(title: "Réglages") {}])
-        model.report("Synthèse prête : Point produit", style: .success, actions: [ToastAction(title: "Afficher") {}])
-        model.notice = "Voix nommée Camille dans toute cette session. Aucune empreinte vocale créée."
+        model.report(String(localized: "Synthèse : \(SummaryFailure.outputTruncated.localizedDescription)"), style: .error,
+                     actions: [ToastAction(title: String(localized: "Réessayer")) {}, ToastAction(title: String(localized: "Réglages")) {}])
+        let sampleTitle = "Point produit" // l10n:ignore
+        model.report(String(localized: "Synthèse prête : \(sampleTitle)"), style: .success, actions: [ToastAction(title: String(localized: "Afficher")) {}])
+        let sampleName = "Camille"
+        model.notice = String(localized: "Voix nommée \(sampleName) dans toute cette session.") + " " + String(localized: "Nommer une voix ne crée pas d’empreinte vocale.")
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-toasts.png"))
         for toast in model.toasts { model.dismissToast(toast.id) }
         let previousSelection = model.selectedID
@@ -65,11 +67,12 @@ import HWYDCore
         model.editingSpeakerID = nil
         render(MenuContentView().environmentObject(model), size: .init(width: 340, height: 350), to: directory.appendingPathComponent("studio-menu.png"))
         model.calendar.enabled = true
-        model.calendar.calendars = [.init(id: "preview", title: "Travail", account: "Google")]
+        model.calendar.calendars = [.init(id: "preview", title: "Travail", account: "Google")] // l10n:ignore
         model.calendar.selectedCalendars = ["preview"]
-        model.calendar.status = "1 réunion dans les 7 prochains jours"
-        model.calendar.notificationStatus = "Aperçu synthétique, aucune notification envoyée"
-        model.calendar.upcoming = [.init(id: "preview-meeting", title: "Point produit", start: Date().addingTimeInterval(600), end: Date().addingTimeInterval(2400), calendarTitle: "Travail", meetingURL: URL(string: "https://meet.google.com/abc-defg-hij")), .init(id: "preview-room", title: "Atelier en salle", start: Date().addingTimeInterval(4200), end: Date().addingTimeInterval(6000), calendarTitle: "Travail")]
+        let upcomingCount = 1
+        model.calendar.status = String(localized: "\(upcomingCount) réunion(s) dans les 7 prochains jours")
+        model.calendar.notificationStatus = String(localized: "Notifications autorisées")
+        model.calendar.upcoming = [.init(id: "preview-meeting", title: "Point produit", start: Date().addingTimeInterval(600), end: Date().addingTimeInterval(2400), calendarTitle: "Travail", meetingURL: URL(string: "https://meet.google.com/abc-defg-hij")), .init(id: "preview-room", title: "Atelier en salle", start: Date().addingTimeInterval(4200), end: Date().addingTimeInterval(6000), calendarTitle: "Travail")] // l10n:ignore
         render(CalendarSettingsView(calendar: model.calendar), size: .init(width: 500, height: 760), to: directory.appendingPathComponent("studio-calendar-settings.png"))
         render(UpcomingMeetingsView(calendar: model.calendar).environmentObject(model), size: .init(width: 780, height: 210), to: directory.appendingPathComponent("studio-calendar-upcoming.png"))
         model.calendar.enabled = false; model.calendar.upcoming = []; model.calendar.calendars = []
@@ -89,12 +92,12 @@ import HWYDCore
         model.selectSummaryService(.local)
         model.showSettings = false
         model.activeCaptureID = nil; model.isDemoMode = false
-        var pending = Recording(title: "Préparer le prototype")
+        var pending = Recording(title: "Préparer le prototype") // l10n:ignore
         pending.transcriptState = .pending
         model.recordings = [pending]; model.selectedID = pending.id; model.processingID = pending.id; model.activeTab = .transcript
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-processing.png"))
         pending.transcriptState = .ready
-        pending.segments = [.init(start: 0.12, end: 6.17, speakerID: nil, source: .mic, text: "Bonjour Antoine, la réunion commence à 9h. Nous devons préparer le prototype pour vendredi.")]
+        pending.segments = [.init(start: 0.12, end: 6.17, speakerID: nil, source: .mic, text: "Bonjour Antoine, la réunion commence à 9h. Nous devons préparer le prototype pour vendredi.")] // l10n:ignore
         pending.transcriptVersion = 1
         model.processingID = nil; model.recordings = [pending]
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-asr.png"))
@@ -104,12 +107,12 @@ import HWYDCore
     }
     /// Synthetic voices covering the three states. Audio chunks are references only; nothing is read or played.
     private static func renderVoiceTiles(model: AppModel, to url: URL) {
-        let lea = VoicePerson(name: "Léa")
-        var proposed = Speaker(label: "Léa", source: .system)
+        let lea = VoicePerson(name: "Léa") // l10n:ignore
+        var proposed = Speaker(label: "Léa", source: .system) // l10n:ignore
         proposed.proposedIdentity = VoiceMatch(personID: lea.id, score: 0.81, margin: 0.14, channel: .remote)
-        let room = Speaker(label: "Voix 1"), named = Speaker(label: "Camille", confirmed: true, source: .system)
-        var duplicate = Speaker(label: "Voix 4"); duplicate.ignored = true
-        var example = Recording(title: "Voix synthétiques", speakers: [room, proposed, named, duplicate], segments: [
+        let room = Speaker(label: "Voix 1"), named = Speaker(label: "Camille", confirmed: true, source: .system) // l10n:ignore
+        var duplicate = Speaker(label: "Voix 4"); duplicate.ignored = true // l10n:ignore
+        var example = Recording(title: "Voix synthétiques", speakers: [room, proposed, named, duplicate], segments: [ // l10n:ignore
             .init(start: 0, end: 48, speakerID: room.id, source: .mic, text: "a"),
             .init(start: 50, end: 61, speakerID: proposed.id, source: .system, text: "b"),
             .init(start: 62, end: 140, speakerID: named.id, source: .system, text: "c"),
@@ -123,7 +126,7 @@ import HWYDCore
     /// Remembered people with their samples per session. Synthetic: the keychain is never read.
     private static func renderVoicePeople(model: AppModel, to url: URL) {
         var brice = VoicePerson(name: "Brice"); brice.enrollmentRequestedAt = Date(); brice.enrolledChannels = [.mic, .remote]
-        var lea = VoicePerson(name: "Léa"); lea.enrollmentRequestedAt = Date(); lea.enrolledChannels = [.mic]
+        var lea = VoicePerson(name: "Léa"); lea.enrollmentRequestedAt = Date(); lea.enrolledChannels = [.mic] // l10n:ignore
         var opposed = VoicePerson(name: "Jordan"); opposed.opposed = true
         let session = Recording(title: "Point produit", isDemo: true)
         let previousPeople = model.people

@@ -3,7 +3,7 @@ import Foundation
 public enum SessionKind: String, Codable, CaseIterable, Sendable {
     case meeting, call, conversation, voiceMemo = "voice-memo", adHoc = "ad-hoc"
     public var label: String {
-        switch self { case .meeting: "Réunion"; case .call: "Appel"; case .conversation: "Conversation"; case .voiceMemo: "Mémo vocal"; case .adHoc: "Session libre" }
+        switch self { case .meeting: String(localized: "Réunion", bundle: .hwyd); case .call: String(localized: "Appel", bundle: .hwyd); case .conversation: String(localized: "Conversation", bundle: .hwyd); case .voiceMemo: String(localized: "Mémo vocal", bundle: .hwyd); case .adHoc: String(localized: "Session libre", bundle: .hwyd) }
     }
     public var symbol: String {
         switch self { case .meeting: "person.2.wave.2"; case .call: "phone"; case .conversation: "bubble.left.and.bubble.right"; case .voiceMemo: "waveform.circle"; case .adHoc: "smallcircle.filled.circle" }
@@ -112,7 +112,7 @@ public struct Recording: Codable, Identifiable, Equatable, Sendable {
     public var participantNames: String {
         let names = participants.map(\.label)
         let unknown = speakers.filter { !$0.confirmed && !$0.ignored }.count
-        return (names + (unknown > 0 ? ["\(unknown) voix à nommer"] : [])).joined(separator: ", ")
+        return (names + (unknown > 0 ? [String(localized: "\(unknown) voix à nommer", bundle: .hwyd)] : [])).joined(separator: ", ")
     }
     public var searchableText: String { ([title, notes, summary ?? ""] + heardSegments.map(\.text) + speakers.filter { !$0.ignored }.map(\.label)).joined(separator: " ") }
     /// Segments of every voice the user did not ignore. Unattributed segments are kept.
@@ -146,11 +146,11 @@ public enum StoreError: LocalizedError, Equatable {
     case notFound, conflict, invalidName, invalidPath, incompatibleSpeaker
     public var errorDescription: String? {
         switch self {
-        case .notFound: "Cette session n’est plus disponible."
-        case .conflict: "Cette session a été modifiée ailleurs. Rechargez-la avant de réessayer."
-        case .invalidName: "Saisissez un nom de 1 à 120 caractères."
-        case .incompatibleSpeaker: "Cette voix appartient à une autre piste audio."
-        case .invalidPath: "Le chemin du fichier audio n’est pas valide."
+        case .notFound: String(localized: "Cette session n’est plus disponible.", bundle: .hwyd)
+        case .conflict: String(localized: "Cette session a été modifiée ailleurs. Rechargez-la avant de réessayer.", bundle: .hwyd)
+        case .invalidName: String(localized: "Saisissez un nom de 1 à 120 caractères.", bundle: .hwyd)
+        case .incompatibleSpeaker: String(localized: "Cette voix appartient à une autre piste audio.", bundle: .hwyd)
+        case .invalidPath: String(localized: "Le chemin du fichier audio n’est pas valide.", bundle: .hwyd)
         }
     }
 }

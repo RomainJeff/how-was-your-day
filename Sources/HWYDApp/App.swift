@@ -97,7 +97,7 @@ import HWYDCore
     func openNotepad() {
         if notepad == nil {
             let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 500, height: 650), styleMask: [.titled, .closable, .resizable, .utilityWindow], backing: .buffered, defer: false)
-            panel.title = "Notes de session"; panel.isFloatingPanel = true; panel.level = .floating
+            panel.title = String(localized: "Notes de session"); panel.isFloatingPanel = true; panel.level = .floating
             panel.isReleasedWhenClosed = false; panel.minSize = NSSize(width: 460, height: 500)
             panel.contentView = NSHostingView(rootView: NotepadWindow().environmentObject(AppEnvironment.model))
             panel.center(); notepad = panel
@@ -132,7 +132,7 @@ struct NotepadWindow: View {
     var body: some View {
         Group {
             if let recording = model.activeCapture { CaptureView(recording: recording, compact: true) }
-            else { EmptyPanel(symbol: "checkmark.circle", title: "Session terminée", detail: "Vos notes sont disponibles dans la bibliothèque.") }
+            else { EmptyPanel(symbol: "checkmark.circle", title: String(localized: "Session terminée"), detail: String(localized: "Vos notes sont disponibles dans la bibliothèque.")) }
         }.foregroundStyle(Studio.text).background(Studio.background).preferredColorScheme(model.appearancePreference.colorScheme)
     }
 }
