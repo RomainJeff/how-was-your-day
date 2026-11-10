@@ -45,7 +45,7 @@ for bundle in "$bin_path"/*.bundle; do
 done
 timestamp_flag="--timestamp=none"
 [[ "${SIGN_TIMESTAMP:-0}" != "1" ]] || timestamp_flag="--timestamp"
-codesign --force "${timestamp_flag}" --identifier dev.lepee.hwyd.pipeline --sign "$sign_identity" "$app/Contents/Helpers/hwyd-pipeline"
-codesign --force "${timestamp_flag}" --identifier dev.lepee.hwyd.mcp --sign "$sign_identity" "$app/Contents/Helpers/hwyd-mcp"
+codesign --force "${timestamp_flag}" --identifier dev.lepee.hwyd.pipeline --options runtime --sign "$sign_identity" "$app/Contents/Helpers/hwyd-pipeline"
+codesign --force "${timestamp_flag}" --identifier dev.lepee.hwyd.mcp --options runtime --sign "$sign_identity" "$app/Contents/Helpers/hwyd-mcp"
 codesign --force "${timestamp_flag}" --identifier dev.lepee.hwyd --options runtime --entitlements Resources/HWYD.entitlements --sign "$sign_identity" "$app"
 printf 'App: %s/%s\n' "$PWD" "$app"
