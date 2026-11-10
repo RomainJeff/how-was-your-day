@@ -43,11 +43,11 @@ public enum TranscriptionError: LocalizedError {
     case unavailable, unsupportedLocale(String), missingAssets(String), invalidAudio, staleResult
     public var errorDescription: String? {
         switch self {
-        case .unavailable: "La transcription Apple n’est pas disponible sur ce Mac."
-        case .unsupportedLocale(let locale): "La langue \(locale) n’est pas prise en charge par SpeechTranscriber sur ce Mac."
-        case .missingAssets(let locale): "Le modèle \(locale) doit être installé. Utilisez « Installer le modèle français » dans les réglages."
-        case .invalidAudio: "Aucune tranche audio valide à transcrire."
-        case .staleResult: "Le résultat ne correspond plus aux fichiers de cette session."
+        case .unavailable: String(localized: "La transcription Apple n’est pas disponible sur ce Mac.", bundle: .hwyd)
+        case .unsupportedLocale(let locale): String(localized: "La langue \(locale) n’est pas prise en charge par SpeechTranscriber sur ce Mac.", bundle: .hwyd)
+        case .missingAssets(let locale): String(localized: "Le modèle \(locale) doit être installé. Utilisez « Installer le modèle français » dans les réglages.", bundle: .hwyd)
+        case .invalidAudio: String(localized: "Aucune tranche audio valide à transcrire.", bundle: .hwyd)
+        case .staleResult: String(localized: "Le résultat ne correspond plus aux fichiers de cette session.", bundle: .hwyd)
         }
     }
 }

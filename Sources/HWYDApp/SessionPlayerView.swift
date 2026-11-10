@@ -19,8 +19,8 @@ struct SessionPlayerView: View {
                 }.buttonStyle(.plain).disabled(!hasAudio).opacity(hasAudio ? 1 : 0.4)
                     .accessibilityLabel(model.isPlaying ? "Mettre en pause" : "Lire les pistes")
                 VStack(spacing: 5) {
-                    track(.mic, label: "Micro", icon: "mic", color: Studio.mint)
-                    track(.system, label: "Système", icon: "speaker.wave.2", color: Studio.muted)
+                    track(.mic, label: String(localized: "Micro"), icon: "mic", color: Studio.mint)
+                    track(.system, label: String(localized: "Système"), icon: "speaker.wave.2", color: Studio.muted)
                 }
                 // Assistive technologies adjust the position here, in 5 s steps.
                 VStack(alignment: .trailing, spacing: 2) {
@@ -57,8 +57,8 @@ struct SessionPlayerView: View {
         return HStack(spacing: 8) {
             Image(systemName: icon).font(.system(size: 12)).foregroundStyle(color).frame(width: 18).help(label).accessibilityHidden(true)
             HStack(spacing: 4) {
-                trackButton("S", help: "Solo", label: label, active: model.soloTracks.contains(source)) { model.toggleSolo(source) }
-                trackButton("M", help: "Muet", label: label, active: model.mutedTracks.contains(source)) { model.toggleMute(source) }
+                trackButton("S", help: String(localized: "Solo"), label: label, active: model.soloTracks.contains(source)) { model.toggleSolo(source) }
+                trackButton("M", help: String(localized: "Muet"), label: label, active: model.mutedTracks.contains(source)) { model.toggleMute(source) }
             }.disabled(!available)
             ZStack {
                 TrackWaveform(peaks: model.trackEnvelopes[source]?.peaks ?? [], progress: position / max(recording.duration, 1), color: color)

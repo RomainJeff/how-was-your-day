@@ -38,8 +38,8 @@ struct CaptureView: View {
                 }
                 if !compact {
                     HStack(spacing: 12) {
-                        source("Micro", symbol: "mic", level: model.micLevel)
-                        source("Système", symbol: "speaker.wave.2", level: model.systemLevel)
+                        source(String(localized: "Micro"), symbol: "mic", level: model.micLevel)
+                        source(String(localized: "Système"), symbol: "speaker.wave.2", level: model.systemLevel)
                     }
                 }
                 Divider().overlay(Studio.line)

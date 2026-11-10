@@ -10,8 +10,8 @@ struct CalendarSettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Image(systemName: "calendar").foregroundStyle(Studio.mint)
-                Eyebrow(text: "Calendriers et rappels")
-                HelpButton(text: "Google Calendar passe par macOS : ajoutez votre compte Google dans l’app Calendrier → Ajouter un compte, puis autorisez HWYD. Les comptes Apple et Outlook synchronisés sont aussi disponibles. Aucun événement n’est modifié.")
+                Eyebrow(text: String(localized: "Calendriers et rappels"))
+                HelpButton(text: String(localized: "Google Calendar passe par macOS : ajoutez votre compte Google dans l’app Calendrier → Ajouter un compte, puis autorisez HWYD. Les comptes Apple et Outlook synchronisés sont aussi disponibles. Aucun événement n’est modifié."))
             }
             Text(calendar.status).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
             HStack {
@@ -29,14 +29,14 @@ struct CalendarSettingsView: View {
                 HStack(spacing: 6) {
                     TextField("Mots-clés exclus, séparés par des virgules", text: $calendar.excludedKeywords)
                         .textFieldStyle(.roundedBorder).focused($exclusionsFocused).onSubmit { applyExclusions() }
-                    HelpButton(text: "Exclusions sur le titre, appliquées en quittant le champ. Journées entières, événements annulés et invitations refusées sont ignorés.")
+                    HelpButton(text: String(localized: "Exclusions sur le titre, appliquées en quittant le champ. Journées entières, événements annulés et invitations refusées sont ignorés."))
                 }
                 HStack(spacing: 6) {
                     Toggle("Rappeler avant les réunions", isOn: Binding(get: { calendar.reminders }, set: { value in
                         if value { Task { await calendar.enableReminders() } }
                         else { calendar.reminders = false; calendar.saveSettings() }
                     })).disabled(calendar.busy)
-                    HelpButton(text: "« Rejoindre et enregistrer » ouvre la visio et lance la capture ; « Enregistrer sans rejoindre » lance seulement la capture. Sans clic, aucun enregistrement. Les rappels des 7 prochains jours sont préparés tant que HWYD tourne ; un rappel peut s’afficher après sa fermeture.")
+                    HelpButton(text: String(localized: "« Rejoindre et enregistrer » ouvre la visio et lance la capture ; « Enregistrer sans rejoindre » lance seulement la capture. Sans clic, aucun enregistrement. Les rappels des 7 prochains jours sont préparés tant que HWYD tourne ; un rappel peut s’afficher après sa fermeture."))
                 }
                 Picker("Prévenir", selection: Binding(get: { calendar.leadMinutes }, set: { calendar.leadMinutes = $0; calendar.saveSettings() })) {
                     Text("Au début").tag(0)
@@ -62,7 +62,7 @@ struct UpcomingMeetingsView: View {
     var body: some View {
         if calendar.enabled {
             VStack(alignment: .leading, spacing: 12) {
-                Eyebrow(text: "À venir")
+                Eyebrow(text: String(localized: "À venir"))
                 if calendar.upcoming.isEmpty { Text(calendar.status).font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted) }
                 ForEach(Array(calendar.upcoming.prefix(4))) { event in
                     HStack(spacing: 14) {

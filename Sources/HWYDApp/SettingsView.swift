@@ -2,7 +2,7 @@ import SwiftUI
 import HWYDCore
 
 enum SettingsCategory: String, CaseIterable, Identifiable {
-    case general = "Général", calendar = "Calendrier", audio = "Audio et voix", summary = "Synthèse", data = "Données et agents"
+    case general = "Général", calendar = "Calendrier", audio = "Audio et voix", summary = "Synthèse", data = "Données et agents" // l10n:ignore (identifiers, display uses title)
     var id: String { rawValue }
     var symbol: String {
         switch self {
@@ -13,13 +13,23 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
         case .data: "internaldrive"
         }
     }
+    /// Display name; `rawValue` stays the stable identifier.
+    var title: String {
+        switch self {
+        case .general: String(localized: "Général")
+        case .calendar: String(localized: "Calendrier")
+        case .audio: String(localized: "Audio et voix")
+        case .summary: String(localized: "Synthèse")
+        case .data: String(localized: "Données et agents")
+        }
+    }
     var subtitle: String {
         switch self {
-        case .general: "Personnalisez votre espace de travail."
-        case .calendar: "Retrouvez vos réunions et choisissez quand recevoir un rappel."
-        case .audio: "Transcription, séparation des voix et personnes mémorisées sur ce Mac."
-        case .summary: "Choisissez le modèle qui résume vos sessions, sur ce Mac ou chez un fournisseur."
-        case .data: "Retrouvez vos fichiers et contrôlez l’accès de vos outils."
+        case .general: String(localized: "Personnalisez votre espace de travail.")
+        case .calendar: String(localized: "Retrouvez vos réunions et choisissez quand recevoir un rappel.")
+        case .audio: String(localized: "Transcription, séparation des voix et personnes mémorisées sur ce Mac.")
+        case .summary: String(localized: "Choisissez le modèle qui résume vos sessions, sur ce Mac ou chez un fournisseur.")
+        case .data: String(localized: "Retrouvez vos fichiers et contrôlez l’accès de vos outils.")
         }
     }
 }
@@ -32,8 +42,8 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 9) {
-                    Eyebrow(text: "Réglages")
-                    Text(model.settingsCategory.rawValue).font(.system(size: Studio.Size.title, weight: .semibold))
+                    Eyebrow(text: String(localized: "Réglages"))
+                    Text(model.settingsCategory.title).font(.system(size: Studio.Size.title, weight: .semibold))
                     Text(model.settingsCategory.subtitle).font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 16)
@@ -65,15 +75,15 @@ struct SettingsView: View {
     @ViewBuilder private var content: some View {
         switch model.settingsCategory {
         case .general:
-            section("Apparence", symbol: "circle.lefthalf.filled") {
-                row("Thème") {
+            section(String(localized: "Apparence"), symbol: "circle.lefthalf.filled") {
+                row(String(localized: "Thème")) {
                     Picker("Thème", selection: $model.appearancePreference) {
                         ForEach(AppearancePreference.allCases) { preference in Text(preference.title).tag(preference) }
                     }.pickerStyle(.segmented).labelsHidden().frame(width: 260)
                 }
             }
-            section("Découvrir HWYD", symbol: "rectangle.stack") {
-                row("Sessions fictives, sans micro") {
+            section(String(localized: "Découvrir HWYD"), symbol: "rectangle.stack") {
+                row(String(localized: "Sessions fictives, sans micro")) {
                     Button(model.isDemoMode ? "Quitter les exemples" : "Explorer des exemples") {
                         model.showSettings = false
                         if model.isDemoMode { model.leaveDemo() } else { model.enterDemo() }
@@ -83,28 +93,28 @@ struct SettingsView: View {
         case .calendar:
             CalendarSettingsView(calendar: model.calendar).disabled(model.isDemoMode)
         case .audio:
-            section("Transcription", symbol: "text.bubble") {
-                row("Langue") { Text("Français").font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted) }
-                row("Modèle Apple Speech", help: "L’installation peut télécharger le modèle Apple. Aucun audio n’est envoyé pour la transcription.") {
+            section(String(localized: "Transcription"), symbol: "text.bubble") {
+                row(String(localized: "Langue")) { Text("Français").font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted) }
+                row(String(localized: "Modèle Apple Speech"), help: String(localized: "L’installation peut télécharger le modèle Apple. Aucun audio n’est envoyé pour la transcription.")) {
                     installControl(ready: model.speechModelReady, busy: model.isInstallingModel) { model.installSpeechModel() }
                 }
             }
-            section("Séparation des voix", symbol: "person.2.wave.2") {
-                toggleRow("Séparer les voix après transcription", isOn: $model.diarizationEnabled).disabled(model.modelWorkBusy || model.isDemoMode)
-                row("Modèles de voix · Community-1", help: "Traitement local par piste. Les modèles se téléchargent une fois ; aucune empreinte personnelle n’est créée sans enrôlement explicite.") {
+            section(String(localized: "Séparation des voix"), symbol: "person.2.wave.2") {
+                toggleRow(String(localized: "Séparer les voix après transcription"), isOn: $model.diarizationEnabled).disabled(model.modelWorkBusy || model.isDemoMode)
+                row(String(localized: "Modèles de voix · Community-1"), help: String(localized: "Traitement local par piste. Les modèles se téléchargent une fois ; aucune empreinte personnelle n’est créée sans enrôlement explicite.")) {
                     installControl(ready: model.diarizerReady, busy: model.isInstallingDiarizer) { model.installDiarizer() }
                 }
             }
-            section("Personnes mémorisées", symbol: "person.crop.circle", help: "Les empreintes restent dans le trousseau de ce Mac, jamais dans les exports. Une voix est apprise séparément au micro et en visio ; une personne connue sur un seul des deux peut être proposée sur l’autre, avec un seuil plus strict. Mémorisez une voix depuis les tuiles d’une session.") {
+            section(String(localized: "Personnes mémorisées"), symbol: "person.crop.circle", help: String(localized: "Les empreintes restent dans le trousseau de ce Mac, jamais dans les exports. Une voix est apprise séparément au micro et en visio ; une personne connue sur un seul des deux peut être proposée sur l’autre, avec un seuil plus strict. Mémorisez une voix depuis les tuiles d’une session.")) {
                 if model.people.isEmpty {
-                    row("Aucune voix mémorisée") { EmptyView() }
+                    row(String(localized: "Aucune voix mémorisée")) { EmptyView() }
                 }
                 ForEach(model.people) { person in VoicePersonRow(person: person) }
             }.disabled(model.isDemoMode)
         case .summary:
-            section("Synthèse", symbol: "sparkles", help: "Chaque synthèse est lancée manuellement depuis la session. Les étapes validées sont conservées pour reprendre après une interruption.") {
-                toggleRow("Activer la synthèse", isOn: $model.summaryEnabled)
-                row("Fournisseur", help: "Le serveur local garde le transcript sur ce Mac. Un agent ACP (Claude Code, Codex…) rédige avec votre propre contexte. Avec Mistral, OpenAI, Anthropic ou Google Gemini, le transcript est envoyé au fournisseur à chaque synthèse, une fois sa clé API enregistrée.") {
+            section(String(localized: "Synthèse"), symbol: "sparkles", help: String(localized: "Chaque synthèse est lancée manuellement depuis la session. Les étapes validées sont conservées pour reprendre après une interruption.")) {
+                toggleRow(String(localized: "Activer la synthèse"), isOn: $model.summaryEnabled)
+                row(String(localized: "Fournisseur"), help: String(localized: "Le serveur local garde le transcript sur ce Mac. Un agent ACP (Claude Code, Codex…) rédige avec votre propre contexte. Avec Mistral, OpenAI, Anthropic ou Google Gemini, le transcript est envoyé au fournisseur à chaque synthèse, une fois sa clé API enregistrée.")) {
                     Picker("Fournisseur", selection: Binding(get: { model.summaryService }, set: { model.selectSummaryService($0) })) {
                         ForEach(SummaryService.allCases) { service in Text(service.displayName).tag(service) }
                     }.labelsHidden().frame(width: 200)
@@ -116,14 +126,14 @@ struct SettingsView: View {
                 }
             }.disabled(model.isDemoMode)
         case .data:
-            section("Données locales", symbol: "internaldrive") {
-                row("Dossier de données") {
+            section(String(localized: "Données locales"), symbol: "internaldrive") {
+                row(String(localized: "Dossier de données")) {
                     Button("Ouvrir") { NSWorkspace.shared.open(model.dataDirectory) }.buttonStyle(StudioButtonStyle(compact: true))
                 }
             }
-            section("Agents et exports", symbol: "externaldrive.connected.to.line.below") {
-                toggleRow("Autoriser les agents à modifier notes et noms", help: "MCP reste en lecture seule par défaut. Les écritures exigent aussi --allow-write au lancement du serveur.", isOn: Binding(get: { model.mcpWritesEnabled }, set: { model.setMCPWrites($0) }))
-                row("Dossier de publication") {
+            section(String(localized: "Agents et exports"), symbol: "externaldrive.connected.to.line.below") {
+                toggleRow(String(localized: "Autoriser les agents à modifier notes et noms"), help: String(localized: "MCP reste en lecture seule par défaut. Les écritures exigent aussi --allow-write au lancement du serveur."), isOn: Binding(get: { model.mcpWritesEnabled }, set: { model.setMCPWrites($0) }))
+                row(String(localized: "Dossier de publication")) {
                     if !model.exportDirectory.isEmpty {
                         Text(model.exportDirectory).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
                     }
@@ -133,13 +143,13 @@ struct SettingsView: View {
         }
     }
     @ViewBuilder private var localSummaryRows: some View {
-        row("Adresse du serveur local", help: "LM Studio ou Ollama, API OpenAI-compatible et JSON Schema requis. Seules les adresses de boucle locale sont acceptées.") {
+        row(String(localized: "Adresse du serveur local"), help: String(localized: "LM Studio ou Ollama, API OpenAI-compatible et JSON Schema requis. Seules les adresses de boucle locale sont acceptées.")) {
             TextField("http://127.0.0.1:1234/v1", text: $model.summaryEndpoint).textFieldStyle(.roundedBorder).frame(width: 280)
         }
-        row("Modèle chargé") {
+        row(String(localized: "Modèle chargé")) {
             TextField("Identifiant du modèle", text: $model.summaryModel).textFieldStyle(.roundedBorder).frame(width: 280)
         }
-        row("Contexte chargé dans le serveur", help: "Indiquez le contexte chargé dans LM Studio. HWYD traite les longues sessions par portions bornées et rédige chaque sujet à partir de ses sources. Un grand contexte serveur n’augmente pas automatiquement la taille des requêtes. Pour limiter la mémoire, chargez un seul modèle et une seule requête à la fois : ce réglage ne modifie pas la mémoire allouée par le serveur.") {
+        row(String(localized: "Contexte chargé dans le serveur"), help: String(localized: "Indiquez le contexte chargé dans LM Studio. HWYD traite les longues sessions par portions bornées et rédige chaque sujet à partir de ses sources. Un grand contexte serveur n’augmente pas automatiquement la taille des requêtes. Pour limiter la mémoire, chargez un seul modèle et une seule requête à la fois : ce réglage ne modifie pas la mémoire allouée par le serveur.")) {
             Picker("Contexte chargé dans le serveur", selection: $model.summaryContextTokens) {
                 Text("16k tokens").tag(16384)
                 Text("32k tokens").tag(32768)
@@ -147,10 +157,10 @@ struct SettingsView: View {
                 Text("128k tokens").tag(131072)
             }.labelsHidden().frame(width: 150)
         }
-        toggleRow("Désactiver le raisonnement étendu", help: "Peut réduire le temps de génération. À activer si le modèle ne renvoie pas de synthèse avec les sorties structurées. Le serveur doit accepter cette option.", isOn: $model.summaryReasoningDisabled)
+        toggleRow(String(localized: "Désactiver le raisonnement étendu"), help: String(localized: "Peut réduire le temps de génération. À activer si le modèle ne renvoie pas de synthèse avec les sorties structurées. Le serveur doit accepter cette option."), isOn: $model.summaryReasoningDisabled)
     }
     @ViewBuilder private var agentSummaryRows: some View {
-        row("Agent", help: "Agent compatible ACP (Agent Client Protocol) installé et connecté sur ce Mac. La commande s’exécute dans un shell de connexion ; vous pouvez en saisir une autre.") {
+        row(String(localized: "Agent"), help: String(localized: "Agent compatible ACP (Agent Client Protocol) installé et connecté sur ce Mac. La commande s’exécute dans un shell de connexion ; vous pouvez en saisir une autre.")) {
             Menu {
                 ForEach(ACPAgentPreset.all) { preset in
                     let installed = model.summaryDetectedAgents.contains(preset.command)
@@ -158,17 +168,17 @@ struct SettingsView: View {
                         model.summaryAgentCommand = preset.command
                     } label: {
                         if model.summaryAgentCommand == preset.command { Label(preset.name, systemImage: "checkmark") }
-                        else { Text(installed ? preset.name : preset.name + " (non installé)") }
+                        else { Text(installed ? preset.name : String(localized: "\(preset.name) (non installé)")) }
                     }
                 }
             } label: {
-                Text(ACPAgentPreset.all.first { $0.command == model.summaryAgentCommand }?.name ?? "Autre")
+                Text(ACPAgentPreset.all.first { $0.command == model.summaryAgentCommand }?.name ?? String(localized: "Autre"))
             }.fixedSize()
             TextField("claude-agent-acp", text: $model.summaryAgentCommand).textFieldStyle(.roundedBorder).frame(width: 200)
                 .font(.system(size: Studio.Size.caption, design: .monospaced))
                 .accessibilityLabel("Commande de l’agent")
         }
-        row("Dossier de travail", help: "L’agent démarre dans ce dossier. Choisissez celui où il trouve son contexte : instructions, mémoire, notes.") {
+        row(String(localized: "Dossier de travail"), help: String(localized: "L’agent démarre dans ce dossier. Choisissez celui où il trouve son contexte : instructions, mémoire, notes.")) {
             Text(model.summaryAgentDirectory).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).lineLimit(1).truncationMode(.middle)
             Button("Choisir…") { model.chooseSummaryAgentDirectory() }.buttonStyle(StudioButtonStyle(compact: true))
         }
@@ -179,7 +189,7 @@ struct SettingsView: View {
     }
     @ViewBuilder private var remoteSummaryRows: some View {
         let name = model.summaryService.displayName
-        row("Clé API", help: "Stockée dans le trousseau de ce Mac, jamais dans les réglages, les exports ou la base. Les requêtes sont facturées sur votre compte \(name).") {
+        row(String(localized: "Clé API"), help: String(localized: "Stockée dans le trousseau de ce Mac, jamais dans les réglages, les exports ou la base. Les requêtes sont facturées sur votre compte \(name).")) {
             if model.summaryKeyStored {
                 Text("Enregistrée").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
                 Button("Supprimer") { model.removeSummaryKey() }.buttonStyle(StudioButtonStyle(compact: true))
@@ -190,9 +200,9 @@ struct SettingsView: View {
                     .buttonStyle(StudioButtonStyle(compact: true)).disabled(apiKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        row("Modèle", help: "Liste des modèles proposés par \(name) pour votre clé. Vous pouvez aussi saisir un identifiant. Le contexte des modèles hébergés est bien plus grand que celui d’un serveur local : une session d’une heure tient en quelques requêtes.") {
+        row(String(localized: "Modèle"), help: String(localized: "Liste des modèles proposés par \(name) pour votre clé. Vous pouvez aussi saisir un identifiant. Le contexte des modèles hébergés est bien plus grand que celui d’un serveur local : une session d’une heure tient en quelques requêtes.")) {
             if model.summaryModelsLoading { ProgressView().controlSize(.small) }
-            TextField(model.summaryKeyStored ? "Choisissez un modèle" : model.summaryService.defaultModel, text: $model.summaryRemoteModel)
+            TextField(model.summaryKeyStored ? String(localized: "Choisissez un modèle") : model.summaryService.defaultModel, text: $model.summaryRemoteModel)
                 .textFieldStyle(.roundedBorder).frame(width: 220)
                 .textInputSuggestions {
                     ForEach(modelSuggestions, id: \.self) { id in Text(id).textInputCompletion(id) }
@@ -265,9 +275,9 @@ struct VoicePersonRow: View {
     @State private var confirmation: Confirmation?
     private enum Confirmation: Identifiable { case erase, oppose; var id: Self { self } }
     private var status: String {
-        if person.opposed { return "Exclue de la reconnaissance" }
+        if person.opposed { return String(localized: "Exclue de la reconnaissance") }
         let channels = person.channels.map(\.label)
-        return channels.isEmpty ? "Aucune empreinte" : channels.joined(separator: " · ")
+        return channels.isEmpty ? String(localized: "Aucune empreinte") : channels.joined(separator: " · ")
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -345,11 +355,11 @@ struct VoicePersonRow: View {
         }
     }
     private func title(_ id: UUID?) -> String {
-        guard let id else { return "Avant la version 0.9 · session inconnue" }
-        return model.recordings.first { $0.id == id }?.title ?? "Session supprimée"
+        guard let id else { return String(localized: "Avant la version 0.9 · session inconnue") }
+        return model.recordings.first { $0.id == id }?.title ?? String(localized: "Session supprimée")
     }
     private func detail(_ group: [VoiceContribution]) -> String {
-        let parts = group.sorted { $0.channel.rawValue < $1.channel.rawValue }.map { "\($0.channel.label) · \($0.count) exemple\($0.count > 1 ? "s" : "")" }
+        let parts = group.sorted { $0.channel.rawValue < $1.channel.rawValue }.map { "\($0.channel.label) · " + String(localized: "\($0.count) exemple(s)") }
         let date = group.compactMap(\.addedAt).max().map { " · " + $0.formatted(date: .abbreviated, time: .omitted) } ?? ""
         return parts.joined(separator: ", ") + date
     }

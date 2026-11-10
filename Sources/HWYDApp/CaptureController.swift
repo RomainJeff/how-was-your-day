@@ -30,32 +30,32 @@ struct CaptureFailure: LocalizedError {
         if let status = writer?.status() {
             if let error = status.error { return error }
             if !isPaused, let lastPacket = status.lastPacket, ProcessInfo.processInfo.systemUptime - lastPacket > 3 {
-                return "Le périphérique ne fournit plus de données audio. La session a été arrêtée."
+                return String(localized: "Le périphérique ne fournit plus de données audio. La session a été arrêtée.")
             }
         }
         if aggregate != 0 {
             if (try? scalar(AudioObjectID(kAudioObjectSystemObject), kAudioHardwarePropertyDefaultInputDevice, as: AudioObjectID.self)) != initialInput || (try? scalar(AudioObjectID(kAudioObjectSystemObject), kAudioHardwarePropertyDefaultOutputDevice, as: AudioObjectID.self)) != initialOutput {
-                return "La route audio a changé. La session a été arrêtée pour préserver les pistes. Relancez une session avec le nouveau périphérique."
+                return String(localized: "La route audio a changé. La session a été arrêtée pour préserver les pistes. Relancez une session avec le nouveau périphérique.")
             }
         }
         return nil
     }
     func start(id: UUID, directory: URL) async throws {
         let granted = await AVCaptureDevice.requestAccess(for: .audio)
-        guard granted else { throw CaptureFailure(message: "L’accès au micro est refusé. Autorisez HWYD dans Réglages Système > Confidentialité et sécurité > Microphone.") }
+        guard granted else { throw CaptureFailure(message: String(localized: "L’accès au micro est refusé. Autorisez HWYD dans Réglages Système > Confidentialité et sécurité > Microphone.")) }
         lockFD = open(directory.appendingPathComponent("capture.lock").path, O_CREAT | O_RDWR | O_CLOEXEC, 0o600)
         guard lockFD >= 0, flock(lockFD, LOCK_EX | LOCK_NB) == 0 else {
             if lockFD >= 0 { close(lockFD); lockFD = -1 }
-            throw CaptureFailure(message: "Une autre instance de HWYD enregistre déjà une session.")
+            throw CaptureFailure(message: String(localized: "Une autre instance de HWYD enregistre déjà une session."))
         }
         do {
             initialInput = try scalar(AudioObjectID(kAudioObjectSystemObject), kAudioHardwarePropertyDefaultInputDevice, as: AudioObjectID.self)
             initialOutput = try scalar(AudioObjectID(kAudioObjectSystemObject), kAudioHardwarePropertyDefaultOutputDevice, as: AudioObjectID.self)
-            guard initialInput != 0 else { throw CaptureFailure(message: "Aucun microphone disponible.") }
+            guard initialInput != 0 else { throw CaptureFailure(message: String(localized: "Aucun microphone disponible.")) }
             let inputUID = try string(initialInput, kAudioDevicePropertyDeviceUID)
-            let micName = (try? string(initialInput, kAudioObjectPropertyName)) ?? "le micro"
+            let micName = (try? string(initialInput, kAudioObjectPropertyName)) ?? String(localized: "le micro")
             let micStreams = try streams(initialInput)
-            guard micStreams.count == 1 else { throw CaptureFailure(message: "Ce prototype prend en charge les microphones à un seul flux d’entrée. Sélectionnez le micro du Mac.") }
+            guard micStreams.count == 1 else { throw CaptureFailure(message: String(localized: "Ce prototype prend en charge les microphones à un seul flux d’entrée. Sélectionnez le micro du Mac.")) }
             let micFormat = try format(micStreams[0])
             let micChannels = micFormat.mChannelsPerFrame
             var processAddress = address(kAudioHardwarePropertyTranslatePIDToProcessObject)
@@ -63,7 +63,7 @@ struct CaptureFailure: LocalizedError {
             let processResult = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &processAddress, UInt32(MemoryLayout<pid_t>.size), &pid, &size, &process)
             let description = CATapDescription(stereoGlobalTapButExcludeProcesses: processResult == noErr && process != 0 ? [process] : [])
             description.name = "HWYD System Audio"; description.isPrivate = true; description.muteBehavior = .unmuted
-            try check(AudioHardwareCreateProcessTap(description, &tap), "Création du tap audio système")
+            try check(AudioHardwareCreateProcessTap(description, &tap), String(localized: "Création du tap audio système"))
             let tapRate = try scalar(tap, kAudioTapPropertyFormat, as: AudioStreamBasicDescription.self).mSampleRate
             let inputs: [CaptureInput]
             if micFormat.mSampleRate == tapRate {
@@ -78,14 +78,14 @@ struct CaptureFailure: LocalizedError {
                     // Do not wait for a tapped app to play: room conversations must start immediately.
                     kAudioAggregateDeviceTapAutoStartKey: false
                 ]
-                try check(AudioHardwareCreateAggregateDevice(composition as CFDictionary, &aggregate), "Création du périphérique agrégé")
+                try check(AudioHardwareCreateAggregateDevice(composition as CFDictionary, &aggregate), String(localized: "Création du périphérique agrégé"))
                 let aggregateStreams = try streams(aggregate)
-                guard aggregateStreams.count == 2 else { throw CaptureFailure(message: "Le graphe audio n’expose pas les deux flux attendus. La capture est annulée, sans piste partielle.") }
+                guard aggregateStreams.count == 2 else { throw CaptureFailure(message: String(localized: "Le graphe audio n’expose pas les deux flux attendus. La capture est annulée, sans piste partielle.")) }
                 let formats = try aggregateStreams.map { try format($0) }
                 // The explicitly ordered subdevice list precedes the tap. Verify its stream layout.
                 let starts = try aggregateStreams.map { try scalar($0, kAudioStreamPropertyStartingChannel, as: UInt32.self) }
                 try validateLayout(starts: starts, formats: formats, micChannels: micChannels, micName: micName)
-                guard let created = HWYDRingCreate(micChannels + 2) else { throw CaptureFailure(message: "Mémoire insuffisante pour préparer la capture.") }
+                guard let created = HWYDRingCreate(micChannels + 2) else { throw CaptureFailure(message: String(localized: "Mémoire insuffisante pour préparer la capture.")) }
                 ring = created
                 inputs = [CaptureInput(ring: created, channels: Int(micChannels + 2), sampleRate: formats[0].mSampleRate, layout: .combined(micChannels: Int(micChannels)))]
             } else {
@@ -100,14 +100,14 @@ struct CaptureFailure: LocalizedError {
                     kAudioAggregateDeviceTapListKey: [[kAudioSubTapUIDKey: description.uuid.uuidString, kAudioSubTapDriftCompensationKey: false]],
                     kAudioAggregateDeviceTapAutoStartKey: false
                 ]
-                try check(AudioHardwareCreateAggregateDevice(composition as CFDictionary, &aggregate), "Création du périphérique agrégé")
+                try check(AudioHardwareCreateAggregateDevice(composition as CFDictionary, &aggregate), String(localized: "Création du périphérique agrégé"))
                 let systemStreams = try streams(aggregate)
-                guard systemStreams.count == 1 else { throw CaptureFailure(message: "Le graphe audio n’expose pas le flux système attendu (\(systemStreams.count) flux). La capture est annulée, sans piste partielle.") }
+                guard systemStreams.count == 1 else { throw CaptureFailure(message: String(localized: "Le graphe audio n’expose pas le flux système attendu (\(systemStreams.count) flux). La capture est annulée, sans piste partielle.")) }
                 let systemFormat = try format(systemStreams[0])
                 try validateSplitLayout(mic: micFormat, system: systemFormat, micName: micName)
-                guard let systemRing = HWYDRingCreate(2) else { throw CaptureFailure(message: "Mémoire insuffisante pour préparer la capture.") }
+                guard let systemRing = HWYDRingCreate(2) else { throw CaptureFailure(message: String(localized: "Mémoire insuffisante pour préparer la capture.")) }
                 ring = systemRing
-                guard let createdMicRing = HWYDRingCreate(micChannels) else { throw CaptureFailure(message: "Mémoire insuffisante pour préparer la capture.") }
+                guard let createdMicRing = HWYDRingCreate(micChannels) else { throw CaptureFailure(message: String(localized: "Mémoire insuffisante pour préparer la capture.")) }
                 micRing = createdMicRing
                 inputs = [
                     CaptureInput(ring: createdMicRing, channels: Int(micChannels), sampleRate: micFormat.mSampleRate, layout: .mic),
@@ -117,15 +117,15 @@ struct CaptureFailure: LocalizedError {
             writer = try AudioWriter(inputs: inputs, id: id, directory: directory)
             // Drain before the devices start: starting a tap aggregate can block for about a second.
             writer?.start()
-            try check(AudioDeviceCreateIOProcID(aggregate, HWYDIOProc, UnsafeMutableRawPointer(ring), &ioProc), "Préparation de la capture")
-            if let micRing { try check(AudioDeviceCreateIOProcID(initialInput, HWYDIOProc, UnsafeMutableRawPointer(micRing), &micProc), "Préparation du micro") }
-            try check(AudioDeviceStart(aggregate, ioProc), "Démarrage de la capture")
-            if let micProc { try check(AudioDeviceStart(initialInput, micProc), "Démarrage du micro") }
+            try check(AudioDeviceCreateIOProcID(aggregate, HWYDIOProc, UnsafeMutableRawPointer(ring), &ioProc), String(localized: "Préparation de la capture"))
+            if let micRing { try check(AudioDeviceCreateIOProcID(initialInput, HWYDIOProc, UnsafeMutableRawPointer(micRing), &micProc), String(localized: "Préparation du micro")) }
+            try check(AudioDeviceStart(aggregate, ioProc), String(localized: "Démarrage de la capture"))
+            if let micProc { try check(AudioDeviceStart(initialInput, micProc), String(localized: "Démarrage du micro")) }
             let deadline = ContinuousClock.now.advanced(by: .seconds(5))
             while writer?.status().lastPacket == nil {
                 if let error = writer?.status().error { throw CaptureFailure(message: error) }
                 guard ContinuousClock.now < deadline else {
-                    throw CaptureFailure(message: "Le périphérique audio a démarré mais aucun buffer n’est reçu. Vérifiez les permissions micro et audio système, puis réessayez.")
+                    throw CaptureFailure(message: String(localized: "Le périphérique audio a démarré mais aucun buffer n’est reçu. Vérifiez les permissions micro et audio système, puis réessayez."))
                 }
                 try await Task.sleep(for: .milliseconds(50))
             }
@@ -143,8 +143,8 @@ struct CaptureFailure: LocalizedError {
     func resume() throws {
         guard isPaused, let ioProc, aggregate != 0 else { return }
         writer?.resume()
-        try check(AudioDeviceStart(aggregate, ioProc), "Reprise de la capture")
-        if let micProc { try check(AudioDeviceStart(initialInput, micProc), "Reprise du micro") }
+        try check(AudioDeviceStart(aggregate, ioProc), String(localized: "Reprise de la capture"))
+        if let micProc { try check(AudioDeviceStart(initialInput, micProc), String(localized: "Reprise du micro")) }
         isPaused = false
     }
     func stop() -> [AudioChunk] {
@@ -164,36 +164,35 @@ struct CaptureFailure: LocalizedError {
     /// Each check reports what it read, so a failure on another Mac can be diagnosed from the message alone.
     /// The ring buffer and the writer assume one interleaved frame and one sample rate for every track.
     private func validateLayout(starts: [UInt32], formats: [AudioStreamBasicDescription], micChannels: UInt32, micName: String) throws {
-        let suffix = " Aucun enregistrement n’a démarré."
         guard micChannels + 2 <= 16 else {
-            throw CaptureFailure(message: "\(micName) expose \(micChannels) canaux, au-delà des 16 canaux pris en charge.\(suffix)")
+            throw CaptureFailure(message: String(localized: "\(micName) expose \(micChannels) canaux, au-delà des 16 canaux pris en charge. Aucun enregistrement n’a démarré."))
         }
         guard starts == [1, micChannels + 1] else {
-            throw CaptureFailure(message: "Ordre des pistes inattendu : canaux de départ \(starts.map(String.init).joined(separator: ", ")), attendus 1, \(micChannels + 1).\(suffix)")
+            throw CaptureFailure(message: String(localized: "Ordre des pistes inattendu : canaux de départ \(starts.map(String.init).joined(separator: ", ")), attendus 1, \(micChannels + 1). Aucun enregistrement n’a démarré."))
         }
         guard formats[0].mChannelsPerFrame == micChannels else {
-            throw CaptureFailure(message: "\(micName) expose \(formats[0].mChannelsPerFrame) canaux dans le graphe audio, \(micChannels) attendus.\(suffix)")
+            throw CaptureFailure(message: String(localized: "\(micName) expose \(formats[0].mChannelsPerFrame) canaux dans le graphe audio, \(micChannels) attendus. Aucun enregistrement n’a démarré."))
         }
         guard formats[1].mChannelsPerFrame == 2 else {
-            throw CaptureFailure(message: "L’audio système expose \(formats[1].mChannelsPerFrame) canaux, 2 attendus.\(suffix)")
+            throw CaptureFailure(message: String(localized: "L’audio système expose \(formats[1].mChannelsPerFrame) canaux, 2 attendus. Aucun enregistrement n’a démarré."))
         }
-        try requireFloat32(micName, formats[0]); try requireFloat32("L’audio système", formats[1])
+        try requireFloat32(micName, formats[0]); try requireFloat32(String(localized: "L’audio système"), formats[1])
         guard formats[0].mSampleRate == formats[1].mSampleRate else {
-            throw CaptureFailure(message: "Fréquences différentes : \(micName) à \(hertz(formats[0].mSampleRate)), audio système à \(hertz(formats[1].mSampleRate)).\(suffix) Choisissez un autre micro ou alignez les fréquences dans Configuration audio et MIDI.")
+            throw CaptureFailure(message: String(localized: "Fréquences différentes : \(micName) à \(hertz(formats[0].mSampleRate)), audio système à \(hertz(formats[1].mSampleRate)). Aucun enregistrement n’a démarré. Choisissez un autre micro ou alignez les fréquences dans Configuration audio et MIDI."))
         }
     }
     private func validateSplitLayout(mic: AudioStreamBasicDescription, system: AudioStreamBasicDescription, micName: String) throws {
         guard mic.mChannelsPerFrame >= 1, mic.mChannelsPerFrame <= 16 else {
-            throw CaptureFailure(message: "\(micName) expose \(mic.mChannelsPerFrame) canaux, entre 1 et 16 pris en charge. Aucun enregistrement n’a démarré.")
+            throw CaptureFailure(message: String(localized: "\(micName) expose \(mic.mChannelsPerFrame) canaux, entre 1 et 16 pris en charge. Aucun enregistrement n’a démarré."))
         }
         guard system.mChannelsPerFrame == 2 else {
-            throw CaptureFailure(message: "L’audio système expose \(system.mChannelsPerFrame) canaux, 2 attendus. Aucun enregistrement n’a démarré.")
+            throw CaptureFailure(message: String(localized: "L’audio système expose \(system.mChannelsPerFrame) canaux, 2 attendus. Aucun enregistrement n’a démarré."))
         }
-        try requireFloat32(micName, mic); try requireFloat32("L’audio système", system)
+        try requireFloat32(micName, mic); try requireFloat32(String(localized: "L’audio système"), system)
     }
     private func requireFloat32(_ label: String, _ format: AudioStreamBasicDescription) throws {
         guard format.mFormatID == kAudioFormatLinearPCM, format.mBitsPerChannel == 32, format.mFormatFlags & kAudioFormatFlagIsFloat != 0 else {
-            throw CaptureFailure(message: "\(label) fournit un format non pris en charge (\(fourCC(format.mFormatID)), \(format.mBitsPerChannel) bits), PCM flottant 32 bits attendu. Aucun enregistrement n’a démarré.")
+            throw CaptureFailure(message: String(localized: "\(label) fournit un format non pris en charge (\(fourCC(format.mFormatID)), \(format.mBitsPerChannel) bits), PCM flottant 32 bits attendu. Aucun enregistrement n’a démarré."))
         }
     }
     private func fourCC(_ code: UInt32) -> String {
@@ -205,13 +204,13 @@ struct CaptureFailure: LocalizedError {
         .init(mSelector: selector, mScope: scope, mElement: kAudioObjectPropertyElementMain)
     }
     private func check(_ status: OSStatus, _ operation: String) throws {
-        if status != noErr { throw CaptureFailure(message: "\(operation) impossible (Core Audio \(status)). Vérifiez les permissions audio de HWYD dans Réglages Système.") }
+        if status != noErr { throw CaptureFailure(message: String(localized: "\(operation) impossible (Core Audio \(status)). Vérifiez les permissions audio de HWYD dans Réglages Système.")) }
     }
     private func scalar<T>(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector, as type: T.Type) throws -> T {
         let pointer = UnsafeMutableRawPointer.allocate(byteCount: MemoryLayout<T>.size, alignment: MemoryLayout<T>.alignment)
         defer { pointer.deallocate() }
         var prop = address(selector), size = UInt32(MemoryLayout<T>.size)
-        try check(AudioObjectGetPropertyData(object, &prop, 0, nil, &size, pointer), "Lecture de la configuration audio")
+        try check(AudioObjectGetPropertyData(object, &prop, 0, nil, &size, pointer), String(localized: "Lecture de la configuration audio"))
         return pointer.load(as: T.self)
     }
     private func string(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector) throws -> String {
@@ -219,15 +218,15 @@ struct CaptureFailure: LocalizedError {
         let storage = UnsafeMutableRawPointer.allocate(byteCount: Int(size), alignment: MemoryLayout<UnsafeRawPointer>.alignment)
         defer { storage.deallocate() }
         storage.storeBytes(of: Optional<UnsafeRawPointer>.none, as: Optional<UnsafeRawPointer>.self)
-        try check(AudioObjectGetPropertyData(object, &prop, 0, nil, &size, storage), "Lecture du périphérique")
-        guard let pointer = storage.load(as: Optional<UnsafeRawPointer>.self) else { throw CaptureFailure(message: "Identifiant audio manquant.") }
+        try check(AudioObjectGetPropertyData(object, &prop, 0, nil, &size, storage), String(localized: "Lecture du périphérique"))
+        guard let pointer = storage.load(as: Optional<UnsafeRawPointer>.self) else { throw CaptureFailure(message: String(localized: "Identifiant audio manquant.")) }
         return Unmanaged<CFString>.fromOpaque(pointer).takeRetainedValue() as String
     }
     private func streams(_ device: AudioObjectID) throws -> [AudioObjectID] {
         var prop = address(kAudioDevicePropertyStreams, scope: kAudioDevicePropertyScopeInput), size: UInt32 = 0
-        try check(AudioObjectGetPropertyDataSize(device, &prop, 0, nil, &size), "Lecture des pistes")
+        try check(AudioObjectGetPropertyDataSize(device, &prop, 0, nil, &size), String(localized: "Lecture des pistes"))
         var result = [AudioObjectID](repeating: 0, count: Int(size) / MemoryLayout<AudioObjectID>.size)
-        try check(AudioObjectGetPropertyData(device, &prop, 0, nil, &size, &result), "Lecture des pistes")
+        try check(AudioObjectGetPropertyData(device, &prop, 0, nil, &size, &result), String(localized: "Lecture des pistes"))
         return result
     }
     private func format(_ stream: AudioObjectID) throws -> AudioStreamBasicDescription { try scalar(stream, kAudioStreamPropertyVirtualFormat, as: AudioStreamBasicDescription.self) }
@@ -347,7 +346,7 @@ private final class AudioWriter: @unchecked Sendable {
         guard status().error == nil else { return }
         for input in inputs where HWYDRingDropped(input.ring) > 0 {
             let reasons = (0..<4).map { String(HWYDRingDropReason(input.ring, UInt32($0))) }.joined(separator: "/")
-            setError("La capture a perdu des buffers audio (\(reasons)). La session est arrêtée pour éviter une désynchronisation silencieuse."); return
+            setError(String(localized: "La capture a perdu des buffers audio (\(reasons)). La session est arrêtée pour éviter une désynchronisation silencieuse.")); return
         }
         do {
             for (index, input) in inputs.enumerated() {
@@ -366,8 +365,8 @@ private final class AudioWriter: @unchecked Sendable {
                 }
             }
             try flush()
-            if !split, pending[0].count != pending[1].count { throw CaptureFailure(message: "Les deux pistes audio ne sont plus synchronisées.") }
-        } catch { setError("Écriture audio interrompue : \(error.localizedDescription)") }
+            if !split, pending[0].count != pending[1].count { throw CaptureFailure(message: String(localized: "Les deux pistes audio ne sont plus synchronisées.")) }
+        } catch { setError(String(localized: "Écriture audio interrompue : \(error.localizedDescription)")) }
     }
     private func tracks(of input: CaptureInput) -> [Int] {
         switch input.layout { case .combined: [0, 1]; case .mic: [0]; case .system: [1] }
@@ -391,7 +390,7 @@ private final class AudioWriter: @unchecked Sendable {
             if supplied { status.pointee = .noDataNow; return nil }
             supplied = true; status.pointee = .haveData; return mono
         }
-        if result == .error { throw error ?? CaptureFailure(message: "Conversion audio impossible.") as NSError }
+        if result == .error { throw error ?? CaptureFailure(message: String(localized: "Conversion audio impossible.")) as NSError }
         var converted = Array(UnsafeBufferPointer(start: output.floatChannelData![0], count: Int(output.frameLength)))
         if split { align(track: track, samples: &converted, host: host, duration: Double(frames) / input.sampleRate) }
         pending[track] += converted

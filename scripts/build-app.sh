@@ -34,6 +34,12 @@ if [[ -n "${BUILD_NUMBER:-}" ]]; then
 fi
 cp Resources/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"
 cp -Rf Resources/Licenses "$app/Contents/Resources/"
+# String Catalogs are the source of truth for UI text. SwiftPM does not compile them for this
+# layout, so they become fr.lproj and en.lproj here. HWYDCore and the helpers resolve them too.
+rm -rf "$app/Contents/Resources/"*.lproj
+for catalog in Resources/Localizable.xcstrings Resources/InfoPlist.xcstrings; do
+    xcrun xcstringstool compile "$catalog" --output-directory "$app/Contents/Resources"
+done
 for bundle in "$bin_path"/*.bundle; do
     [[ ! -d "$bundle" ]] || cp -R "$bundle" "$app/Contents/Resources/"
 done
