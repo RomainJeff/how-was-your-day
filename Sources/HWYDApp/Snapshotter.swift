@@ -43,6 +43,16 @@ import HWYDCore
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-notes.png"))
         model.activeTab = .summary
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-summary.png"))
+        model.report("Synthèse : Le modèle a renvoyé une synthèse incohérente : référence inconnue « S99 ».", style: .error,
+                     actions: [ToastAction(title: "Réessayer") {}, ToastAction(title: "Réglages") {}])
+        model.report("Synthèse prête : Point produit", style: .success, actions: [ToastAction(title: "Afficher") {}])
+        model.notice = "Voix nommée Camille dans toute cette session. Aucune empreinte vocale créée."
+        render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-toasts.png"))
+        for toast in model.toasts { model.dismissToast(toast.id) }
+        let previousSelection = model.selectedID
+        model.requestNewSession(); model.newSessionKind = .meeting
+        render(RootView().environmentObject(model), size: .init(width: 1080, height: 790), to: directory.appendingPathComponent("studio-new-session.png"))
+        model.showNewSession = false; model.selectedID = previousSelection
         render(RootView().environmentObject(model), size: .init(width: 1080, height: 1500), to: directory.appendingPathComponent("studio-summary-full.png"))
         render(VoiceIdentityView().environmentObject(model), size: .init(width: 610, height: 700), to: directory.appendingPathComponent("studio-voice-identity.png"))
         model.activeCaptureID = model.selectedID; model.elapsed = 1122; model.micLevel = 0.65; model.systemLevel = 0.35

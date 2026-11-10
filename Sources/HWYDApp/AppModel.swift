@@ -11,10 +11,20 @@ final class AppModel: ObservableObject {
     @Published var search = ""
     @Published var kindFilter: SessionKind?
     @Published var activeTab: DetailTab = .transcript
-    @Published var showSettings = false
+    @Published var showSettings = false { didSet { if showSettings { showNewSession = false } } }
     @Published var settingsCategory: SettingsCategory = .general
-    @Published var errorMessage: String?
-    @Published var notice: String?
+    /// The latest error and notice. Each new value is also shown as a toast.
+    @Published var errorMessage: String? { didSet { if bridgesToasts, let errorMessage { postToast(Toast(style: .error, message: errorMessage)) } } }
+    @Published var notice: String? { didSet { if bridgesToasts, let notice { postToast(Toast(style: .info, message: notice)) } } }
+    @Published private(set) var toasts: [Toast] = []
+    private var toastTimers: [UUID: Task<Void, Never>] = [:]
+    private var bridgesToasts = true
+    /// The setup screen shown before a capture starts: kind and optional name.
+    @Published var showNewSession = false
+    @Published var newSessionKind: SessionKind = .adHoc {
+        didSet { if persistPreferences && !isDemoMode { preferences.set(newSessionKind.rawValue, forKey: "newSession.kind") } }
+    }
+    @Published var newSessionTitle = ""
     @Published var isDemoMode = false
     @Published var isLoading = true
     @Published var activeCaptureID: UUID?
@@ -120,6 +130,7 @@ final class AppModel: ObservableObject {
         summaryContextTokens = preferences.integer(forKey: "summary.contextTokens") == 0 ? 32768 : preferences.integer(forKey: "summary.contextTokens")
         summaryReasoningDisabled = preferences.bool(forKey: "summary.reasoningDisabled")
         summaryService = SummaryService(rawValue: preferences.string(forKey: "summary.service") ?? "") ?? .local
+        newSessionKind = SessionKind(rawValue: preferences.string(forKey: "newSession.kind") ?? "") ?? .adHoc
         summaryAgentCommand = preferences.string(forKey: "summary.agent.command") ?? "claude-agent-acp"
         summaryAgentDirectory = preferences.string(forKey: "summary.agent.directory") ?? "~"
         appearancePreference = AppearancePreference(rawValue: preferences.string(forKey: "appearancePreference") ?? "") ?? .system
@@ -159,8 +170,8 @@ final class AppModel: ObservableObject {
     }
     var todayRecordings: [Recording] { filteredRecordings.filter { Calendar.current.isDateInToday($0.startedAt) } }
     var olderRecordings: [Recording] { filteredRecordings.filter { !Calendar.current.isDateInToday($0.startedAt) } }
-    func select(_ item: Recording) { showSettings = false; stopPlayback(); selectedID = item.id; activeTab = .transcript; playbackTime = 0; playback.activeSegmentIDs = []; mutedTracks = []; soloTracks = []; trackEnvelopes = [:] }
-    func library() { showSettings = false; stopPlayback(); selectedID = nil; search = "" }
+    func select(_ item: Recording) { showSettings = false; showNewSession = false; stopPlayback(); selectedID = item.id; activeTab = .transcript; playbackTime = 0; playback.activeSegmentIDs = []; mutedTracks = []; soloTracks = []; trackEnvelopes = [:] }
+    func library() { showSettings = false; showNewSession = false; stopPlayback(); selectedID = nil; search = "" }
     func enterDemo() {
         guard activeCaptureID == nil, !modelWorkBusy, !hasUnsavedChanges else { return }
         calendar.suspend()
@@ -201,7 +212,9 @@ final class AppModel: ObservableObject {
                 if let index = recordings.firstIndex(where: { $0.id == id }) { recordings[index].revision = saved.revision; recordings[index].notesVersion = saved.notesVersion; recordings[index].summaryVersion = saved.summaryVersion }
                 savedAt = Date()
             } catch {
-                dirtyIDs.insert(id); errorMessage = "Les dernières modifications ne sont pas enregistrées : \(error.localizedDescription)"
+                dirtyIDs.insert(id)
+                report("Les dernières modifications ne sont pas enregistrées : \(error.localizedDescription)", style: .error,
+                       actions: [ToastAction(title: "Réessayer") { [weak self] in self?.retrySave() }])
                 hasUnsavedChanges = true; return
             }
         }
@@ -291,15 +304,73 @@ final class AppModel: ObservableObject {
             isCapturePaused = true
         }
     }
-    func startCapture(meeting: CalendarContext? = nil) {
+    // MARK: Toasts
+
+    func postToast(_ toast: Toast) {
+        // The same message twice replaces the first one instead of stacking.
+        toasts.removeAll { $0.message == toast.message && $0.style == toast.style }
+        toasts.append(toast)
+        while toasts.count > 4, let oldest = toasts.firstIndex(where: { !$0.staysOnScreen }) ?? toasts.indices.first {
+            dismissToast(toasts[oldest].id)
+        }
+        scheduleDismissal(toast)
+        AccessibilityNotification.Announcement(toast.message).post()
+    }
+    /// Sets the matching message property without a second, plain toast.
+    func report(_ message: String, style: Toast.Style = .info, actions: [ToastAction] = [], sticky: Bool = false) {
+        bridgesToasts = false
+        if style == .error { errorMessage = message } else { notice = message }
+        bridgesToasts = true
+        postToast(Toast(style: style, message: message, actions: actions, sticky: sticky))
+    }
+    func dismissToast(_ id: UUID) {
+        toastTimers.removeValue(forKey: id)?.cancel()
+        toasts.removeAll { $0.id == id }
+    }
+    func runToastAction(_ action: ToastAction, of toast: Toast) {
+        dismissToast(toast.id)
+        action.run()
+    }
+    /// Hovering keeps a toast on screen; leaving it gives a short delay before it goes.
+    func holdToast(_ id: UUID, _ held: Bool) {
+        guard let toast = toasts.first(where: { $0.id == id }), !toast.staysOnScreen else { return }
+        toastTimers.removeValue(forKey: id)?.cancel()
+        if !held { scheduleDismissal(toast, after: .seconds(2)) }
+    }
+    private func scheduleDismissal(_ toast: Toast, after delay: Duration? = nil) {
+        guard !toast.staysOnScreen else { return }
+        toastTimers[toast.id] = Task { [weak self] in
+            try? await Task.sleep(for: delay ?? toast.lifetime)
+            guard !Task.isCancelled else { return }
+            self?.toasts.removeAll { $0.id == toast.id }
+            self?.toastTimers[toast.id] = nil
+        }
+    }
+
+    // MARK: Capture
+
+    /// Opens the setup screen, or the running capture if there is one.
+    func requestNewSession() {
+        if let active = activeCapture { select(active); showWindow?(); return }
+        showSettings = false; stopPlayback(); selectedID = nil
+        newSessionTitle = ""; showNewSession = true
+        showWindow?()
+    }
+    /// Starts recording. A calendar meeting provides its own kind and title; otherwise the
+    /// setup screen does, and an empty name falls back to the kind and time.
+    func startCapture(meeting: CalendarContext? = nil, kind: SessionKind? = nil, title: String? = nil) {
         guard activeCaptureID == nil, !isStarting else { showWindow?(); return }
-        showSettings = false
+        let kind = meeting == nil ? (kind ?? .adHoc) : .meeting
+        let typed = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let time = Date().formatted(date: .omitted, time: .shortened)
+        let sessionTitle = !typed.isEmpty ? typed : meeting?.title ?? (kind == .adHoc ? "Session du \(time)" : "\(kind.label) du \(time)")
+        showSettings = false; showNewSession = false
         startTicker(); stopPlayback(); isStarting = true
         Task {
             defer { isStarting = false }
             let id = UUID()
             if isDemoMode {
-                let item = Recording(id: id, title: "Nouvelle conversation", state: .recording, isDemo: true)
+                let item = Recording(id: id, title: sessionTitle, kind: kind, state: .recording, isDemo: true)
                 recordings.insert(item, at: 0); activeCaptureID = id; selectedID = id
                 elapsed = 0; captureStart = .now; showWindow?(); return
             }
@@ -308,7 +379,7 @@ final class AppModel: ObservableObject {
                 let controller = CaptureController()
                 try await controller.start(id: id, directory: dataDirectory)
                 capture = controller
-                var item = Recording(id: id, title: meeting?.title ?? "Session du \(Date().formatted(date: .omitted, time: .shortened))", kind: meeting == nil ? .adHoc : .meeting, state: .recording)
+                var item = Recording(id: id, title: sessionTitle, kind: kind, state: .recording)
                 item.calendarContext = meeting
                 recordings.insert(item, at: 0); activeCaptureID = id; selectedID = id
                 elapsed = 0; captureStart = .now; dirtyIDs.insert(id)
@@ -390,7 +461,8 @@ final class AppModel: ObservableObject {
                 if let warning = result.identityWarning { notice = "Transcript disponible. " + warning }
             } catch {
                 update(id) { $0.transcriptState = .failed }
-                errorMessage = "Transcription : \(error.localizedDescription)"
+                report("Transcription : \(error.localizedDescription)", style: .error,
+                       actions: [ToastAction(title: "Réessayer") { [weak self] in self?.transcribe(id) }])
                 await flush()
             }
         }
@@ -693,10 +765,24 @@ final class AppModel: ObservableObject {
                 guard persisted.revision == item.revision else { throw SummaryFailure.stale }
                 update(item.id) { $0.summary = result.structured.markdown; $0.summaryProvenance = result }
                 await flush()
+                // A long run (agents take minutes) may finish while another screen is open.
+                let showsSummary = selectedID == item.id && activeTab == .summary && !showSettings
+                report("Synthèse prête : \(item.title)", style: .success,
+                       actions: showsSummary ? [] : [ToastAction(title: "Afficher") { [weak self] in
+                           guard let self, let latest = self.recordings.first(where: { $0.id == item.id }) else { return }
+                           self.select(latest); self.activeTab = .summary
+                       }])
             } catch {
                 if error is CancellationError || Task.isCancelled || (error as? URLError)?.code == .cancelled {
                     notice = "Synthèse annulée."
-                } else { errorMessage = "Synthèse : \(error.localizedDescription)" }
+                } else {
+                    report("Synthèse : \(error.localizedDescription)", style: .error, actions: [
+                        ToastAction(title: "Réessayer") { [weak self] in
+                            guard let self, let item = self.recordings.first(where: { $0.id == recordingID }) else { return }
+                            self.select(item); self.activeTab = .summary; self.generateSummary()
+                        },
+                        ToastAction(title: "Réglages") { [weak self] in self?.settingsCategory = .summary; self?.showSettings = true }])
+                }
             }
         }
     }

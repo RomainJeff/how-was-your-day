@@ -155,11 +155,40 @@ import HWYDCore
         }
         print("ACP agent summary through bundled hwyd-mcp: restricted tools, readable rejection, accepted handoff: PASS")
     }
+    /// The setup screen never records by itself, and toasts stack, deduplicate and expire.
+    private static func checkNewSessionAndToasts() async throws {
+        let model = AppModel(preview: true, appliesAppearance: false)
+        model.requestNewSession()
+        guard model.showNewSession, model.activeCaptureID == nil else { throw CaptureFailure(message: "New session must open its setup screen without recording") }
+        model.newSessionKind = .call
+        model.startCapture(kind: model.newSessionKind, title: "  ")
+        let deadline = ContinuousClock.now.advanced(by: .seconds(3))
+        while model.activeCaptureID == nil, ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        guard let active = model.activeCapture, active.kind == .call, active.title.hasPrefix("Appel du "), !model.showNewSession else {
+            throw CaptureFailure(message: "Kind and default name were not applied")
+        }
+        model.stopCapture()
+        model.startCapture(kind: .voiceMemo, title: "Idée produit")
+        while model.activeCaptureID == nil, ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        guard model.activeCapture?.title == "Idée produit", model.activeCapture?.kind == .voiceMemo else { throw CaptureFailure(message: "Typed name was not applied") }
+        model.stopCapture()
+
+        for toast in model.toasts { model.dismissToast(toast.id) }
+        model.notice = "Premier"; model.notice = "Premier"
+        model.report("Décision", style: .error, actions: [ToastAction(title: "Réessayer") {}])
+        guard model.toasts.count == 2, model.toasts.last?.staysOnScreen == true, model.errorMessage == "Décision" else { throw CaptureFailure(message: "Toasts did not deduplicate or keep their actions") }
+        for index in 0..<5 { model.notice = "Message \(index)" }
+        guard model.toasts.count == 4, model.toasts.contains(where: { $0.message == "Décision" }) else { throw CaptureFailure(message: "Overflow must drop transient toasts before decisions") }
+        try await Task.sleep(for: .seconds(5.5))
+        guard model.toasts.map(\.message) == ["Décision"] else { throw CaptureFailure(message: "Transient toasts must expire, decisions must stay: \(model.toasts.map(\.message))") }
+        print("New session setup without recording, kind and name, toast stacking, expiry and decisions: PASS")
+    }
     static func run(directory: URL) async throws {
         try await PlaybackChecks.run(directory: directory.appendingPathComponent("playback"))
         try checkAppearancePreferences(directory: directory.appendingPathComponent("appearance-test"))
         try await checkSummaryLifecycle(directory: directory.appendingPathComponent("summary-lifecycle-test"))
         try await checkAgentSummary(directory: directory.appendingPathComponent("agent-summary-test"))
+        try await checkNewSessionAndToasts()
         let model = AppModel(directory: directory)
         let previousDiarization = model.diarizationEnabled
         model.diarizationEnabled = false
