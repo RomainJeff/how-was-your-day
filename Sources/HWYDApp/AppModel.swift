@@ -88,10 +88,65 @@ final class AppModel: ObservableObject {
         didSet { if persistPreferences && !isDemoMode { preferences.set(diarizationEnabled, forKey: "diarizationEnabled") } }
     }
     @Published var isInstallingModel = false
+    /// Language installing right now, shown next to its row.
+    @Published var installingSpeechLocale: String?
     private let pipelineRunner = PipelineRunner()
-    /// Known from an install done here, or from a transcript the model already produced. Shown in settings only.
+    /// Default transcription language for new sessions: a locale or `SpeechLanguage.automatic`.
+    @Published var speechLanguage = UserDefaults.standard.string(forKey: "speech.language") ?? SpeechLanguage.automatic {
+        didSet { if persistPreferences && !isDemoMode { preferences.set(speechLanguage, forKey: "speech.language") } }
+    }
+    /// System-wide shortcut that starts or ends a recording. Nil when the user cleared it.
+    @Published var recordingShortcut: RecordingShortcut? = .standard {
+        didSet {
+            guard oldValue != recordingShortcut else { return }
+            if persistPreferences { preferences.set(recordingShortcut.flatMap { try? JSONEncoder().encode($0) } ?? Data(), forKey: RecordingShortcut.preferenceKey) }
+            registerRecordingShortcut()
+        }
+    }
+    /// The shortcut is taken by another application or the system.
+    @Published var recordingShortcutUnavailable = false
+    /// Off for previews and test runs, which must not take a system-wide shortcut.
+    private var shortcutEnabled = false
+    func enableRecordingShortcut() { shortcutEnabled = true; registerRecordingShortcut() }
+    func reloadRecordingShortcut() { registerRecordingShortcut() }
+    private func registerRecordingShortcut() {
+        guard shortcutEnabled else { return }
+        recordingShortcutUnavailable = !GlobalHotKey.shared.register(recordingShortcut) { [weak self] in self?.toggleRecordingFromShortcut() }
+    }
+    /// Starts a session with the last chosen kind and the default language, or ends the running one.
+    /// The window stays where it is: the shortcut is meant to be used from another application.
+    func toggleRecordingFromShortcut() {
+        if activeCaptureID != nil { stopCapture(reveal: false) }
+        else if !isStarting { startCapture(kind: newSessionKind, reveal: false) }
+    }
+    /// Language chosen on the setup screen for the next session.
+    @Published var newSessionLanguage = SpeechLanguage.automatic
+    /// One locale per language, as reported by Apple Speech on this Mac.
+    @Published var installedSpeechLocales: [String] = []
+    @Published var supportedSpeechLocales: [String] = []
+    /// Known from Apple Speech, from an install done here, or from a transcript the model already produced.
     var speechModelReady: Bool {
-        preferences.bool(forKey: "models.speechInstalled") || recordings.contains { !$0.isDemo && $0.transcriptVersion > 0 && $0.transcription != nil }
+        !installedSpeechLocales.isEmpty || preferences.bool(forKey: "models.speechInstalled") || recordings.contains { !$0.isDemo && $0.transcriptVersion > 0 && $0.transcription != nil }
+    }
+    /// Languages offered for a session: automatic detection, then the installed languages.
+    var sessionLanguageChoices: [String] { [SpeechLanguage.automatic] + installedSpeechLocales }
+    func refreshSpeechLanguages() {
+        guard !isDemoMode else { return }
+        Task {
+            guard let data = try? await PipelineRunner.query(["languages"]),
+                  let locales = try? JSONDecoder().decode(SpeechLocales.self, from: data) else { return }
+            installedSpeechLocales = SpeechLanguage.oneLocalePerLanguage(locales.installed)
+            supportedSpeechLocales = SpeechLanguage.oneLocalePerLanguage(locales.supported)
+                .sorted { SpeechLanguage.displayName($0).localizedCompare(SpeechLanguage.displayName($1)) == .orderedAscending }
+        }
+    }
+    /// The language a request uses: the session's choice, French for sessions recorded before the
+    /// choice existed, and the fallback for a language uninstalled since.
+    func transcriptionLocale(for item: Recording, override: String? = nil) -> (locale: String, candidates: [String]?, fallback: String?) {
+        let requested = override ?? item.speechLanguage ?? SpeechLanguage.defaultLocale
+        let fallback = SpeechLanguage.fallback(installed: installedSpeechLocales)
+        if requested == SpeechLanguage.automatic { return (requested, installedSpeechLocales, fallback) }
+        return (requested, nil, nil)
     }
     var diarizerReady: Bool {
         preferences.bool(forKey: "models.diarizerInstalled") || recordings.contains { !$0.isDemo && $0.transcription?.diarizationEngine != nil }
@@ -134,6 +189,10 @@ final class AppModel: ObservableObject {
         summaryReasoningDisabled = preferences.bool(forKey: "summary.reasoningDisabled")
         summaryService = SummaryService(rawValue: preferences.string(forKey: "summary.service") ?? "") ?? .local
         newSessionKind = SessionKind(rawValue: preferences.string(forKey: "newSession.kind") ?? "") ?? .adHoc
+        speechLanguage = preferences.string(forKey: "speech.language") ?? SpeechLanguage.automatic
+        if let data = preferences.data(forKey: RecordingShortcut.preferenceKey) {
+            recordingShortcut = data.isEmpty ? nil : (try? JSONDecoder().decode(RecordingShortcut.self, from: data)) ?? .standard
+        }
         summaryAgentCommand = preferences.string(forKey: "summary.agent.command") ?? "claude-agent-acp"
         summaryAgentDirectory = preferences.string(forKey: "summary.agent.directory") ?? "~"
         appearancePreference = AppearancePreference(rawValue: preferences.string(forKey: "appearancePreference") ?? "") ?? .system
@@ -141,6 +200,7 @@ final class AppModel: ObservableObject {
         if appliesAppearance { NSApp.appearance = appearancePreference.appearance }
         if preview {
             recordings = DemoContent.recordings(); isDemoMode = true; isLoading = false
+            installedSpeechLocales = ["fr-FR", "en-US"]; supportedSpeechLocales = ["de-DE", "en-US", "es-ES", "fr-FR"]
         } else {
             do { store = try SessionStore(directory: dataDirectory) }
             catch { errorMessage = "Impossible d’ouvrir les données locales : \(error.localizedDescription)"; isLoading = false }
@@ -149,6 +209,7 @@ final class AppModel: ObservableObject {
     }
     func load() async {
         guard let store else { return }
+        refreshSpeechLanguages()
         do {
             let count = try await store.recoverInterrupted()
             recordings = try await store.all()
@@ -367,17 +428,19 @@ final class AppModel: ObservableObject {
     func requestNewSession() {
         if let active = activeCapture { select(active); showWindow?(); return }
         showSettings = false; stopPlayback(); selectedID = nil
-        newSessionTitle = ""; showNewSession = true
-        showWindow?()
+        newSessionTitle = ""; newSessionLanguage = sessionLanguageChoices.contains(speechLanguage) ? speechLanguage : SpeechLanguage.automatic
+        showNewSession = true
+        refreshSpeechLanguages(); showWindow?()
     }
     /// Starts recording. A calendar meeting provides its own kind and title; otherwise the
     /// setup screen does, and an empty name falls back to the kind and time.
-    func startCapture(meeting: CalendarContext? = nil, kind: SessionKind? = nil, title: String? = nil) {
-        guard activeCaptureID == nil, !isStarting else { showWindow?(); return }
+    func startCapture(meeting: CalendarContext? = nil, kind: SessionKind? = nil, title: String? = nil, language: String? = nil, reveal: Bool = true) {
+        guard activeCaptureID == nil, !isStarting else { if reveal { showWindow?() }; return }
         let kind = meeting == nil ? (kind ?? .adHoc) : .meeting
         let typed = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let time = Date().formatted(date: .omitted, time: .shortened)
         let sessionTitle = !typed.isEmpty ? typed : meeting?.title ?? (kind == .adHoc ? "Session du \(time)" : "\(kind.label) du \(time)")
+        let language = language ?? speechLanguage
         showSettings = false; showNewSession = false
         startTicker(); stopPlayback(); isStarting = true
         Task {
@@ -386,7 +449,7 @@ final class AppModel: ObservableObject {
             if isDemoMode {
                 let item = Recording(id: id, title: sessionTitle, kind: kind, state: .recording, isDemo: true)
                 recordings.insert(item, at: 0); activeCaptureID = id; selectedID = id
-                elapsed = 0; captureStart = .now; showWindow?(); return
+                elapsed = 0; captureStart = .now; if reveal { showWindow?() }; return
             }
             guard store != nil else { errorMessage = "Le store local n’est pas disponible."; return }
             do {
@@ -394,14 +457,14 @@ final class AppModel: ObservableObject {
                 try await controller.start(id: id, directory: dataDirectory)
                 capture = controller
                 var item = Recording(id: id, title: sessionTitle, kind: kind, state: .recording)
-                item.calendarContext = meeting
+                item.calendarContext = meeting; item.speechLanguage = language
                 recordings.insert(item, at: 0); activeCaptureID = id; selectedID = id
                 elapsed = 0; captureStart = .now; dirtyIDs.insert(id)
-                await flush(); showWindow?()
-            } catch { errorMessage = error.localizedDescription }
+                await flush(); if reveal { showWindow?() }
+            } catch { errorMessage = error.localizedDescription; if !reveal { showWindow?() } }
         }
     }
-    func stopCapture() {
+    func stopCapture(reveal: Bool = true) {
         guard let id = activeCaptureID else { return }
         let duration = elapsed
         let chunks = capture?.stop() ?? []
@@ -411,25 +474,25 @@ final class AppModel: ObservableObject {
         if let finalizationError { errorMessage = finalizationError }
         selectedID = id; activeTab = .notes
         notice = isDemoMode ? "Simulation terminée. Les notes restent disponibles." : (chunks.isEmpty ? "Aucun audio reçu. Vos notes sont conservées." : "Audio et notes conservés. La transcription locale va démarrer.")
-        showWindow?()
+        if reveal || finalizationError != nil { showWindow?() }
         if !isDemoMode, !chunks.isEmpty {
             if modelWorkBusy { notice = "Audio conservé. Un traitement est déjà en cours ; lancez la transcription depuis cette session ensuite." }
             else { transcribe(id) }
         }
     }
     func cancelProcessing() { pipelineRunner.cancel(); voiceRunner.cancel() }
-    func installSpeechModel() {
+    func installSpeechModel(_ locale: String) {
         guard !modelWorkBusy, !isDemoMode else { return }
         pipelineRunner.prepare()
-        isInstallingModel = true
+        isInstallingModel = true; installingSpeechLocale = locale
         Task {
-            defer { isInstallingModel = false }
+            defer { isInstallingModel = false; installingSpeechLocale = nil; refreshSpeechLanguages() }
             do {
                 let directory = dataDirectory.appendingPathComponent("jobs")
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-                try await pipelineRunner.run(arguments: ["install-model", "fr-FR"], log: directory.appendingPathComponent("install-model.log"))
+                try await pipelineRunner.run(arguments: ["install-model", locale], log: directory.appendingPathComponent("install-model.log"))
                 if persistPreferences { preferences.set(true, forKey: "models.speechInstalled") }
-                notice = "Modèle français installé. La transcription reste locale."
+                notice = "Langue installée : \(SpeechLanguage.displayName(locale)). La transcription reste locale."
             } catch { errorMessage = error.localizedDescription }
         }
     }
@@ -448,7 +511,8 @@ final class AppModel: ObservableObject {
             } catch { errorMessage = "Installation des voix : \(error.localizedDescription)" }
         }
     }
-    func transcribe(_ id: UUID) {
+    /// `language` replaces the session's language for this run and becomes its new choice.
+    func transcribe(_ id: UUID, language: String? = nil) {
         guard !isDemoMode, !modelWorkBusy, let item = recordings.first(where: { $0.id == id }), item.state != .recording, !item.audioChunks.isEmpty else { return }
         pipelineRunner.prepare()
         processingID = id
@@ -462,12 +526,19 @@ final class AppModel: ObservableObject {
                 let job = dataDirectory.appendingPathComponent("jobs/\(UUID().uuidString)")
                 try FileManager.default.createDirectory(at: job, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
                 let input = job.appendingPathComponent("request.json"), output = job.appendingPathComponent("result.json")
-                let request = TranscriptionRequest(recordingID: id, chunks: item.audioChunks, diarize: diarizationEnabled)
+                if installedSpeechLocales.isEmpty, let data = try? await PipelineRunner.query(["languages"]),
+                   let locales = try? JSONDecoder().decode(SpeechLocales.self, from: data) {
+                    installedSpeechLocales = SpeechLanguage.oneLocalePerLanguage(locales.installed)
+                }
+                let choice = transcriptionLocale(for: item, override: language)
+                let request = TranscriptionRequest(recordingID: id, locale: choice.locale, chunks: item.audioChunks, diarize: diarizationEnabled,
+                                                   candidateLocales: choice.candidates, fallbackLocale: choice.fallback)
                 try JSONEncoder().encode(request).write(to: input, options: .atomic)
                 try await pipelineRunner.run(arguments: ["transcribe", dataDirectory.path, input.path, output.path], log: job.appendingPathComponent("pipeline.log"))
                 let result = try JSONDecoder().decode(TranscriptionResult.self, from: Data(contentsOf: output))
                 guard var latest = recordings.first(where: { $0.id == id }), latest.transcriptVersion == originalVersion else { throw TranscriptionError.staleResult }
                 try latest.applyTranscription(result)
+                if let language { latest.speechLanguage = language }
                 update(id) { $0 = latest }
                 await flush()
                 if !hasUnsavedChanges { try? FileManager.default.removeItem(at: job) }

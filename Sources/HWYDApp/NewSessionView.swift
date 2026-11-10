@@ -31,6 +31,15 @@ struct NewSessionView: View {
                         .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Studio.line))
                         .focused($nameFocused).onSubmit(start).frame(maxWidth: 520)
                 }
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Eyebrow(text: "Langue")
+                        HelpButton(text: "Langue de la transcription. En détection automatique, HWYD choisit parmi les langues installées d’après le début de l’enregistrement. Vous pourrez retranscrire dans une autre langue.")
+                    }
+                    Picker("Langue", selection: $model.newSessionLanguage) {
+                        ForEach(model.sessionLanguageChoices, id: \.self) { choice in Text(SessionLanguageLabel.title(choice)).tag(choice) }
+                    }.labelsHidden().fixedSize()
+                }
                 HStack(spacing: 10) {
                     Button(action: start) {
                         Label(model.isStarting ? "Préparation…" : model.isDemoMode ? "Simuler l’enregistrement" : "Démarrer l’enregistrement", systemImage: "record.circle")
@@ -42,7 +51,7 @@ struct NewSessionView: View {
         }
         .onAppear { nameFocused = true }
     }
-    private func start() { model.startCapture(kind: model.newSessionKind, title: model.newSessionTitle) }
+    private func start() { model.startCapture(kind: model.newSessionKind, title: model.newSessionTitle, language: model.newSessionLanguage) }
     private func kindTile(_ kind: SessionKind) -> some View {
         let selected = model.newSessionKind == kind
         return Button { model.newSessionKind = kind } label: {
@@ -62,5 +71,17 @@ struct NewSessionView: View {
     static func placeholder(_ kind: SessionKind) -> String {
         let time = Date().formatted(date: .omitted, time: .shortened)
         return kind == .adHoc ? "Session du \(time)" : "\(kind.label) du \(time)"
+    }
+}
+
+/// How a transcription language choice reads in pickers and transcript headers.
+enum SessionLanguageLabel {
+    static func title(_ choice: String) -> String {
+        choice == SpeechLanguage.automatic ? "Détection automatique" : SpeechLanguage.displayName(choice)
+    }
+    /// The language a transcript was produced in, marked when it was detected.
+    static func transcript(_ provenance: TranscriptionProvenance) -> String {
+        let name = SpeechLanguage.displayName(provenance.locale)
+        return provenance.languageDetection?.method == .detected ? "\(name) (détectée)" : name
     }
 }

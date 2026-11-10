@@ -91,6 +91,9 @@ public struct Recording: Codable, Identifiable, Equatable, Sendable {
     public var audioChunks: [AudioChunk]
     public var consentAnnounced: Bool
     public var isDemo: Bool
+    /// Transcription language requested for this session: a locale or `SpeechLanguage.automatic`.
+    /// Absent in sessions recorded before 0.11.0, which were transcribed in French.
+    public var speechLanguage: String?
     public init(id: UUID = UUID(), title: String, kind: SessionKind = .adHoc, startedAt: Date = Date(), duration: Double = 0,
                 state: CaptureState = .sealed, notes: String = "", noteEntries: [NoteEntry] = [], speakers: [Speaker] = [],
                 segments: [TranscriptSegment] = [], summary: String? = nil, isDemo: Bool = false) {

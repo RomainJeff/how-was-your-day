@@ -16,6 +16,8 @@ import HWYDCore
                 let job = try JSONDecoder().decode(VoiceJob.self, from: Data(contentsOf: URL(fileURLWithPath: args[2])))
                 try await VoiceStage.run(command: command!, store: store, job: job).write(to: URL(fileURLWithPath: args[3]), options: .atomic)
             case "diagnose": print(await AppleSpeechRecognizer.diagnostics())
+            case "languages":
+                FileHandle.standardOutput.write(try JSONEncoder().encode(await AppleSpeechRecognizer.locales()))
             case "install-model":
                 try await AppleSpeechRecognizer().install(locale: args.count > 1 ? args[1] : "fr-FR")
                 print("Modèle installé.")
@@ -71,7 +73,7 @@ import HWYDCore
                 let recordings = try await SessionStore(directory: URL(fileURLWithPath: args[1])).all()
                 for item in recordings { print("\(item.id)  \(item.state.rawValue)  v\(item.revision)  \(item.title)") }
             default:
-                FileHandle.standardError.write(Data("Usage: hwyd-pipeline echo-diagnostic <store> <request.json> <report.json> | diagnose | install-model [locale] | install-diarizer <store> | inspect <store> | transcribe[-calibration] <store> <request.json> <result.json>\n".utf8)); exit(2)
+                FileHandle.standardError.write(Data("Usage: hwyd-pipeline echo-diagnostic <store> <request.json> <report.json> | diagnose | languages | install-model [locale] | install-diarizer <store> | inspect <store> | transcribe[-calibration] <store> <request.json> <result.json>\n".utf8)); exit(2)
             }
         } catch { FileHandle.standardError.write(Data("\(error.localizedDescription)\n".utf8)); exit(1) }
     }
