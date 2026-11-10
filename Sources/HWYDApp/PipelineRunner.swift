@@ -39,6 +39,25 @@ import HWYDCore
         }
     }
 }
+extension PipelineRunner {
+    /// Runs a short read-only helper command and returns its standard output.
+    nonisolated static func query(_ arguments: [String], timeout: Duration = .seconds(30)) async throws -> Data {
+        let executable = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/hwyd-pipeline")
+        guard FileManager.default.isExecutableFile(atPath: executable.path) else { throw PipelineFailure(message: String(localized: "Le helper de transcription est absent.")) }
+        let child = Process(); child.executableURL = executable; child.arguments = arguments
+        let pipe = Pipe(); child.standardOutput = pipe; child.standardError = FileHandle.nullDevice; child.standardInput = FileHandle.nullDevice
+        try child.run()
+        let reader = Task.detached { pipe.fileHandleForReading.readDataToEndOfFile() }
+        let deadline = ContinuousClock.now.advanced(by: timeout)
+        while child.isRunning {
+            if ContinuousClock.now > deadline { child.terminate(); throw PipelineFailure(message: String(localized: "Le helper ne répond pas.")) }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let data = await reader.value
+        guard child.terminationStatus == 0 else { throw PipelineFailure(message: String(localized: "Le helper a échoué.")) }
+        return data
+    }
+}
 struct PipelineFailure: LocalizedError {
     let message: String
     var errorDescription: String? { message }

@@ -1,4 +1,5 @@
 import SwiftUI
+import Carbon.HIToolbox
 import HWYDCore
 
 enum SettingsCategory: String, CaseIterable, Identifiable {
@@ -82,6 +83,14 @@ struct SettingsView: View {
                     }.pickerStyle(.segmented).labelsHidden().frame(width: 260)
                 }
             }
+            section(String(localized: "Raccourci"), symbol: "keyboard") {
+                row(String(localized: "Démarrer ou terminer un enregistrement"), help: String(localized: "Fonctionne aussi quand une autre application est au premier plan. La session prend le dernier type choisi et détecte la langue ; la fenêtre reste en arrière-plan. Sans raccourci, utilisez le menu de la barre des menus.")) {
+                    if model.recordingShortcutUnavailable {
+                        Label("Déjà utilisé ailleurs", systemImage: "exclamationmark.triangle.fill").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.copper)
+                    }
+                    ShortcutRecorder(shortcut: $model.recordingShortcut)
+                }
+            }
             section(String(localized: "Découvrir HWYD"), symbol: "rectangle.stack") {
                 row(String(localized: "Sessions fictives, sans micro")) {
                     Button(model.isDemoMode ? "Quitter les exemples" : "Explorer des exemples") {
@@ -94,11 +103,21 @@ struct SettingsView: View {
             CalendarSettingsView(calendar: model.calendar).disabled(model.isDemoMode)
         case .audio:
             section(String(localized: "Transcription"), symbol: "text.bubble") {
-                row(String(localized: "Langue")) { Text("Français").font(.system(size: Studio.Size.body)).foregroundStyle(Studio.muted) }
-                row(String(localized: "Modèle Apple Speech"), help: String(localized: "L’installation peut télécharger le modèle Apple. Aucun audio n’est envoyé pour la transcription.")) {
-                    installControl(ready: model.speechModelReady, busy: model.isInstallingModel) { model.installSpeechModel() }
+                row(String(localized: "Langues installées"), help: String(localized: "HWYD détecte la langue de chaque piste parmi ces langues, d’après le début de l’enregistrement. Si une autre langue est reconnue, il propose de l’installer. Modèles Apple Speech, environ 350 Mo par langue, téléchargés une fois. Aucun audio n’est envoyé pour la transcription.")) {
+                    Text(model.installedSpeechLocales.isEmpty ? "Aucune" : model.installedSpeechLocales.map { SpeechLanguage.displayName($0) }.joined(separator: ", "))
+                        .font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted).lineLimit(2).multilineTextAlignment(.trailing)
+                    if let locale = model.installingSpeechLocale {
+                        ProgressView().controlSize(.small)
+                        Text("Installation : \(SpeechLanguage.displayName(locale))…").font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
+                    } else {
+                        Menu("Ajouter une langue") {
+                            ForEach(model.supportedSpeechLocales.filter { locale in !model.installedSpeechLocales.contains { SpeechLanguage.languageCode(of: $0) == SpeechLanguage.languageCode(of: locale) } }, id: \.self) { locale in
+                                Button(SpeechLanguage.displayName(locale)) { model.installSpeechModel(locale) }
+                            }
+                        }.menuStyle(.button).fixedSize().disabled(model.modelWorkBusy || model.isDemoMode)
+                    }
                 }
-            }
+            }.task { model.refreshSpeechLanguages() }
             section(String(localized: "Séparation des voix"), symbol: "person.2.wave.2") {
                 toggleRow(String(localized: "Séparer les voix après transcription"), isOn: $model.diarizationEnabled).disabled(model.modelWorkBusy || model.isDemoMode)
                 row(String(localized: "Modèles de voix · Community-1"), help: String(localized: "Traitement local par piste. Les modèles se téléchargent une fois ; aucune empreinte personnelle n’est créée sans enrôlement explicite.")) {
@@ -362,5 +381,47 @@ struct VoicePersonRow: View {
         let parts = group.sorted { $0.channel.rawValue < $1.channel.rawValue }.map { "\($0.channel.label) · " + String(localized: "\($0.count) exemple(s)") }
         let date = group.compactMap(\.addedAt).max().map { " · " + $0.formatted(date: .abbreviated, time: .omitted) } ?? ""
         return parts.joined(separator: ", ") + date
+    }
+}
+
+/// Click, then press the new combination. Escape cancels, Delete clears the shortcut.
+struct ShortcutRecorder: View {
+    @Binding var shortcut: RecordingShortcut?
+    @State private var listening = false
+    @State private var monitor: Any?
+    var body: some View {
+        HStack(spacing: 6) {
+            Button { listening ? stop() : listen() } label: {
+                Text(listening ? String(localized: "Appuyez sur un raccourci…") : shortcut?.display ?? String(localized: "Aucun"))
+                    .font(.system(size: Studio.Size.body, design: listening ? .default : .monospaced)).frame(minWidth: 120)
+            }.buttonStyle(StudioButtonStyle(primary: listening, compact: true))
+                .accessibilityLabel(listening ? String(localized: "Enregistrement du raccourci") : String(localized: "Raccourci : \(shortcut?.display ?? String(localized: "aucun"))"))
+            if shortcut != nil && !listening {
+                Button { shortcut = nil } label: { Image(systemName: "xmark.circle.fill") }.buttonStyle(.plain).foregroundStyle(Studio.muted)
+                    .help("Supprimer le raccourci").accessibilityLabel("Supprimer le raccourci")
+            } else if shortcut == nil && !listening {
+                Button("Par défaut") { shortcut = .standard }.buttonStyle(StudioButtonStyle(compact: true))
+            }
+        }.onDisappear(perform: stop)
+    }
+    private func listen() {
+        listening = true
+        // The current shortcut is released while listening, so pressing it again can be recorded.
+        GlobalHotKey.shared.unregister()
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            switch Int(event.keyCode) {
+            case kVK_Escape: stop()
+            case kVK_Delete, kVK_ForwardDelete: shortcut = nil; stop()
+            default:
+                guard let recorded = RecordingShortcut(event: event) else { NSSound.beep(); return nil }
+                shortcut = recorded; stop()
+            }
+            return nil
+        }
+    }
+    private func stop() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+        if listening { listening = false; AppEnvironment.model.reloadRecordingShortcut() }
     }
 }

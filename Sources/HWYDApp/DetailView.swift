@@ -58,8 +58,15 @@ struct DetailView: View {
         .sheet(item: $splittingSegment) { segment in
             SegmentSplitView(recordingID: recording.id, segment: segment).environmentObject(model)
         }
+        .onChange(of: model.languageChoiceID) { _, id in
+            guard id == recording.id else { return }
+            model.languageChoiceID = nil; model.refreshSpeechLanguages(); confirmReprocessing = true
+        }
         .confirmationDialog("Remplacer le transcript ?", isPresented: $confirmReprocessing) {
             Button("Retranscrire") { model.transcribe(recording.id) }
+            ForEach(model.sessionLanguageChoices.filter { $0 != (recording.speechLanguage ?? SpeechLanguage.defaultLocale) }, id: \.self) { choice in
+                Button(choice == SpeechLanguage.automatic ? "Retranscrire avec détection automatique" : "Retranscrire en \(SpeechLanguage.displayName(choice))") { model.transcribe(recording.id, language: choice) }
+            }
             Button("Annuler", role: .cancel) {}
         } message: { Text("Les voix seront détectées à nouveau et les noms corrigés seront réinitialisés. Vos notes et les versions précédentes restent conservées.") }
     }
@@ -76,9 +83,9 @@ struct DetailView: View {
                     Spacer()
                     Button("Annuler") { model.cancelProcessing() }.buttonStyle(StudioButtonStyle())
                 } else {
-                    Text(recording.transcriptState == .failed ? "Le traitement a été interrompu ou a échoué." : (recording.transcription?.diarizationEngine == nil ? "Français · Apple Speech · sur ce Mac" : "Français · Apple Speech + Community-1")).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
+                    Text(recording.transcriptState == .failed ? String(localized: "Le traitement a été interrompu ou a échoué.") : (recording.transcription.map { SessionLanguageLabel.transcript($0) + ($0.diarizationEngine == nil ? String(localized: " · Apple Speech · sur ce Mac") : " · Apple Speech + Community-1") } ?? SessionLanguageLabel.title(recording.speechLanguage ?? SpeechLanguage.defaultLocale) + String(localized: " · Apple Speech · sur ce Mac"))).font(.system(size: Studio.Size.caption)).foregroundStyle(Studio.muted)
                     Spacer()
-                    Button(recording.transcriptVersion > 0 ? "Retranscrire" : "Transcrire") { if recording.transcriptVersion > 0 { confirmReprocessing = true } else { model.transcribe(recording.id) } }
+                    Button(recording.transcriptVersion > 0 ? "Retranscrire" : "Transcrire") { if recording.transcriptVersion > 0 { model.refreshSpeechLanguages(); confirmReprocessing = true } else { model.transcribe(recording.id) } }
                         .buttonStyle(StudioButtonStyle()).disabled(model.modelWorkBusy || recording.audioChunks.isEmpty)
                 }
             }
