@@ -45,12 +45,13 @@ With several valid Developer ID certificates (after a renewal), set `SIGN_IDENTI
 2. Create an app-specific password at account.apple.com, then store the notary credentials in the keychain:
 
    ```sh
-   xcrun notarytool store-credentials hwyd-notary --apple-id <apple-id> --team-id <team-id>
+   xcrun notarytool store-credentials apple-notary --apple-id <apple-id> --team-id <team-id>
    ```
 
-3. Check with `security find-identity -v -p codesigning` and `xcrun notarytool history --keychain-profile hwyd-notary`.
+3. The profile is not specific to HWYD: other apps of the same team can notarize with it.
+4. Check with `security find-identity -v -p codesigning` and `xcrun notarytool history --keychain-profile apple-notary`.
 
-`SIGN_IDENTITY` and `NOTARY_PROFILE` override the defaults (`Developer ID Application`, `hwyd-notary`).
+`SIGN_IDENTITY` and `NOTARY_PROFILE` override the defaults (`Developer ID Application`, `apple-notary`).
 
 ## CI and public files
 
