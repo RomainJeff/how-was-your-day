@@ -13,8 +13,38 @@ gh auth status >/dev/null
 if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
     echo "Release $tag exists; refusing to overwrite artifacts." >&2; exit 1
 fi
-SIGN_TIMESTAMP=1 VERSION="$version" BUILD_NUMBER="$(git rev-list --count HEAD)" HWYD_APP_OUTPUT='build/release/How Was Your Day.app' scripts/build-app.sh release
+# Public releases are signed with Developer ID and notarized. NOTARY_PROFILE names a notarytool
+# keychain profile created once with `xcrun notarytool store-credentials`.
+identity="${SIGN_IDENTITY:-Developer ID Application}"
+profile="${NOTARY_PROFILE:-hwyd-notary}"
+if ! security find-identity -v -p codesigning | grep -F -- "$identity" >/dev/null; then
+    echo "Signing identity \"$identity\" missing from the keychain." >&2; exit 1
+fi
+notarize=0
+if [[ "$identity" == "Developer ID Application"* ]]; then
+    xcrun notarytool history --keychain-profile "$profile" >/dev/null || { echo "Notary profile \"$profile\" unavailable. See docs/distribution.md." >&2; exit 1; }
+    notarize=1
+elif [[ "${HWYD_ALLOW_UNNOTARIZED:-0}" != "1" ]]; then
+    echo "Releases require Developer ID and notarization. Set HWYD_ALLOW_UNNOTARIZED=1 to publish without." >&2; exit 1
+fi
+app='build/release/How Was Your Day.app'
+SIGN_IDENTITY="$identity" SIGN_TIMESTAMP=1 VERSION="$version" BUILD_NUMBER="$(git rev-list --count HEAD)" HWYD_APP_OUTPUT="$app" scripts/build-app.sh release
+if [[ "$notarize" == 1 ]]; then
+    submission="$(mktemp -d)/HowWasYourDay.zip"
+    ditto -c -k --keepParent "$app" "$submission"
+    xcrun notarytool submit "$submission" --keychain-profile "$profile" --wait
+    xcrun stapler staple "$app"
+fi
 scripts/package.sh
+if [[ "$notarize" == 1 ]]; then
+    dmg=build/release/HowWasYourDay.dmg
+    codesign --force --timestamp --sign "$identity" "$dmg"
+    xcrun notarytool submit "$dmg" --keychain-profile "$profile" --wait
+    xcrun stapler staple "$dmg"
+    spctl --assess --type open --context context:primary-signature -v "$dmg"
+    spctl --assess --type execute -v "$app"
+    (cd build/release && shasum -a 256 HowWasYourDay.dmg HowWasYourDay.zip > SHA256SUMS)
+fi
 git tag "$tag"
 git push origin HEAD "$tag"
 gh release create "$tag" --repo "$repo" --verify-tag --title "$tag" --notes-file "$notes" \

@@ -31,9 +31,24 @@ Existing releases are never overwritten. If publishing fails after the tag was p
 
 ## Signing status
 
-Releases up to 0.4.0 used a persistent self-signed certificate, like No Bleeding Eyes. From 0.5.0, releases are signed with a personal-team `Apple Development` identity (team `WBV98478T5`) with a secure timestamp. Updating from 0.4.0 changes the app identity once, so macOS asks again for microphone, audio capture and keychain access. Releases are not Apple-notarized. Gatekeeper may block the first launch; use the macOS Privacy & Security interface. No script or cask disables quarantine or security checks.
+Releases up to 0.4.0 used a persistent self-signed certificate. From 0.5.0 to 0.10.0, releases were signed with a personal-team `Apple Development` identity and were not notarized.
 
-Developer ID signing and notarization remain future work. The build supports `SIGN_IDENTITY` and `SIGN_TIMESTAMP=1`, but packaging does not submit artifacts for notarization.
+`scripts/publish-release.sh` now requires a `Developer ID Application` identity and notarizes the release: the app and both helpers are signed with the hardened runtime and a secure timestamp, the app is submitted to the notary service and stapled, then the DMG is signed, notarized and stapled. `spctl` checks both before publishing. Publishing without notarization needs `HWYD_ALLOW_UNNOTARIZED=1` and a different `SIGN_IDENTITY`.
+
+The first notarized release changes the app's signing team, so macOS asks once more for microphone, audio capture and keychain access.
+
+### One-time setup
+
+1. Create a `Developer ID Application` certificate (Xcode > Settings > Accounts > Manage Certificates, or developer.apple.com). Only the Account Holder can create it.
+2. Create an app-specific password at account.apple.com, then store the notary credentials in the keychain:
+
+   ```sh
+   xcrun notarytool store-credentials hwyd-notary --apple-id <apple-id> --team-id <team-id>
+   ```
+
+3. Check with `security find-identity -v -p codesigning` and `xcrun notarytool history --keychain-profile hwyd-notary`.
+
+`SIGN_IDENTITY` and `NOTARY_PROFILE` override the defaults (`Developer ID Application`, `hwyd-notary`).
 
 ## CI and public files
 
