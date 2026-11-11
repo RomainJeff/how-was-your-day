@@ -53,7 +53,7 @@ struct RootView: View {
                         .padding(.horizontal, 12).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading)
                         .background(model.selectedID == item.id ? Studio.mint.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
                         .contentShape(RoundedRectangle(cornerRadius: 6))
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).contextMenu { SessionContextMenu(item: item) }
             }
             }
             Spacer()
